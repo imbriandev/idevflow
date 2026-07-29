@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "stages": ["define", "plan", "build", "test", "review", "ship", "learn"],
+  "lifecycle": [
+    "idea",
+    "defined",
+    "planned",
+    "plan_approved",
+    "building",
+    "built",
+    "testing",
+    "tested",
+    "reviewing",
+    "review_passed",
+    "candidate_verified",
+    "ready_for_ship_approval",
+    "promoted",
+    "testflight_handoff"
+  ],
+  "interruptStates": [
+    "blocked",
+    "fix_required",
+    "manual_decision_required",
+    "verification_failed",
+    "stale_candidate",
+    "conflicted",
+    "parked"
+  ]
+}
