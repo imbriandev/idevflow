@@ -7,11 +7,11 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Commands | Seven lifecycle commands | `commands/` | Foundation |
 | Skills | Progressive stage expertise | `skills/` | Foundation |
 | Contracts | Ready, done, forbidden, evidence, backward route | `lifecycle/` | Foundation |
-| State | Atomic, recoverable, versioned project state | `state/` | Pending |
-| Git | Clean baseline and repository identity | `git/` | Pending |
+| State | Atomic, recoverable, versioned project state | `state/` | Foundation implemented |
+| Git | Clean baseline and repository identity | `git/` | Discovery implemented; baseline pending |
 | Worktrees | Isolated branch/worktree per writer | `git/` | Pending |
 | Claims | Path ownership and overlap detection | `git/` | Pending |
-| Leases | Session, coordinator, worker, simulator leases | `state/`, `simulator/` | Pending |
+| Leases | Session, coordinator, worker, simulator leases | `state/`, `simulator/` | Runtime lock implemented; leases pending |
 | Preflight | Stage/risk/scope/write authorization | `lifecycle/` | Pending |
 | Postflight | Changed-file and evidence attestation | `lifecycle/` | Pending |
 | Recovery | Status, doctor, stale/orphan handling | `state/` | Pending |
@@ -33,4 +33,4 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Context | Triggered references and context budget | `lifecycle/` | Pending |
 | Packaging | Local, Git, and eventual npm installation | package root | Foundation |
 | Migration | Schema/config migration without source loss | `state/` | Pending |
-| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/` | Started |
+| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/` | State/lock/repository tests implemented |

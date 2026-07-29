@@ -49,4 +49,5 @@ pi -e .
 - [Runtime state model](docs/architecture/state-model.md)
 - [Rewrite parity matrix](docs/plans/parity-matrix.md)
 - [Implementation plan](docs/plans/implementation-plan.md)
+- [Milestone 3 safety-kernel execution](docs/plans/milestone-3-safety-kernel.md)
 - [ADR-0001: Pi-native TypeScript kernel](docs/decisions/0001-pi-native-typescript-kernel.md)

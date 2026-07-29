@@ -6,11 +6,13 @@ import {
   restoreSessionState,
   type SessionState,
 } from "./state/session-state.ts";
+import { registerRuntimeTool } from "./tools/runtime-tool.ts";
 import { formatDashboard, updateStatus } from "./ui/status.ts";
 
 export default function piIosExtension(pi: ExtensionAPI): void {
   let state: SessionState = emptySessionState();
 
+  registerRuntimeTool(pi);
   registerStageCommands(
     pi,
     () => state,
