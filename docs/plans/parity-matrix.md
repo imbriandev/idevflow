@@ -30,7 +30,8 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Release | Candidate-bound approval and promotion | `release/` | Expiring single-use approval and exact local promotion implemented |
 | TestFlight | Verified manual handoff by default | `release/` | Evidence package and explicit no-upload boundary implemented |
 | Observability | Bounded events, metrics, debug report | `state/`, `pipeline/`, `recovery/` | Hash-chained events, bounded worker logs, dashboard, doctor diagnostics, and versioned metadata-only report implemented |
-| Context | Triggered references and context budget | `lifecycle/` | Stage contracts and progressive skills implemented; specialist cold references pending |
+| Context | Triggered references and context budget | `lifecycle/` | Stage contracts, progressive skills, bounded task packets, and minimal state injection implemented; specialist cold references intentionally deferred (non-authoritative) |
 | Packaging | Local, Git, and eventual npm installation | package root | Local/Git loading, package smoke validation, installation/migration, and release-process documentation implemented |
 | Migration | Schema/config migration without source loss | `state/`, `config/` | Versioned backup-and-atomic config migration and operator documentation implemented |
-| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/`, `.github/` | Golden paths, corruption/recovery faults, mock-agent authority, UI fail-closed, package smoke, and macOS Xcode E2E CI implemented |
+| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/`, `.github/` | Golden paths, corruption/recovery faults, mock-agent authority, UI fail-closed, package smoke, runtime provenance gate, plus macOS Xcode verification and full real SampleApp handoff E2E CI implemented |
+| Cutover | Stable provenance, release record, and manual-boundary confirmation | package root, `docs/` | v1.0.0 cutover ledger, Python-runtime rejection gate, validation evidence, and annotated Git tag implemented |

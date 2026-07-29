@@ -74,7 +74,7 @@ Exit: independent slices run concurrently and integrate without authority leakag
 
 Exit: all quality gates pass and a real app reaches verified TestFlight handoff.
 
-## Milestone 8 — Cutover
+## Milestone 8 — Cutover ✅ Complete
 
 - Run the full parity matrix.
 - Run the workflow on a real app.

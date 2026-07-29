@@ -1,6 +1,6 @@
 {
   "name": "pi-ios",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "description": "A Pi-native workflow for taking an indie iOS app from idea to verified TestFlight handoff.",
   "type": "module",
   "private": true,

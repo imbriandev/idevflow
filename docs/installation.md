@@ -55,7 +55,7 @@ npm run check
 git diff --check
 pi -e . --list-models
 npm pack --dry-run --json
-PI_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts
+PI_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
 ```
 
 The real Xcode E2E test is opt-in locally and required in the macOS CI workflow.

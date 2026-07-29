@@ -27,7 +27,7 @@ Mock-agent evaluations call the registered typed tools rather than simulate pros
 - Node 22 installation and the full typecheck/unit suite
 - Pi extension loading and package dry-run
 - whitespace validation
-- real Xcode simulator verification with `PI_IOS_XCODE_E2E=1`
+- real Xcode simulator verification and the full SampleApp manual-handoff E2E with `PI_IOS_XCODE_E2E=1`
 
 `docs/installation.md` documents requirements, local loading, initialization, safe migration, diagnostics, and exact validation commands. `docs/release-process.md` separates package release from iOS app promotion and reiterates the manual TestFlight boundary.
 
