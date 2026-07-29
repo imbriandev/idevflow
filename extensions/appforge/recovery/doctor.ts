@@ -35,7 +35,16 @@ export async function diagnoseSessions(repository: RepositoryDescriptor): Promis
     } else if (session.status === "stale") {
       diagnostics.push({ sessionId: session.id, severity: "warning", message: `Stale session: ${session.statusReason ?? "unknown reason"}`, recommendation: "Inspect, resume deliberately, or preserve the branch for manual recovery" });
     } else {
-      diagnostics.push({ sessionId: session.id, severity: "info", message: `${session.status} on ${session.branch}`, recommendation: session.status === "ready_for_integration" ? "Await controlled integration" : "Continue the owning Pi session" });
+      diagnostics.push({
+        sessionId: session.id,
+        severity: "info",
+        message: `${session.status} on ${session.branch}`,
+        recommendation: session.status === "ready_for_integration"
+          ? "Run controlled lifecycle integration"
+          : session.status === "integrated"
+            ? "Retain as source-bound lifecycle evidence"
+            : "Continue the owning Pi session",
+      });
     }
   }
   const registeredPaths = new Set(Object.values(state.sessions).map((session) => session.worktreePath));

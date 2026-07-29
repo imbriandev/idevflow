@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "entitlement": "pro",
+  "products": [{ "productId": "com.example.app.pro.monthly" }],
+  "paywallRevision": "v1",
+  "appStoreSnapshotFingerprint": "sha256:replace",
+  "providerSnapshotFingerprint": "sha256:replace",
+  "requiredProofs": ["purchase", "restore", "entitlement"],
+  "providedProofs": ["purchase", "restore", "entitlement"]
+}

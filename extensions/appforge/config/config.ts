@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { writeFileAtomically } from "../state/atomic-file.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
-export const CONFIG_SCHEMA_VERSION = 2 as const;
+export const CONFIG_SCHEMA_VERSION = 3 as const;
 
 export interface XcodeConfig {
   readonly container?: string;
@@ -25,6 +25,20 @@ export interface VerificationConfig {
   readonly requiredScreenshotVariants: readonly string[];
 }
 
+export interface DocumentConfig {
+  readonly productMemory: string;
+  readonly slcSpec: string;
+  readonly workGraph: string;
+  readonly privacyReview: string;
+  readonly monetization: string;
+  readonly releaseManifest: string;
+}
+
+export interface ReleaseConfig {
+  readonly approvalTtlSeconds: number;
+  readonly defaultTarget: "testflight-internal" | "testflight-external";
+}
+
 export interface PiIosConfig {
   readonly schemaVersion: typeof CONFIG_SCHEMA_VERSION;
   readonly baseBranch: string;
@@ -36,6 +50,8 @@ export interface PiIosConfig {
   readonly xcode: XcodeConfig;
   readonly simulator: SimulatorConfig;
   readonly verification: VerificationConfig;
+  readonly documents: DocumentConfig;
+  readonly release: ReleaseConfig;
 }
 
 export const DEFAULT_CONFIG: PiIosConfig = {
@@ -53,6 +69,15 @@ export const DEFAULT_CONFIG: PiIosConfig = {
     requireXcresult: true,
     requiredScreenshotVariants: ["compact-light", "compact-dark", "accessibility-xxxl"],
   },
+  documents: {
+    productMemory: "docs/pi-ios/product-memory.json",
+    slcSpec: "docs/pi-ios/slc.json",
+    workGraph: "docs/pi-ios/work-graph.json",
+    privacyReview: "docs/pi-ios/privacy-review.json",
+    monetization: "docs/pi-ios/monetization.json",
+    releaseManifest: "docs/pi-ios/release.json",
+  },
+  release: { approvalTtlSeconds: 1_800, defaultTarget: "testflight-internal" },
 };
 
 export function configPath(primaryRoot: string): string {
@@ -106,6 +131,17 @@ export function validateConfig(value: unknown): PiIosConfig {
   if (!Array.isArray(config.verification.requiredScreenshotVariants) || config.verification.requiredScreenshotVariants.length === 0 || config.verification.requiredScreenshotVariants.some((variant) => typeof variant !== "string" || !variant)) {
     throw new SafetyKernelError("Pi iOS config verification.requiredScreenshotVariants must be a non-empty string array");
   }
+
+  if (!config.documents || typeof config.documents !== "object") throw new SafetyKernelError("Pi iOS config documents must be an object");
+  for (const key of ["productMemory", "slcSpec", "workGraph", "privacyReview", "monetization", "releaseManifest"] as const) {
+    const path = optionalString(config.documents[key], `documents.${key}`)!;
+    if (path.startsWith("/") || path.split(/[\\/]/).includes("..")) throw new SafetyKernelError(`Pi iOS config documents.${key} must stay project-relative`);
+  }
+  if (!config.release || typeof config.release !== "object") throw new SafetyKernelError("Pi iOS config release must be an object");
+  positiveInteger(config.release.approvalTtlSeconds, "release.approvalTtlSeconds", 60);
+  if (config.release.defaultTarget !== "testflight-internal" && config.release.defaultTarget !== "testflight-external") {
+    throw new SafetyKernelError("Pi iOS config release.defaultTarget is invalid");
+  }
   return config as PiIosConfig;
 }
 
@@ -139,6 +175,8 @@ function migrateLegacy(raw: Record<string, unknown>): PiIosConfig {
     xcode: { ...DEFAULT_CONFIG.xcode, ...(typeof raw.xcode === "object" ? raw.xcode : {}) },
     simulator: { ...DEFAULT_CONFIG.simulator, ...(typeof raw.simulator === "object" ? raw.simulator : {}) },
     verification: { ...DEFAULT_CONFIG.verification, ...(typeof raw.verification === "object" ? raw.verification : {}) },
+    documents: { ...DEFAULT_CONFIG.documents, ...(typeof raw.documents === "object" ? raw.documents : {}) },
+    release: { ...DEFAULT_CONFIG.release, ...(typeof raw.release === "object" ? raw.release : {}) },
   });
 }
 
@@ -155,7 +193,7 @@ export async function discoverConfigMigration(primaryRoot: string): Promise<Conf
     validateConfig(raw);
     return { needed: false, fromVersion: CONFIG_SCHEMA_VERSION, toVersion: CONFIG_SCHEMA_VERSION };
   }
-  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1) {
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2) {
     throw new SafetyKernelError(`No migration path from config schema ${String(raw.schemaVersion)}`);
   }
   return {

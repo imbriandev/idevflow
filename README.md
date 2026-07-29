@@ -40,6 +40,8 @@ The extension also provides `/ios` for current workflow, runtime, baseline, and 
 The agent uses typed tools rather than ad-hoc shell mutation:
 
 - `pi_ios_runtime` — status, initialize, or migrate local runtime state.
+- `pi_ios_lifecycle` — integrate stages, approve frozen plans, and record source-bound reviews.
+- `pi_ios_release` — create, approve, locally promote, and hand off exact TestFlight candidates.
 - `pi_ios_preflight` — authorize a stage, create a worktree, and claim paths.
 - `pi_ios_session` — status, heartbeat, park/resume, verification-bound postflight, and finish.
 - `pi_ios_exec` — run allowlisted Git, Swift, Xcode, and simulator commands in the writer worktree.
@@ -66,5 +68,6 @@ pi -e .
 - [Implementation plan](docs/plans/implementation-plan.md)
 - [Milestone 3 safety-kernel execution](docs/plans/milestone-3-safety-kernel.md)
 - [Milestone 4 Xcode verification](docs/plans/milestone-4-xcode-verification.md)
+- [Milestone 5 full lifecycle](docs/plans/milestone-5-full-lifecycle.md)
 - [Security notes](docs/security.md)
 - [ADR-0001: Pi-native TypeScript kernel](docs/decisions/0001-pi-native-typescript-kernel.md)

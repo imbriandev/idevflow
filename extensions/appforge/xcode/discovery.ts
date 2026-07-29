@@ -42,6 +42,8 @@ export interface XcodeProjectDescriptor {
   readonly deploymentTarget?: string;
   readonly swiftLanguageVersion?: string;
   readonly bundleIdentifier?: string;
+  readonly marketingVersion?: string;
+  readonly buildNumber?: string;
 }
 
 async function discoverContainers(root: string, depth = 0): Promise<{ workspaces: string[]; projects: string[]; packages: string[] }> {
@@ -91,10 +93,11 @@ async function buildSettings(
   container: string,
   kind: "workspace" | "project",
   scheme: string,
+  configuration: string,
   root: string,
   probe: CommandProbe,
 ): Promise<Readonly<Record<string, string>>> {
-  const result = await probe.run("xcodebuild", [kind === "workspace" ? "-workspace" : "-project", container, "-scheme", scheme, "-showBuildSettings", "-json"], root);
+  const result = await probe.run("xcodebuild", [kind === "workspace" ? "-workspace" : "-project", container, "-scheme", scheme, "-configuration", configuration, "-showBuildSettings", "-json"], root);
   if (result.code !== 0) throw new SafetyKernelError(`xcodebuild -showBuildSettings failed: ${result.stderr.trim()}`);
   try {
     const entries = JSON.parse(result.stdout) as { buildSettings?: Record<string, string> }[];
@@ -120,6 +123,7 @@ export async function discoverXcodeProject(
   root: string,
   config: PiIosConfig,
   probe: CommandProbe = systemProbe,
+  configuration = config.xcode.configuration,
 ): Promise<XcodeProjectDescriptor> {
   const discovered = await discoverContainers(root);
   let container: string | undefined;
@@ -164,7 +168,7 @@ export async function discoverXcodeProject(
 
   const schemes = await xcodeSchemes(container, kind, root, probe);
   const scheme = selectScheme(schemes, config.xcode.scheme);
-  const settings = await buildSettings(container, kind, scheme, root, probe);
+  const settings = await buildSettings(container, kind, scheme, configuration, root, probe);
   return {
     kind,
     root,
@@ -175,5 +179,7 @@ export async function discoverXcodeProject(
     ...(settings.IPHONEOS_DEPLOYMENT_TARGET ? { deploymentTarget: settings.IPHONEOS_DEPLOYMENT_TARGET } : {}),
     ...(settings.SWIFT_VERSION ? { swiftLanguageVersion: settings.SWIFT_VERSION } : {}),
     ...(settings.PRODUCT_BUNDLE_IDENTIFIER ? { bundleIdentifier: settings.PRODUCT_BUNDLE_IDENTIFIER } : {}),
+    ...(settings.MARKETING_VERSION ? { marketingVersion: settings.MARKETING_VERSION } : {}),
+    ...(settings.CURRENT_PROJECT_VERSION ? { buildNumber: settings.CURRENT_PROJECT_VERSION } : {}),
   };
 }

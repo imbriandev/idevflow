@@ -15,6 +15,12 @@ An installed project uses:
   sessions/
   graphs/
   receipts/verification/<fingerprint>.json
+  receipts/integration/<session>.json
+  receipts/stages/<stage>-<commit>.json
+  approvals/plan.json
+  approvals/promotion.json
+  release/candidate.json
+  release/handoff-<candidate>.json
   evidence/<session>/
   artifacts/verification/<fingerprint>/
   resources/<session>/
@@ -55,6 +61,7 @@ idea
   -> ready_for_ship_approval
   -> promoted
   -> testflight_handoff
+  -> defined (next explicitly redefined cycle)
 ```
 
 Interrupt states are `blocked`, `fix_required`, `manual_decision_required`, `verification_failed`, `stale_candidate`, `conflicted`, and `parked`.

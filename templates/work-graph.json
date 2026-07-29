@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "title": "",
+  "sourceSpecFingerprint": "",
+  "architecture": [
+    { "id": "ADR-001", "title": "", "decision": "", "rationale": "", "status": "accepted" }
+  ],
+  "slices": [
+    { "id": "slice-1", "title": "", "goal": "", "paths": ["App"], "risk": "medium", "dependsOn": [], "acceptance": [""], "verificationProfile": "integration" }
+  ]
+}

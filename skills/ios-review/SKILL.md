@@ -15,8 +15,8 @@ Produce a bounded, evidence-linked verdict for the current source commit.
 3. Prioritize correctness, data loss, privacy, accessibility, and primary-flow failures before polish.
 4. Cite actionable findings with file and line, impact, evidence, and smallest responsible route.
 5. Separate blockers, important findings, polish, and non-findings.
-6. Produce a machine-readable verdict: pass, fix_required, blocked, or manual_decision_required.
-7. Do not edit code; route repairs through `/ios:build` or `/ios:test`.
+6. Run or reuse valid integration-or-stronger verification for the exact integrated commit. Produce verdict JSON with `verdict`, `summary`, `findings`, and `residualRisk`, then submit it through `pi_ios_lifecycle review`.
+7. Do not edit code; only the kernel receipt may advance to `review_passed`. Route repairs through `/ios:build` or `/ios:test`.
 
 ## Guardrails
 

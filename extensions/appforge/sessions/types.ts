@@ -1,7 +1,7 @@
 import type { Risk, Stage } from "../lifecycle/contracts.ts";
 
 export const SESSION_REGISTRY_SCHEMA_VERSION = 1 as const;
-export type WriterStatus = "active" | "parked" | "postflight_passed" | "ready_for_integration" | "stale" | "blocked";
+export type WriterStatus = "active" | "parked" | "postflight_passed" | "ready_for_integration" | "integrated" | "stale" | "blocked";
 
 export interface PostflightReceipt {
   readonly evidence: string;

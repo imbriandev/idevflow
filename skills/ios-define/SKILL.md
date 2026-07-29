@@ -15,8 +15,8 @@ Turn uncertainty into the smallest coherent product commitment.
 3. Define one Simple, Lovable, Complete path that finishes a real job.
 4. Include empty, loading, failure, accessibility, privacy, and trust expectations that affect the promise.
 5. List explicit non-goals and a falsifiable TestFlight learning question.
-6. Write product documents only through the Pi iOS write preflight once that kernel capability is available.
-7. Recommend `/ios:plan` only when the SLC and acceptance boundary are coherent.
+6. Through write preflight, create the schema-valid configured `productMemory` and `slcSpec` JSON documents (defaults: `docs/pi-ios/product-memory.json` and `docs/pi-ios/slc.json`).
+7. Run docs verification, postflight, finish, then `pi_ios_lifecycle integrate`. Use lifecycle status to report the validated product fingerprint. Recommend `/ios:plan` only after lifecycle reaches `defined`.
 
 ## Guardrails
 

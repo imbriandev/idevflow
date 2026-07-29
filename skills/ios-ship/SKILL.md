@@ -13,10 +13,10 @@ Make a commit-bound Go/No-Go decision and prepare a deliberate TestFlight handof
 1. Resolve the exact candidate commit, target, graph revision, and prior review verdict.
 2. Reject stale candidates or evidence whose source/config/toolchain fingerprint differs.
 3. Prepare source-bound screenshot variants with `pi_ios_simulator`, accessibility/performance metadata with `pi_ios_proof`, then run fresh `pi_ios_verify` using the non-reusable `release` profile.
-4. Review privacy manifests, permissions, entitlements, data handling, signing, versioning, and known issues.
-5. For paid apps, prove purchase, cancel, pending, restore, expiration, offline entitlement, and disclosure behavior.
-6. Present Go/No-Go with accepted risks and request a candidate-bound promotion approval.
-7. Treat push, upload, and tester distribution as separate approvals. Default to manual Xcode Organizer/App Store Connect handoff.
+4. Validate the configured privacy-review and release-manifest JSON. If StoreKit or RevenueCat is detected, require the reconciled monetization manifest and complete proof set.
+5. Call `pi_ios_release create_candidate` with the fresh release fingerprint. Present the exact candidate, target, gates, and known issues.
+6. Call `pi_ios_release approve` only when the founder is ready; use its expiring single-use token for exact local `promote`.
+7. Call `handoff` to emit the verified manual package. Push, upload, and tester distribution remain unperformed, separate approvals.
 
 ## Guardrails
 

@@ -11,3 +11,5 @@ As of 2026-07-29, `npm audit` reports `GHSA-mh99-v99m-4gvg` in `brace-expansion@
 Pi extensions execute with the user's system permissions. Pi iOS therefore fails closed for untrusted project mutation, direct write paths outside claimed worktrees, expired writer or simulator leases, mutating shell commands, non-interactive registry repair, stale postflight receipts, weak verification profiles, missing xcresult/test evidence, source-mismatched quality proof, and candidate actions that later milestones will approval-bind.
 
 Supervised process logs are redacted before persistence. Completed verification bundles are recursively scanned for credential patterns; contaminated local artifact directories are removed and no successful receipt is issued.
+
+Plan approval is interactive and bound to graph fingerprint plus plan commit. Ship approval is interactive, expiring, single-use, stored only as a token hash, and bound to candidate fingerprint, commit, and target. Candidate creation and promotion revalidate source and artifact hashes. Local promotion performs no push, upload, archive/export, or distribution; the final handoff records those boundaries explicitly.

@@ -16,7 +16,7 @@ Implement one approved slice and produce commit-bound evidence.
 4. Implement the smallest complete vertical behavior; preserve Swift concurrency isolation and explicit state ownership.
 5. Add focused tests when they provide a stable behavioral seam.
 6. Call `pi_ios_verify`; accept the adaptive minimum profile and preserve its verification fingerprint.
-7. Call `pi_ios_session postflight` with evidence and that exact fingerprint. Finish only if source and artifacts remain unchanged, then submit the commit for controlled integration.
+7. Call `pi_ios_session postflight` with evidence and that exact fingerprint. Finish only if source and artifacts remain unchanged, then call `pi_ios_lifecycle integrate` with the approved `sliceId`; the kernel must map claims to exactly one approved slice and emit the build-stage receipt.
 
 ## Guardrails
 

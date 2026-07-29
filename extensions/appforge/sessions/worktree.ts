@@ -33,7 +33,12 @@ export async function createWriterWorktree(input: {
   const worktreePath = join(parent, `${slugify(input.task)}-${shortId}`);
   await mkdir(parent, { recursive: true });
 
-  const baseCommitResult = await execFileAsync("git", ["rev-parse", "--verify", input.config.baseBranch], {
+  const integrationExists = await execFileAsync("git", ["rev-parse", "--verify", input.config.integrationBranch], {
+    cwd: input.repository.primaryRoot,
+    encoding: "utf8",
+  }).then(() => true).catch(() => false);
+  const sourceBranch = integrationExists ? input.config.integrationBranch : input.config.baseBranch;
+  const baseCommitResult = await execFileAsync("git", ["rev-parse", "--verify", sourceBranch], {
     cwd: input.repository.primaryRoot,
     encoding: "utf8",
   });

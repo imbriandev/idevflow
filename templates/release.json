@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0",
+  "build": "1",
+  "bundleId": "com.example.app",
+  "target": "testflight-internal",
+  "releaseNotes": "",
+  "knownIssues": [],
+  "supportUrl": "https://example.com/support",
+  "privacyUrl": "https://example.com/privacy"
+}

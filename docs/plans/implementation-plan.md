@@ -44,7 +44,7 @@ Exit: adversarial tests cannot write outside authorization or lose unintegrated 
 
 Exit: fixture apps and a real sample app produce commit-bound evidence.
 
-## Milestone 5 — Full lifecycle
+## Milestone 5 — Full lifecycle ✅ Complete
 
 - Product memory and SLC documents.
 - Architecture plans and machine-readable work graphs.

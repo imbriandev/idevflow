@@ -13,7 +13,7 @@ import { acquireSimulatorLease, releaseSimulatorLease } from "../simulator/servi
 import { SimulatorLeaseStore } from "../simulator/leases.ts";
 import type { SimulatorLease } from "../simulator/types.ts";
 import { SafetyKernelError } from "../state/errors.ts";
-import { discoverXcodeProject, type XcodeProjectDescriptor } from "../xcode/discovery.ts";
+import { discoverXcodeProject, systemProbe, type XcodeProjectDescriptor } from "../xcode/discovery.ts";
 import { discoverToolchain } from "../xcode/toolchain.ts";
 import { sourceFingerprint, verificationFingerprint } from "./fingerprint.ts";
 import { collectProof, simulatorProof, type ProofInput } from "./proofs.ts";
@@ -56,12 +56,13 @@ function xcodeBaseArgs(
   config: PiIosConfig,
   simulator: SimulatorLease,
   derivedData: string,
+  configuration: string,
 ): string[] {
   return [
     project.kind === "workspace" ? "-workspace" : "-project",
     project.container,
     "-scheme", project.scheme,
-    "-configuration", config.xcode.configuration,
+    "-configuration", configuration,
     "-destination", config.xcode.destination ?? `platform=iOS Simulator,id=${simulator.udid}`,
     "-derivedDataPath", derivedData,
     "COMPILER_INDEX_STORE_ENABLE=NO",
@@ -73,14 +74,16 @@ async function runCommand(spec: ProcessSpec, signal: AbortSignal | undefined): P
 }
 
 export async function verifySession(input: VerificationInput): Promise<VerificationReceipt> {
-  if (input.session.status !== "active") throw new SafetyKernelError(`Verification requires an active writer session, found ${input.session.status}`);
+  if (input.session.status !== "active" && input.session.status !== "ready_for_integration" && input.session.status !== "integrated") {
+    throw new SafetyKernelError(`Verification requires an active, ready, or integrated writer session, found ${input.session.status}`);
+  }
   const files = await changedFiles(input.session.worktreePath);
   const profile = chooseProfile(input.session, files, input.requestedProfile);
   const contract = PROFILE_CONTRACTS[profile];
   input.onProgress?.(`Selected ${profile} verification for ${files.length} changed file(s)`);
 
   const toolchain = await discoverToolchain(input.session.worktreePath);
-  const project = profile === "docs" ? undefined : await discoverXcodeProject(input.session.worktreePath, input.config);
+  const project = profile === "docs" ? undefined : await discoverXcodeProject(input.session.worktreePath, input.config, systemProbe, profile === "release" ? "Release" : input.config.xcode.configuration);
   if (project && project.kind !== "swift-package") {
     const deployment = Number.parseFloat(project.deploymentTarget ?? "0");
     if (deployment < 26) throw new SafetyKernelError(`Pi iOS requires iOS deployment target 26 or newer, found ${project.deploymentTarget ?? "unknown"}`);
@@ -159,7 +162,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
       } else {
         if (!simulator) throw new SafetyKernelError("Xcode verification is missing a simulator lease");
         executable = "xcodebuild";
-        args = [...xcodeBaseArgs(project, input.config, simulator, derivedData), "-resultBundlePath", resultBundle, action];
+        args = [...xcodeBaseArgs(project, input.config, simulator, derivedData, profile === "release" ? "Release" : input.config.xcode.configuration), "-resultBundlePath", resultBundle, action];
       }
       const result = await runCommand({
         executable,

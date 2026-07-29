@@ -117,6 +117,14 @@ Adaptive profiles select the minimum allowed strength from stage, risk, and chan
 
 Postflight accepts a verification fingerprint rather than prose. It validates receipt ownership, source identity, minimum profile, and artifact integrity before recording its own commit-bound attestation.
 
+## Full single-agent lifecycle
+
+Tracked product memory and SLC documents produce the definition fingerprint. A machine-readable architecture/work graph binds that fingerprint to accepted decisions, dependency-valid vertical slices, path claims, risk, acceptance, and verification strength. Interactive plan approval binds the exact graph and plan commit.
+
+Completed writer commits fast-forward onto the integration branch under a lock. Define, plan, build, test, review, and post-handoff learning produce local source-bound receipts. Build integration must descend from the approved plan and map claims to exactly one approved slice. Machine-readable review verdicts apply only to the currently verified integration commit.
+
 ## Release boundary
 
-The default result is a verified TestFlight handoff. The kernel prepares and validates the candidate, archive readiness, privacy state, known issues, and evidence bundle. Upload or distribution remains a separate explicit capability and approval boundary.
+The default result is a verified TestFlight handoff. Candidate creation requires fresh release verification, xcresult/test evidence, source-bound visual/accessibility/performance proof, privacy readiness, monetization reconciliation when detected, exact bundle/target metadata, and known issues.
+
+Interactive ship approval produces an expiring single-use capability bound to candidate commit, fingerprint, and target. Promotion fast-forwards only the local base branch. The handoff package explicitly records that push, archive/upload, and distribution did not occur; each remains a separate future capability and approval boundary.

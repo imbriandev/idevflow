@@ -16,7 +16,7 @@ Turn uncertainty into reproducible evidence.
 4. Obtain write authorization before adding tests or fixes.
 5. Add the narrowest stable regression proof and repair the verified cause.
 6. Re-run focused checks through `pi_ios_verify`; do not request a profile weaker than policy selects.
-7. Inspect xcresult summaries and provide source-bound simulator, screenshot, accessibility, or performance proof when the selected profile requires it. Pass the successful verification fingerprint to postflight.
+7. Inspect xcresult summaries and provide source-bound simulator, screenshot, accessibility, or performance proof when required. Pass the fingerprint to postflight, finish, and call `pi_ios_lifecycle integrate` to produce the test-stage receipt.
 
 ## Guardrails
 

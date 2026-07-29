@@ -26,7 +26,7 @@ describe("configuration", () => {
     assert.equal((await discoverConfigMigration(root)).needed, true);
     const migrated = await applyConfigMigration(root);
     assert.equal(migrated.baseBranch, "trunk");
-    assert.equal(migrated.schemaVersion, 2);
+    assert.equal(migrated.schemaVersion, 3);
     assert.equal(JSON.parse(await readFile(`${path}.v0.backup`, "utf8")).schemaVersion, 0);
   });
 
@@ -44,8 +44,23 @@ describe("configuration", () => {
       verificationTimeoutSeconds: 1_800,
     }), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 2);
+    assert.equal(migrated.schemaVersion, 3);
     assert.deepEqual(migrated.verification.requiredScreenshotVariants, ["compact-light", "compact-dark", "accessibility-xxxl"]);
+  });
+
+  it("migrates the milestone-4 schema with lifecycle defaults", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
+    roots.push(root);
+    const path = join(root, ".appforge", "config.json");
+    await initializeConfig(root);
+    const legacy = { ...DEFAULT_CONFIG, schemaVersion: 2 } as Record<string, unknown>;
+    delete legacy.documents;
+    delete legacy.release;
+    await writeFile(path, JSON.stringify(legacy), "utf8");
+    const migrated = await applyConfigMigration(root);
+    assert.equal(migrated.schemaVersion, 3);
+    assert.equal(migrated.documents.workGraph, "docs/pi-ios/work-graph.json");
+    assert.equal(migrated.release.defaultTarget, "testflight-internal");
   });
 
   it("rejects unknown schemas and unsafe lease values", () => {

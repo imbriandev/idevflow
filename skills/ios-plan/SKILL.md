@@ -16,7 +16,8 @@ Convert an approved product or technical goal into an executable vertical-slice 
 4. Split work into independently verifiable user-visible slices with acceptance criteria and claimed-path candidates.
 5. Assign risk and identify privacy, payment, signing, destructive-data, and architecture stop conditions.
 6. Define focused and combined verification, including simulator and artifact needs.
-7. Present the frozen plan fingerprint and wait for explicit founder approval before implementation.
+7. Write the configured work-graph JSON with the exact product fingerprint, accepted architecture decisions, DAG-valid slices, claims, risk, acceptance, and verification profiles. Verify, finish, and call `pi_ios_lifecycle integrate`.
+8. Present the frozen graph fingerprint and call `pi_ios_lifecycle approve_plan`; implementation cannot begin until the interactive founder approval reaches `plan_approved`.
 
 ## Guardrails
 

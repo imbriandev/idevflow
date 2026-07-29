@@ -5,6 +5,7 @@ import { loadConfig } from "./config/config.ts";
 import { inspectBaseline } from "./git/baseline.ts";
 import { STAGE_CONTRACTS } from "./lifecycle/contracts.ts";
 import { discoverRepository } from "./repository/discovery.ts";
+import { loadCandidate } from "./release/service.ts";
 import { SessionRegistry } from "./sessions/registry.ts";
 import { heartbeatSession } from "./sessions/service.ts";
 import { RuntimeStore } from "./state/runtime-store.ts";
@@ -16,6 +17,8 @@ import {
 import { registerDoctorTool } from "./tools/doctor-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
 import { registerPreflightTool } from "./tools/preflight-tool.ts";
+import { registerLifecycleTool } from "./tools/lifecycle-tool.ts";
+import { registerReleaseTool } from "./tools/release-tool.ts";
 import { registerProofTool } from "./tools/proof-tool.ts";
 import { registerRuntimeTool } from "./tools/runtime-tool.ts";
 import { registerSessionTool } from "./tools/session-tool.ts";
@@ -39,6 +42,8 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   }
 
   registerRuntimeTool(pi);
+  registerLifecycleTool(pi);
+  registerReleaseTool(pi);
   registerPreflightTool(pi, () => state);
   registerSessionTool(pi);
   registerExecTool(pi);
@@ -65,9 +70,11 @@ export default function piIosExtension(pi: ExtensionAPI): void {
         const config = await loadConfig(repository.primaryRoot);
         const baseline = await inspectBaseline(repository, config);
         const writer = await new SessionRegistry(repository).findLatestByPiSession(ctx.sessionManager.getSessionId());
+        const candidate = await loadCandidate(repository);
         lines.push(`Runtime: ${runtime ? `r${runtime.revision} · ${runtime.lifecycle}` : "not initialized"}`);
         lines.push(`Baseline: ${baseline.ready ? "ready" : baseline.problems.join("; ")}`);
         lines.push(`Writer: ${writer ? `${writer.id} · ${writer.status} · ${writer.branch}` : "none"}`);
+        lines.push(`Candidate: ${candidate ? `${candidate.status} · ${candidate.commit.slice(0, 12)} · ${candidate.target}` : "none"}`);
       } catch (error) {
         lines.push(`Project status unavailable: ${(error as Error).message}`);
       }
