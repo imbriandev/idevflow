@@ -49,7 +49,7 @@ Workers run as isolated Pi processes in extension-created Git worktrees. A worke
 - claimed paths
 - risk and verification requirements
 
-Workers can produce source commits and receipts. They cannot integrate, promote, push, upload, or distribute.
+Workers can produce source commits and receipts. They cannot integrate, approve risk, retry themselves, promote, push, upload, or distribute. Their packets are digest-checked and secret-free; their random capabilities are hash-only at rest and redacted from logs.
 
 ### Project state
 
@@ -122,6 +122,14 @@ Postflight accepts a verification fingerprint rather than prose. It validates re
 Tracked product memory and SLC documents produce the definition fingerprint. A machine-readable architecture/work graph binds that fingerprint to accepted decisions, dependency-valid vertical slices, path claims, risk, acceptance, and verification strength. Interactive plan approval binds the exact graph and plan commit.
 
 Completed writer commits fast-forward onto the integration branch under a lock. Define, plan, build, test, review, and post-handoff learning produce local source-bound receipts. Build integration must descend from the approved plan and map claims to exactly one approved slice. Machine-readable review verdicts apply only to the currently verified integration commit.
+
+## Multi-agent pipeline
+
+An approved graph is frozen into a durable pipeline record with a coordinator lease and integration epoch. The scheduler runs only dependency-ready, non-overlapping slices up to configured bounded concurrency. Each worker gets its own branch and worktree, repairs only through a finite deterministic budget, then submits test and review evidence bound to its finished commit.
+
+The coordinator is the sole integration authority. It cherry-picks ready commits in an isolated temporary worktree under the integration lock and uses compare-and-swap publication. Failed multi-slice batches recursively split; conflicted source is retained rather than guessed away. Once every slice integrates, a clean candidate worktree receives fresh combined verification and advances the lifecycle to `review_passed`. Any later integration-branch drift makes that pipeline candidate stale.
+
+Pipeline state is hash-chained independently of lifecycle and writer session state. Reconciliation detects lost workers, preserves their worktrees, and requires an explicit bounded retry. Dashboard and doctor diagnostics expose coordinator, worker, batch, and stale-candidate state.
 
 ## Release boundary
 

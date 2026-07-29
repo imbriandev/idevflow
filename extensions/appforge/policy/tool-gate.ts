@@ -13,9 +13,28 @@ function shellQuote(value: string): string {
 
 export function registerToolGate(pi: ExtensionAPI, readState: () => SessionState): void {
   pi.on("tool_call", async (event, ctx) => {
-    const stage = readState().stage;
+    const workerMode = Boolean(process.env.PI_IOS_WORKER_PACKET);
+    const stage = readState().stage ?? (workerMode ? "build" : undefined);
     if (!stage) return;
     const contract = STAGE_CONTRACTS[stage];
+
+    if (workerMode && ["pi_ios_runtime", "pi_ios_lifecycle", "pi_ios_release", "pi_ios_pipeline", "pi_ios_doctor", "pi_ios_simulator", "pi_ios_proof"].includes(event.toolName)) {
+      return { block: true, reason: `Pipeline workers have no authority to call ${event.toolName}.` };
+    }
+
+    if (workerMode && event.toolName === "read") {
+      const repository = await discoverRepository(ctx.cwd);
+      const session = await new SessionRegistry(repository).findByPiSession(ctx.sessionManager.getSessionId());
+      if (!session || session.status !== "active") return { block: true, reason: "Pipeline worker reads require exact write preflight first." };
+      const input = event.input as { path?: string };
+      if (typeof input.path !== "string") return { block: true, reason: "Pipeline worker read is missing a path." };
+      try {
+        input.path = (await resolveSafeWritePath(input.path, session.worktreePath)).absolute;
+      } catch (error) {
+        return { block: true, reason: `Pipeline worker read blocked: ${(error as Error).message}` };
+      }
+      return;
+    }
 
     if (event.toolName === "edit" || event.toolName === "write") {
       if (!contract.writeCapable) return { block: true, reason: `Stage ${stage} is read-only; enter a write-capable stage first.` };

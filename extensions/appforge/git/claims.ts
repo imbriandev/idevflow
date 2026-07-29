@@ -10,7 +10,9 @@ export function normalizeClaim(input: string, worktreeRoot: string): string {
   if (normalized === ".." || normalized.startsWith(`..${sep}`) || isAbsolute(normalized)) {
     throw new SafetyKernelError(`Claim path escapes the worktree: ${input}`);
   }
-  return normalized.split(sep).join("/").replace(/^\.\//, "").replace(/\/$/, "");
+  const projectPath = normalized.split(sep).join("/").replace(/^\.\//, "").replace(/\/$/, "");
+  if ([".git", ".appforge", ".pi"].includes(projectPath.split("/")[0]!)) throw new SafetyKernelError(`Claim path targets protected control state: ${input}`);
+  return projectPath;
 }
 
 export async function resolveSafeWritePath(input: string, worktreeRoot: string): Promise<{ absolute: string; projectPath: string }> {

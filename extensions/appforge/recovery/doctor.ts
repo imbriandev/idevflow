@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { access } from "node:fs/promises";
 import { promisify } from "node:util";
+import { PipelineStore } from "../pipeline/store.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import type { WriterSession } from "../sessions/types.ts";
@@ -54,6 +55,22 @@ export async function diagnoseSessions(repository: RepositoryDescriptor): Promis
     }
   }
   return diagnostics;
+}
+
+export async function diagnosePipelines(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {
+  const pipelines = await new PipelineStore(repository).list();
+  const now = Date.now();
+  return pipelines.flatMap((pipeline) => {
+    const running = Object.values(pipeline.slices).filter((slice) => slice.status === "working");
+    const expiredRuns = running.flatMap((slice) => slice.runs.filter((run) => run.state === "running" && Date.parse(run.leaseExpiresAt) < now));
+    const severity: SessionDiagnostic["severity"] = ["blocked", "cancelled", "stale_candidate"].includes(pipeline.status) || expiredRuns.length ? "warning" : "info";
+    return [{
+      sessionId: `pipeline:${pipeline.id}`,
+      severity,
+      message: `${pipeline.status}; ${running.length} working, ${expiredRuns.length} expired worker lease(s), ${pipeline.batches.length} integration batch record(s)`,
+      recommendation: expiredRuns.length ? "Run pi_ios_pipeline reconcile as the current coordinator; worker source will be preserved" : pipeline.status === "stale_candidate" ? "Inspect integration drift and create or run a new pipeline deliberately" : "Use pi_ios_pipeline status for source-bound slice and batch receipts",
+    }];
+  });
 }
 
 export async function repairExpiredSessions(repository: RepositoryDescriptor, actor: string): Promise<WriterSession[]> {

@@ -22,15 +22,16 @@ describe("process supervisor", () => {
     const root = await fixture();
     const result = await runSupervised({
       executable: process.execPath,
-      args: ["-e", "console.log('token=super-secret'); console.error('Bearer abc.def.ghi')"],
+      args: ["-e", "console.log('token=super-secret'); console.log('literal-capability'); console.error('Bearer abc.def.ghi')"],
       cwd: root,
       timeoutMs: 5_000,
+      redactValues: ["literal-capability"],
       stdoutPath: join(root, "stdout.log"),
       stderrPath: join(root, "stderr.log"),
     });
     assert.equal(result.code, 0);
     assert.doesNotMatch(result.stdoutTail, /super-secret/);
-    assert.doesNotMatch(await readFile(result.stdoutPath, "utf8"), /super-secret/);
+    assert.doesNotMatch(await readFile(result.stdoutPath, "utf8"), /super-secret|literal-capability/);
     assert.doesNotMatch(await readFile(result.stderrPath, "utf8"), /abc\.def\.ghi/);
   });
 

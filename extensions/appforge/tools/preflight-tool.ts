@@ -8,6 +8,7 @@ import { discoverRepository } from "../repository/discovery.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { writePreflight } from "../sessions/service.ts";
 import type { SessionState } from "../state/session-state.ts";
+import { assertPacketPath, readWorkerPacket } from "../workers/packets.ts";
 
 export function registerPreflightTool(pi: ExtensionAPI, readState: () => SessionState): void {
   pi.registerTool({
@@ -28,6 +29,15 @@ export function registerPreflightTool(pi: ExtensionAPI, readState: () => Session
     }),
     async execute(_id, params, _signal, _update, ctx) {
       const selectedStage = readState().stage;
+      const workerPacketPath = process.env.PI_IOS_WORKER_PACKET;
+      if (workerPacketPath) {
+        const discovered = await discoverRepository(ctx.cwd);
+        const packet = await readWorkerPacket(await assertPacketPath(workerPacketPath, discovered.primaryRoot), process.env.PI_IOS_WORKER_PACKET_DIGEST);
+        const requestedPaths = [...params.paths].sort();
+        if (params.stage !== "build" || !params.write || params.task !== packet.task || params.risk !== packet.risk || JSON.stringify(requestedPaths) !== JSON.stringify([...packet.claims].sort())) {
+          throw new Error("Worker preflight must exactly match its immutable task packet");
+        }
+      }
       if (selectedStage && selectedStage !== params.stage) {
         throw new Error(`Preflight stage ${params.stage} does not match active stage ${selectedStage}`);
       }

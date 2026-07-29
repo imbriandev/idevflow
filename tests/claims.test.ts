@@ -10,6 +10,7 @@ describe("path claims", () => {
     assert.equal(normalizeClaim("Sources/Feature", "/repo/worktree"), "Sources/Feature");
     assert.throws(() => normalizeClaim("../secret", "/repo/worktree"));
     assert.throws(() => normalizeClaim(".", "/repo/worktree"));
+    assert.throws(() => normalizeClaim(".appforge/state", "/repo/worktree"), /protected control state/);
   });
 
   it("blocks write paths that cross symbolic links", async () => {

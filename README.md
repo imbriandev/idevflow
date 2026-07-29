@@ -42,6 +42,8 @@ The agent uses typed tools rather than ad-hoc shell mutation:
 - `pi_ios_runtime` — status, initialize, or migrate local runtime state.
 - `pi_ios_lifecycle` — integrate stages, approve frozen plans, and record source-bound reviews.
 - `pi_ios_release` — create, approve, locally promote, and hand off exact TestFlight candidates.
+- `pi_ios_pipeline` — create, schedule, reconcile, observe, and integrate frozen multi-agent work graphs.
+- `pi_ios_pipeline_worker` — capability-bound worker repair and source-bound submission (worker processes only).
 - `pi_ios_preflight` — authorize a stage, create a worktree, and claim paths.
 - `pi_ios_session` — status, heartbeat, park/resume, verification-bound postflight, and finish.
 - `pi_ios_exec` — run allowlisted Git, Swift, Xcode, and simulator commands in the writer worktree.
@@ -51,6 +53,8 @@ The agent uses typed tools rather than ad-hoc shell mutation:
 - `pi_ios_doctor` — diagnose or conservatively repair stale registry state.
 
 During an active stage, direct writes are blocked until preflight and restricted to claimed paths. Mutating Bash is blocked; managed execution is routed through `pi_ios_exec`.
+
+Approved work graphs can run through isolated supervised Pi subprocesses. Workers receive immutable secret-free packets and bounded capabilities; only the coordinator can approve risk, integrate commits, retry lost work, or create the combined candidate. Push, upload, and tester distribution remain separate manual boundaries.
 
 ## Development
 
@@ -69,5 +73,6 @@ pi -e .
 - [Milestone 3 safety-kernel execution](docs/plans/milestone-3-safety-kernel.md)
 - [Milestone 4 Xcode verification](docs/plans/milestone-4-xcode-verification.md)
 - [Milestone 5 full lifecycle](docs/plans/milestone-5-full-lifecycle.md)
+- [Milestone 6 multi-agent pipeline](docs/plans/milestone-6-multi-agent-pipeline.md)
 - [Security notes](docs/security.md)
 - [ADR-0001: Pi-native TypeScript kernel](docs/decisions/0001-pi-native-typescript-kernel.md)

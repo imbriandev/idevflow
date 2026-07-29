@@ -1,7 +1,7 @@
 import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { diagnoseSessions, repairExpiredSessions } from "../recovery/doctor.ts";
+import { diagnosePipelines, diagnoseSessions, repairExpiredSessions } from "../recovery/doctor.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 
 export function registerDoctorTool(pi: ExtensionAPI): void {
@@ -20,7 +20,7 @@ export function registerDoctorTool(pi: ExtensionAPI): void {
         const repaired = await repairExpiredSessions(repository, `pi-session:${ctx.sessionManager.getSessionId()}`);
         return { content: [{ type: "text", text: `Doctor marked ${repaired.length} expired session(s) stale; all worktrees were preserved.` }], details: { repaired } };
       }
-      const diagnostics = await diagnoseSessions(repository);
+      const diagnostics = [...await diagnoseSessions(repository), ...await diagnosePipelines(repository)];
       return {
         content: [{ type: "text", text: diagnostics.length ? diagnostics.map((item) => `${item.severity}: ${item.sessionId} — ${item.message}. ${item.recommendation}`).join("\n") : "No Pi iOS writer sessions." }],
         details: { diagnostics },

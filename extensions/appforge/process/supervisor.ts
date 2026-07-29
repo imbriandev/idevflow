@@ -4,7 +4,18 @@ import { dirname } from "node:path";
 import { SafetyKernelError } from "../state/errors.ts";
 import { StreamingRedactor } from "./redaction.ts";
 
-const ENV_ALLOWLIST = new Set(["PATH", "HOME", "TMPDIR", "DEVELOPER_DIR", "SDKROOT", "LANG", "LC_ALL", "NSUnbufferedIO"]);
+const ENV_ALLOWLIST = new Set([
+  "PATH", "HOME", "TMPDIR", "DEVELOPER_DIR", "SDKROOT", "LANG", "LC_ALL", "NSUnbufferedIO",
+  "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY",
+  "AZURE_OPENAI_API_KEY", "MISTRAL_API_KEY", "GROQ_API_KEY", "XAI_API_KEY",
+  "PI_IOS_WORKER_PACKET", "PI_IOS_WORKER_PACKET_DIGEST", "PI_IOS_WORKER_CAPABILITY", "PI_IOS_WORKER_EXTENSION",
+  "PI_SKIP_VERSION_CHECK", "PI_TELEMETRY",
+]);
+const OVERRIDE_ONLY_ENV = new Set([
+  "ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY", "OPENROUTER_API_KEY",
+  "AZURE_OPENAI_API_KEY", "MISTRAL_API_KEY", "GROQ_API_KEY", "XAI_API_KEY",
+  "PI_IOS_WORKER_PACKET", "PI_IOS_WORKER_PACKET_DIGEST", "PI_IOS_WORKER_CAPABILITY", "PI_IOS_WORKER_EXTENSION",
+]);
 const TAIL_CHARACTERS = 50_000;
 
 export interface ProcessSpec {
@@ -15,6 +26,8 @@ export interface ProcessSpec {
   readonly stdoutPath: string;
   readonly stderrPath: string;
   readonly environment?: Readonly<Record<string, string>>;
+  readonly onSpawn?: (pid: number) => void | Promise<void>;
+  readonly redactValues?: readonly string[];
 }
 
 export interface SupervisedProcessResult {
@@ -40,7 +53,7 @@ function boundedTail(current: string, addition: string): string {
 function safeEnvironment(overrides: Readonly<Record<string, string>> = {}): NodeJS.ProcessEnv {
   const environment: NodeJS.ProcessEnv = {};
   for (const key of ENV_ALLOWLIST) {
-    const value = overrides[key] ?? process.env[key];
+    const value = overrides[key] ?? (OVERRIDE_ONLY_ENV.has(key) ? undefined : process.env[key]);
     if (value !== undefined) environment[key] = value;
   }
   return environment;
@@ -63,8 +76,8 @@ export async function runSupervised(spec: ProcessSpec, abortSignal?: AbortSignal
   await Promise.all([mkdir(dirname(spec.stdoutPath), { recursive: true }), mkdir(dirname(spec.stderrPath), { recursive: true })]);
   const stdoutFile = await open(spec.stdoutPath, "w", 0o600);
   const stderrFile = await open(spec.stderrPath, "w", 0o600);
-  const stdoutRedactor = new StreamingRedactor();
-  const stderrRedactor = new StreamingRedactor();
+  const stdoutRedactor = new StreamingRedactor(spec.redactValues);
+  const stderrRedactor = new StreamingRedactor(spec.redactValues);
   let stdoutTail = "";
   let stderrTail = "";
   let stdoutWrites = Promise.resolve();
@@ -81,6 +94,11 @@ export async function runSupervised(spec: ProcessSpec, abortSignal?: AbortSignal
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
+
+    if (child.pid && spec.onSpawn) {
+      try { await spec.onSpawn(child.pid); }
+      catch (error) { killProcessGroup(child.pid, "SIGTERM"); throw error; }
+    }
 
     const completion = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
       child.once("error", reject);

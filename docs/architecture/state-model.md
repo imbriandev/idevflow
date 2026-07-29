@@ -12,6 +12,10 @@ An installed project uses:
   state/locks/
   state/sessions/events.jsonl
   state/sessions/snapshot.json
+  pipeline/events/<pipeline>.jsonl
+  pipeline/snapshots/<pipeline>.json
+  pipeline/packets/<packet>.json
+  pipeline/logs/<run>/{stdout,stderr}.log
   sessions/
   graphs/
   receipts/verification/<fingerprint>.json
@@ -67,6 +71,14 @@ idea
 Interrupt states are `blocked`, `fix_required`, `manual_decision_required`, `verification_failed`, `stale_candidate`, `conflicted`, and `parked`.
 
 Transitions are contract functions with explicit prerequisites and emitted events. A transition never parses an assistant response to discover whether prerequisites passed.
+
+## Pipeline state
+
+A pipeline snapshot is derived from its own append-only hash-chained journal under the same atomic locking discipline. It freezes the approved graph and plan commit, coordinator lease, integration epoch, slice dependency and claim state, worker attempts and leases, repair counts, batch outcomes, and the combined candidate snapshot.
+
+Worker task packets are immutable digest-bound files. Capability values never enter the snapshot or journal; only their hashes do. Packet, session, postflight, verification, test, and review fingerprints bind a submitted slice to one finished source commit.
+
+Coordinator integration records every attempted batch. Publication is compare-and-swap against the expected integration head. A failed multi-slice batch can split recursively; no recovery deletes a worker branch, worktree, packet, or log. Integration drift after combined verification changes the pipeline status to `stale_candidate`.
 
 ## Session mirror
 

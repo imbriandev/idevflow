@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { registerStageCommands } from "./commands/register-stage-commands.ts";
 import { registerToolGate } from "./policy/tool-gate.ts";
@@ -6,6 +7,7 @@ import { inspectBaseline } from "./git/baseline.ts";
 import { STAGE_CONTRACTS } from "./lifecycle/contracts.ts";
 import { discoverRepository } from "./repository/discovery.ts";
 import { loadCandidate } from "./release/service.ts";
+import { PipelineStore } from "./pipeline/store.ts";
 import { SessionRegistry } from "./sessions/registry.ts";
 import { heartbeatSession } from "./sessions/service.ts";
 import { RuntimeStore } from "./state/runtime-store.ts";
@@ -17,6 +19,8 @@ import {
 import { registerDoctorTool } from "./tools/doctor-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
 import { registerPreflightTool } from "./tools/preflight-tool.ts";
+import { registerPipelineTool } from "./tools/pipeline-tool.ts";
+import { registerPipelineWorkerTool } from "./tools/pipeline-worker-tool.ts";
 import { registerLifecycleTool } from "./tools/lifecycle-tool.ts";
 import { registerReleaseTool } from "./tools/release-tool.ts";
 import { registerProofTool } from "./tools/proof-tool.ts";
@@ -25,6 +29,7 @@ import { registerSessionTool } from "./tools/session-tool.ts";
 import { registerSimulatorTool } from "./tools/simulator-tool.ts";
 import { registerVerificationTool } from "./tools/verification-tool.ts";
 import { formatDashboard, updateStatus } from "./ui/status.ts";
+import { heartbeatPipelineWorker } from "./workers/service.ts";
 
 export default function piIosExtension(pi: ExtensionAPI): void {
   let state: SessionState = emptySessionState();
@@ -42,6 +47,8 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   }
 
   registerRuntimeTool(pi);
+  registerPipelineTool(pi, fileURLToPath(import.meta.url));
+  registerPipelineWorkerTool(pi);
   registerLifecycleTool(pi);
   registerReleaseTool(pi);
   registerPreflightTool(pi, () => state);
@@ -71,9 +78,11 @@ export default function piIosExtension(pi: ExtensionAPI): void {
         const baseline = await inspectBaseline(repository, config);
         const writer = await new SessionRegistry(repository).findLatestByPiSession(ctx.sessionManager.getSessionId());
         const candidate = await loadCandidate(repository);
+        const pipelines = await new PipelineStore(repository).list();
         lines.push(`Runtime: ${runtime ? `r${runtime.revision} · ${runtime.lifecycle}` : "not initialized"}`);
         lines.push(`Baseline: ${baseline.ready ? "ready" : baseline.problems.join("; ")}`);
         lines.push(`Writer: ${writer ? `${writer.id} · ${writer.status} · ${writer.branch}` : "none"}`);
+        lines.push(`Pipelines: ${pipelines.length ? pipelines.map((pipeline) => `${pipeline.id}:${pipeline.status}`).join(", ") : "none"}`);
         lines.push(`Candidate: ${candidate ? `${candidate.status} · ${candidate.commit.slice(0, 12)} · ${candidate.target}` : "none"}`);
       } catch (error) {
         lines.push(`Project status unavailable: ${(error as Error).message}`);
@@ -90,6 +99,14 @@ export default function piIosExtension(pi: ExtensionAPI): void {
 
   pi.on("turn_start", async (_event, ctx) => {
     await refreshWriterLease(ctx);
+    if (process.env.PI_IOS_WORKER_PACKET) {
+      try {
+        const repository = await discoverRepository(ctx.cwd);
+        await heartbeatPipelineWorker(repository, ctx.sessionManager.getSessionId());
+      } catch {
+        // The worker tool will surface an authoritative capability error before submission.
+      }
+    }
   });
 
   pi.on("before_agent_start", async () => {

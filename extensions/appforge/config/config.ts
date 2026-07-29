@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { writeFileAtomically } from "../state/atomic-file.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
-export const CONFIG_SCHEMA_VERSION = 3 as const;
+export const CONFIG_SCHEMA_VERSION = 4 as const;
 
 export interface XcodeConfig {
   readonly container?: string;
@@ -39,6 +39,19 @@ export interface ReleaseConfig {
   readonly defaultTarget: "testflight-internal" | "testflight-external";
 }
 
+export interface PipelineConfig {
+  readonly enabled: boolean;
+  readonly maxSlices: number;
+  readonly maxConcurrency: number;
+  readonly maxBatchesPerRun: number;
+  readonly maxRepairCycles: number;
+  readonly maxWorkerAttempts: number;
+  readonly workerTimeoutSeconds: number;
+  readonly workerLeaseSeconds: number;
+  readonly coordinatorLeaseSeconds: number;
+  readonly candidateWorktreeDirectory?: string;
+}
+
 export interface PiIosConfig {
   readonly schemaVersion: typeof CONFIG_SCHEMA_VERSION;
   readonly baseBranch: string;
@@ -52,6 +65,7 @@ export interface PiIosConfig {
   readonly verification: VerificationConfig;
   readonly documents: DocumentConfig;
   readonly release: ReleaseConfig;
+  readonly pipeline: PipelineConfig;
 }
 
 export const DEFAULT_CONFIG: PiIosConfig = {
@@ -78,6 +92,17 @@ export const DEFAULT_CONFIG: PiIosConfig = {
     releaseManifest: "docs/pi-ios/release.json",
   },
   release: { approvalTtlSeconds: 1_800, defaultTarget: "testflight-internal" },
+  pipeline: {
+    enabled: true,
+    maxSlices: 12,
+    maxConcurrency: 2,
+    maxBatchesPerRun: 4,
+    maxRepairCycles: 2,
+    maxWorkerAttempts: 2,
+    workerTimeoutSeconds: 3_600,
+    workerLeaseSeconds: 300,
+    coordinatorLeaseSeconds: 600,
+  },
 };
 
 export function configPath(primaryRoot: string): string {
@@ -142,6 +167,18 @@ export function validateConfig(value: unknown): PiIosConfig {
   if (config.release.defaultTarget !== "testflight-internal" && config.release.defaultTarget !== "testflight-external") {
     throw new SafetyKernelError("Pi iOS config release.defaultTarget is invalid");
   }
+  if (!config.pipeline || typeof config.pipeline !== "object") throw new SafetyKernelError("Pi iOS config pipeline must be an object");
+  if (typeof config.pipeline.enabled !== "boolean") throw new SafetyKernelError("Pi iOS config pipeline.enabled must be boolean");
+  const maxSlices = positiveInteger(config.pipeline.maxSlices, "pipeline.maxSlices");
+  const maxConcurrency = positiveInteger(config.pipeline.maxConcurrency, "pipeline.maxConcurrency");
+  if (maxConcurrency > maxSlices || maxConcurrency > 8) throw new SafetyKernelError("pipeline.maxConcurrency must not exceed maxSlices or 8");
+  positiveInteger(config.pipeline.maxBatchesPerRun, "pipeline.maxBatchesPerRun");
+  positiveInteger(config.pipeline.maxRepairCycles, "pipeline.maxRepairCycles");
+  positiveInteger(config.pipeline.maxWorkerAttempts, "pipeline.maxWorkerAttempts");
+  positiveInteger(config.pipeline.workerTimeoutSeconds, "pipeline.workerTimeoutSeconds", 60);
+  positiveInteger(config.pipeline.workerLeaseSeconds, "pipeline.workerLeaseSeconds", 60);
+  positiveInteger(config.pipeline.coordinatorLeaseSeconds, "pipeline.coordinatorLeaseSeconds", 60);
+  optionalString(config.pipeline.candidateWorktreeDirectory, "pipeline.candidateWorktreeDirectory");
   return config as PiIosConfig;
 }
 
@@ -177,6 +214,7 @@ function migrateLegacy(raw: Record<string, unknown>): PiIosConfig {
     verification: { ...DEFAULT_CONFIG.verification, ...(typeof raw.verification === "object" ? raw.verification : {}) },
     documents: { ...DEFAULT_CONFIG.documents, ...(typeof raw.documents === "object" ? raw.documents : {}) },
     release: { ...DEFAULT_CONFIG.release, ...(typeof raw.release === "object" ? raw.release : {}) },
+    pipeline: { ...DEFAULT_CONFIG.pipeline, ...(typeof raw.pipeline === "object" ? raw.pipeline : {}) },
   });
 }
 
@@ -193,7 +231,7 @@ export async function discoverConfigMigration(primaryRoot: string): Promise<Conf
     validateConfig(raw);
     return { needed: false, fromVersion: CONFIG_SCHEMA_VERSION, toVersion: CONFIG_SCHEMA_VERSION };
   }
-  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2) {
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3) {
     throw new SafetyKernelError(`No migration path from config schema ${String(raw.schemaVersion)}`);
   }
   return {

@@ -54,7 +54,7 @@ Exit: fixture apps and a real sample app produce commit-bound evidence.
 
 Exit: one single-agent golden path succeeds end to end.
 
-## Milestone 6 — Multi-agent pipeline
+## Milestone 6 — Multi-agent pipeline ✅ Complete
 
 - Worker task packets and isolated Pi processes.
 - Dependency scheduler and bounded concurrency.

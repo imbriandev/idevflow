@@ -22,6 +22,11 @@ export function redactText(value: string): string {
 export class StreamingRedactor {
   private pending = "";
   private privateKey = false;
+  private readonly literalSecrets: readonly string[];
+
+  constructor(literalSecrets: readonly string[] = []) {
+    this.literalSecrets = [...new Set(literalSecrets.filter((value) => value.length >= 8))].sort((a, b) => b.length - a.length);
+  }
 
   push(chunk: string): string {
     this.pending += chunk;
@@ -51,6 +56,8 @@ export class StreamingRedactor {
       if (/-----END [A-Z0-9 ]*PRIVATE KEY-----/.test(line)) this.privateKey = false;
       return "[REDACTED PRIVATE KEY]";
     }
-    return redactText(line);
+    let redacted = redactText(line);
+    for (const secret of this.literalSecrets) redacted = redacted.replaceAll(secret, "[REDACTED]");
+    return redacted;
   }
 }
