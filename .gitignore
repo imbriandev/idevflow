@@ -3,7 +3,7 @@ coverage/
 dist/
 .DS_Store
 *.log
-.appforge/
+.pi-ios/
 .pi/npm/
 
 # Local secrets and signing material
