@@ -5,3 +5,23 @@ dist/
 *.log
 .appforge/
 .pi/npm/
+
+# Local secrets and signing material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.mobileprovision
+*.cer
+*.der
+*.keystore
+*.jks
+AuthKey_*.p8
+GoogleService-Info.plist
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
