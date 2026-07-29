@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { rm } from "node:fs/promises";
+import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { initializeConfig } from "../extensions/appforge/config/config.ts";
 import { registerToolGate } from "../extensions/appforge/policy/tool-gate.ts";
@@ -11,6 +12,8 @@ import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
+  delete process.env.PI_IOS_WORKER_PACKET;
+  delete process.env.PI_IOS_WORKER_EXTENSION;
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
 });
 
@@ -62,6 +65,17 @@ describe("tool gate", () => {
 
     const outside = await gate({ toolName: "edit", input: { path: "Sources/Other.swift" } }, ctx);
     assert.equal(outside?.block, true);
+  });
+
+  it("allows a worker to read only package-owned Markdown specialist references before preflight", async () => {
+    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
+    process.env.PI_IOS_WORKER_PACKET = "/packet.json";
+    process.env.PI_IOS_WORKER_EXTENSION = join(process.cwd(), "extensions", "appforge", "index.ts");
+    const gate = captureGate(); const ctx = context(fixture.root);
+    const reference: Record<string, unknown> = { path: join(process.cwd(), "references", "swiftui-experience.md") };
+    assert.equal(await gate({ toolName: "read", input: reference }, ctx), undefined);
+    const nonReference = await gate({ toolName: "read", input: { path: join(process.cwd(), "extensions", "appforge", "index.ts") } }, ctx);
+    assert.equal(nonReference?.block, true);
   });
 
   it("blocks mutating shell and routes read-only shell to the writer worktree", async () => {

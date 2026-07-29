@@ -44,6 +44,8 @@ Review the migration plan before applying it. Unknown future schemas fail closed
 
 ## Diagnostics and recovery
 
+Use `pi_ios_context` before non-trivial SwiftUI, persistence, concurrency, testing, privacy, monetization, accessibility, performance, widget, App Intent, audit, or release reasoning. It returns readable package-owned reference paths within a bounded cold-path budget; read only the selected material.
+
 Use `pi_ios_doctor status` for human-readable findings or `pi_ios_doctor report` for a structured metadata-only support report. The report intentionally excludes source text, task text, worker packets, logs, approvals, and credentials.
 
 `pi_ios_doctor repair` is interactive and only marks expired active writer sessions as stale. `pi_ios_pipeline reconcile` detects lost worker leases. Neither operation deletes branches, worktrees, packets, logs, or unintegrated source.

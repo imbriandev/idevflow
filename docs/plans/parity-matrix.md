@@ -5,7 +5,7 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Area | Required behavior | Target module | Status |
 | --- | --- | --- | --- |
 | Commands | Seven lifecycle commands | `commands/` | Full single-agent lifecycle wired |
-| Skills | Progressive stage expertise | `skills/` | Full lifecycle tool routes documented |
+| Skills | Progressive stage expertise | `skills/`, `references/` | Seven lifecycle skills require bounded specialist context selection and surface-specific reasoning |
 | Contracts | Ready, done, forbidden, evidence, backward route | `lifecycle/` | Deterministic stage transitions and receipts implemented |
 | State | Atomic, recoverable, versioned project state | `state/` | Foundation implemented |
 | Git | Clean baseline and repository identity | `git/` | Safety baseline implemented |
@@ -30,8 +30,8 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Release | Candidate-bound approval and promotion | `release/` | Expiring single-use approval and exact local promotion implemented |
 | TestFlight | Verified manual handoff by default | `release/` | Evidence package and explicit no-upload boundary implemented |
 | Observability | Bounded events, metrics, debug report | `state/`, `pipeline/`, `recovery/` | Hash-chained events, bounded worker logs, dashboard, doctor diagnostics, and versioned metadata-only report implemented |
-| Context | Triggered references and context budget | `lifecycle/` | Stage contracts, progressive skills, bounded task packets, and minimal state injection implemented; specialist cold references intentionally deferred (non-authoritative) |
+| Context | Triggered references and context budget | `context/`, `references/`, `lifecycle/` | Deterministic stage/risk/surface selector, package-owned cold references, 2.4k/3.2k token budgets, worker access, and scenario coverage implemented |
 | Packaging | Local, Git, and eventual npm installation | package root | Local/Git loading, package smoke validation, installation/migration, and release-process documentation implemented |
 | Migration | Schema/config migration without source loss | `state/`, `config/` | Versioned backup-and-atomic config migration and operator documentation implemented |
-| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/`, `.github/` | Golden paths, corruption/recovery faults, mock-agent authority, UI fail-closed, package smoke, runtime provenance gate, plus macOS Xcode verification and full real SampleApp handoff E2E CI implemented |
+| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/`, `.github/` | Golden paths, corruption/recovery faults, mock-agent authority, UI fail-closed, expert-domain context scenarios, package smoke, runtime provenance gate, plus macOS Xcode verification and full real SampleApp handoff E2E CI implemented |
 | Cutover | Stable provenance, release record, and manual-boundary confirmation | package root, `docs/` | v1.0.0 cutover ledger, Python-runtime rejection gate, validation evidence, and annotated Git tag implemented |

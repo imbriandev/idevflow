@@ -36,7 +36,7 @@ Skills provide progressively disclosed expertise for seven stages:
 6. Ship — release verification and TestFlight handoff decision.
 7. Learn — feedback synthesis and next focus.
 
-Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools.
+Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools. For non-trivial Apple-platform work, `pi_ios_context` deterministically selects a bounded cold path from the package-owned specialist knowledge base; skills then read only selected references. This improves domain reasoning without loading all guidance or granting authority.
 
 ### Worker runtime
 

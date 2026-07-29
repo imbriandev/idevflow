@@ -10,7 +10,7 @@ This cutover replaces no external service and does not migrate AppForge runtime 
 
 The [parity matrix](plans/parity-matrix.md) was reviewed at cutover. All safety-critical lifecycle, source ownership, verification, approval, integration, release, recovery, and pipeline requirements are implemented and covered by tests.
 
-Specialist cold references/context-budget tuning and aggregate telemetry export are intentionally not required for the stable safety contract. Progressive stage skills, bounded prompts, durable journals, bounded logs, `/ios`, and `pi_ios_doctor report` provide the supported baseline. Any future optional analytics must remain local, redacted, and unable to advance lifecycle state.
+The original v1.0.0 cutover intentionally separated specialist reasoning from the stable safety contract. v1.1.0 closes that gap with package-owned specialist cold references, deterministic stage/risk/surface selection, bounded context budgets, worker access, and domain scenario evaluations. Aggregate telemetry export remains intentionally out of scope; any future optional analytics must remain local, redacted, and unable to advance lifecycle state.
 
 ## Evidence run for this cutover
 

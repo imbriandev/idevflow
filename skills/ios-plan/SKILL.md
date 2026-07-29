@@ -19,6 +19,10 @@ Convert an approved product or technical goal into an executable vertical-slice 
 7. Write the configured work-graph JSON with the exact product fingerprint, accepted architecture decisions, DAG-valid slices, claims, risk, acceptance, and verification profiles. Verify, finish, and call `pi_ios_lifecycle integrate`.
 8. Present the frozen graph fingerprint and call `pi_ios_lifecycle approve_plan`; implementation cannot begin until the interactive founder approval reaches `plan_approved`.
 
+## Specialist context
+
+Call `pi_ios_context` before a consequential architecture decision. Mark actual surfaces: `swiftui`, `swiftdata`, `concurrency`, `privacy`, `monetization`, `widgetkit`, or `app-intents`. Read only returned references and turn relevant checks into slice acceptance/verification requirements. Persistence, migration, CloudKit, destructive data, identity, purchase, and permission changes are high-risk planning surfaces.
+
 ## Guardrails
 
 - Do not write production code.

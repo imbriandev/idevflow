@@ -1,3 +1,5 @@
+import { realpath } from "node:fs/promises";
+import { dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { STAGE_CONTRACTS } from "../lifecycle/contracts.ts";
 import { classifyReadOnlyShell, hardenReadOnlyShell } from "./shell-policy.ts";
@@ -9,6 +11,16 @@ import type { SessionState } from "../state/session-state.ts";
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'"'"'`)}'`;
+}
+
+async function packageReferencePath(input: string): Promise<string | undefined> {
+  const extension = process.env.PI_IOS_WORKER_EXTENSION;
+  if (!extension || !isAbsolute(input) || extname(input).toLowerCase() !== ".md") return undefined;
+  const root = await realpath(resolve(dirname(extension), "../..", "references")).catch(() => undefined);
+  const candidate = await realpath(input).catch(() => undefined);
+  if (!root || !candidate) return undefined;
+  const containment = relative(root, candidate);
+  return containment && containment !== ".." && !containment.startsWith(`..${sep}`) ? candidate : undefined;
 }
 
 export function registerToolGate(pi: ExtensionAPI, readState: () => SessionState): void {
@@ -23,10 +35,14 @@ export function registerToolGate(pi: ExtensionAPI, readState: () => SessionState
     }
 
     if (workerMode && event.toolName === "read") {
+      const input = event.input as { path?: string };
+      if (typeof input.path === "string") {
+        const reference = await packageReferencePath(input.path);
+        if (reference) { input.path = reference; return; }
+      }
       const repository = await discoverRepository(ctx.cwd);
       const session = await new SessionRegistry(repository).findByPiSession(ctx.sessionManager.getSessionId());
       if (!session || session.status !== "active") return { block: true, reason: "Pipeline worker reads require exact write preflight first." };
-      const input = event.input as { path?: string };
       if (typeof input.path !== "string") return { block: true, reason: "Pipeline worker read is missing a path." };
       try {
         input.path = (await resolveSafeWritePath(input.path, session.worktreePath)).absolute;

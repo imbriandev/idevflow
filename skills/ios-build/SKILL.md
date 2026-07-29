@@ -18,6 +18,10 @@ Implement one approved slice and produce commit-bound evidence.
 6. Call `pi_ios_verify`; accept the adaptive minimum profile and preserve its verification fingerprint.
 7. Call `pi_ios_session postflight` with evidence and that exact fingerprint. Finish only if source and artifacts remain unchanged, then call `pi_ios_lifecycle integrate` with the approved `sliceId`; the kernel must map claims to exactly one approved slice and emit the build-stage receipt.
 
+## Specialist context
+
+Before implementing a non-trivial surface, call `pi_ios_context` with `stage=build`, slice risk, task, and touched surfaces. Read returned references before editing: SwiftUI/layout/accessibility uses `swiftui-experience.md`; persistence/concurrency uses `swift-state.md`; user-facing language uses `product-interface.md`; paid behavior uses `monetization.md`; permissions/data use `privacy-security.md`. Convert applicable checks into code, tests, or evidence—never merely a prose claim.
+
 ## Guardrails
 
 - Never write outside claimed paths.

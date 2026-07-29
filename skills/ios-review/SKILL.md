@@ -18,6 +18,10 @@ Produce a bounded, evidence-linked verdict for the current source commit.
 6. Run or reuse valid integration-or-stronger verification for the exact integrated commit. Produce verdict JSON with `verdict`, `summary`, `findings`, and `residualRisk`, then submit it through `pi_ios_lifecycle review`.
 7. Do not edit code; only the kernel receipt may advance to `review_passed`. Route repairs through `/ios:build` or `/ios:test`.
 
+## Specialist context
+
+Call `pi_ios_context` with `stage=review`, risk, scope, and requested surfaces. Start with `review-audit.md`; add SwiftUI, state/concurrency, privacy, monetization, copy, or testing references only when evidence and scope justify them. A deep audit requires the explicit `audit` surface and must state unaudited areas.
+
 ## Guardrails
 
 - Review the code, not the author's intent.

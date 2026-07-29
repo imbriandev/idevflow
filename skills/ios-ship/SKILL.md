@@ -18,6 +18,10 @@ Make a commit-bound Go/No-Go decision and prepare a deliberate TestFlight handof
 6. Call `pi_ios_release approve` only when the founder is ready; use its expiring single-use token for exact local `promote`.
 7. Call `handoff` to emit the verified manual package. Push, upload, and tester distribution remain unperformed, separate approvals.
 
+## Specialist context
+
+Call `pi_ios_context` with `stage=ship`, `risk=critical`, and candidate surfaces before Go/No-Go. Read `release-testflight.md` and every returned privacy/monetization/testing reference. The reference improves review quality; the release tool and fresh receipt remain the only authority for candidate, approval, promotion, and handoff.
+
 ## Guardrails
 
 - Never promote a different commit than the approved candidate.

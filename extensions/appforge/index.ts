@@ -16,6 +16,7 @@ import {
   restoreSessionState,
   type SessionState,
 } from "./state/session-state.ts";
+import { registerContextTool } from "./tools/context-tool.ts";
 import { registerDoctorTool } from "./tools/doctor-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
 import { registerPreflightTool } from "./tools/preflight-tool.ts";
@@ -47,6 +48,7 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   }
 
   registerRuntimeTool(pi);
+  registerContextTool(pi);
   registerPipelineTool(pi, fileURLToPath(import.meta.url));
   registerPipelineWorkerTool(pi);
   registerLifecycleTool(pi);
@@ -115,7 +117,7 @@ export default function piIosExtension(pi: ExtensionAPI): void {
     return {
       message: {
         customType: "pi-ios-stage-contract",
-        content: `Active Pi iOS stage: ${state.stage}. ${contract.purpose} Forbidden actions: ${contract.forbidden.join("; ")}. Deterministic gates remain authoritative.`,
+        content: `Active Pi iOS stage: ${state.stage}. ${contract.purpose} Forbidden actions: ${contract.forbidden.join("; ")}. For non-trivial iOS domain work, call pi_ios_context with stage, risk, task, and surfaces; read only its selected package references. Deterministic gates remain authoritative.`,
         display: false,
       },
     };

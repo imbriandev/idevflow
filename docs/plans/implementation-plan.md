@@ -80,3 +80,11 @@ Exit: all quality gates pass and a real app reaches verified TestFlight handoff.
 - Run the workflow on a real app.
 - Confirm no Python invocation or AppForge runtime dependency.
 - Tag the first stable package release.
+
+## Milestone 9 — Specialist Knowledge Parity ✅ Complete
+
+- Port the legacy workflow’s expert iOS reasoning into curated package-owned cold references.
+- Add deterministic stage/risk/surface context selection and bounded worker access.
+- Add domain scenario evaluations and legacy-reference coverage ledger.
+
+Exit: skills and workers can load relevant SwiftUI, SwiftData, concurrency, testing, accessibility, privacy, monetization, release, widget, App Intent, product, and audit guidance without context flooding or legacy runtime dependence.

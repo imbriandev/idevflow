@@ -16,12 +16,14 @@ describe("isolated worker process", () => {
     const packetPath = join(root, "packet.json"); const digest = await writeWorkerPacket(packetPath, packet);
     const script = join(root, "child.mjs");
     await writeFile(script, "console.log(`pid=${process.pid} capability=${process.env.PI_IOS_WORKER_CAPABILITY}`);\n");
-    let spawnedPid = 0;
-    const launcher = new PiWorkerLauncher(() => ({ executable: process.execPath, args: [script] }));
+    let spawnedPid = 0; let piArgs: string[] = [];
+    const launcher = new PiWorkerLauncher((args) => { piArgs = args; return { executable: process.execPath, args: [script] }; });
     const result = await launcher.launch({ packetPath, packetDigest: digest, capability: "pipeline-capability-value", extensionPath: "/extension.ts", cwd: root, timeoutMs: 5_000, stdoutPath: join(root, "stdout.log"), stderrPath: join(root, "stderr.log"), onSpawn(pid) { spawnedPid = pid; } });
     assert.equal(result.code, 0);
     assert.notEqual(spawnedPid, process.pid);
     assert.doesNotMatch(await readFile(result.stdoutPath, "utf8"), /pipeline-capability-value/);
     assert.match(await readFile(result.stdoutPath, "utf8"), /\[REDACTED\]/);
+    assert.equal(piArgs.some((arg) => arg.includes("pi_ios_context")), true);
+    assert.equal(piArgs.at(-1)?.includes("Call pi_ios_context"), true);
   });
 });

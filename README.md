@@ -40,6 +40,7 @@ The extension also provides `/ios` for current workflow, runtime, baseline, and 
 The agent uses typed tools rather than ad-hoc shell mutation:
 
 - `pi_ios_runtime` — status, initialize, or migrate local runtime state.
+- `pi_ios_context` — deterministically select bounded specialist iOS references by stage, risk, and task surface.
 - `pi_ios_lifecycle` — integrate stages, approve frozen plans, and record source-bound reviews.
 - `pi_ios_release` — create, approve, locally promote, and hand off exact TestFlight candidates.
 - `pi_ios_pipeline` — create, schedule, reconcile, observe, and integrate frozen multi-agent work graphs.
@@ -80,4 +81,5 @@ pi -e .
 - [Installation and upgrade](docs/installation.md)
 - [Release process](docs/release-process.md)
 - [Stable v1.0.0 cutover](docs/cutover.md)
+- [Specialist knowledge parity](docs/plans/milestone-9-specialist-knowledge.md)
 - [ADR-0001: Pi-native TypeScript kernel](docs/decisions/0001-pi-native-typescript-kernel.md)

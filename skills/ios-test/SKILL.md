@@ -18,6 +18,10 @@ Turn uncertainty into reproducible evidence.
 6. Re-run focused checks through `pi_ios_verify`; do not request a profile weaker than policy selects.
 7. Inspect xcresult summaries and provide source-bound simulator, screenshot, accessibility, or performance proof when required. Pass the fingerprint to postflight, finish, and call `pi_ios_lifecycle integrate` to produce the test-stage receipt.
 
+## Specialist context
+
+Call `pi_ios_context` with `stage=test` and the reproduction surface before choosing a repair. Read `testing-quality.md` for every regression/flaky claim; additionally load SwiftUI, state/concurrency, privacy, or monetization guidance only when the failure touches it. Primary-flow, accessibility, or performance claims require the corresponding source-bound artifacts, not a successful build alone.
+
 ## Guardrails
 
 - No speculative fix before reproduction or bounded diagnosis.

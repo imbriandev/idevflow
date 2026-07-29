@@ -17,6 +17,10 @@ Turn real evidence into a smaller, clearer next decision.
 5. Update product memory through authorized writes, docs verification, postflight, finish, and `pi_ios_lifecycle integrate`; learning preserves the completed handoff state.
 6. Choose one next focus and route to define, plan, build, or test. A new define cycle may advance the completed handoff to a new `defined` commitment.
 
+## Specialist context
+
+For product-language, retention, purchase, privacy-trust, or release-learning conclusions, call `pi_ios_context` with `stage=learn` and the relevant surfaces. Read only returned references, preserve exact user evidence, and route any architecture or implementation implication through the appropriate next lifecycle stage.
+
 ## Guardrails
 
 - Do not turn every request into scope.

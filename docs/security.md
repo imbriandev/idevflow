@@ -16,4 +16,6 @@ Multi-agent workers receive immutable digest-checked, credential-shaped-content-
 
 `pi_ios_doctor report` is metadata-only: it returns aggregate state, revisions, identifiers, and recommendations, but excludes source/task text, worker packets and logs, approval tokens, receipt payloads, and credentials. Report generation is read-only; repair remains a separate interactive operation.
 
+Specialist guidance is package-owned static Markdown selected by `pi_ios_context`; no project-provided reference path is honored. Pipeline workers may read only canonical `.md` files under that package `references/` directory, using a symlink-safe containment check. This read exception never permits package source, project source outside a claimed worktree, or any write.
+
 Plan approval is interactive and bound to graph fingerprint plus plan commit. Ship approval is interactive, expiring, single-use, stored only as a token hash, and bound to candidate fingerprint, commit, and target. Candidate creation and promotion revalidate source and artifact hashes. Local promotion performs no push, upload, archive/export, or distribution; the final handoff records those boundaries explicitly.

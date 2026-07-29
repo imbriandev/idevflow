@@ -18,6 +18,10 @@ Turn uncertainty into the smallest coherent product commitment.
 6. Through write preflight, create the schema-valid configured `productMemory` and `slcSpec` JSON documents (defaults: `docs/pi-ios/product-memory.json` and `docs/pi-ios/slc.json`).
 7. Run docs verification, postflight, finish, then `pi_ios_lifecycle integrate`. Use lifecycle status to report the validated product fingerprint. Recommend `/ios:plan` only after lifecycle reaches `defined`.
 
+## Specialist context
+
+For product ambiguity, onboarding, interface language, accessibility wording, or a paid-value hypothesis, call `pi_ios_context` with `stage=define`, risk, task, and relevant surfaces. Read only its returned package paths. Apply `product-interface.md`; add `monetization.md` only when paid behavior is in scope. Do not load implementation checklists during ordinary product definition.
+
 ## Guardrails
 
 - Do not write production code.
