@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { initializeConfig, loadConfig } from "../extensions/appforge/config/config.ts";
+import { selectKnowledge } from "../extensions/appforge/context/knowledge.ts";
+import { recordContextReceipt } from "../extensions/appforge/context/receipts.ts";
 import { recordReview } from "../extensions/appforge/lifecycle/service.ts";
 import { createCandidate, createTestFlightHandoff, issuePromotionApproval, promoteCandidate } from "../extensions/appforge/release/service.ts";
 import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
@@ -50,10 +52,15 @@ describe("real app manual TestFlight handoff", () => {
     const commit = await git(root, ["rev-parse", "HEAD"]); const now = new Date().toISOString();
     const session: WriterSession = { id: "real-handoff-session", piSessionId: "real-handoff", stage: "test", task: "verify real SampleApp handoff", risk: "high", status: "integrated", branch: "pi-ios/integration", worktreePath: root, baseCommit: await git(root, ["rev-parse", "main"]), claims: ["SampleApp", "docs/pi-ios"], createdAt: now, heartbeatAt: now, leaseExpiresAt: new Date(Date.now() + 3_600_000).toISOString(), commit };
     await new SessionRegistry(repository).start(session, "real-handoff-e2e");
+    await recordContextReceipt(repository, { session, stage: "test", risk: "high", task: session.task, selection: selectKnowledge({ stage: "test", risk: "high", task: session.task }) });
+    const initialConfig = await loadConfig(root);
+    await writeFile(join(root, ".appforge", "config.json"), JSON.stringify({ ...initialConfig, quality: { ...initialConfig.quality, performanceBudgets: { "Duration (AppLaunch)": 10 } } }));
     const config = await loadConfig(root);
     const integration = await verifySession({ repository, config, session, requestedProfile: "integration" });
     assert.equal(integration.success, true, integration.commands.map((result) => result.stderrTail).join("\n"));
+    await recordContextReceipt(repository, { session, stage: "review", risk: "high", task: "Review SampleApp integration quality", selection: selectKnowledge({ stage: "review", risk: "high", task: "Review SampleApp integration quality" }) });
     await recordReview(repository, "real-handoff", integration.verificationFingerprint, { verdict: "pass", summary: "SampleApp integration verification passed", findings: [], residualRisk: "Manual upload remains outside Pi iOS" });
+    await recordContextReceipt(repository, { session, stage: "ship", risk: "critical", task: "Release SampleApp TestFlight candidate", selection: selectKnowledge({ stage: "ship", risk: "critical", task: "Release SampleApp TestFlight candidate" }) });
 
     const source = await sourceFingerprint(session);
     await acquireSimulatorLease(repository, config, session.id, true);
@@ -64,8 +71,8 @@ describe("real app manual TestFlight handoff", () => {
     await writeFile(performance, JSON.stringify({ integrationTestReceipt: integration.id, xcodeTestDurationMs: integration.commands.reduce((total, result) => total + result.durationMs, 0) }));
     const release = await verifySession({ repository, config, session, requestedProfile: "release", proofs: [
       ...screenshots.map((shot) => ({ kind: "screenshot" as const, path: shot.path, metadata: { sourceFingerprint: source.fingerprint, variant: shot.lease ? shot.path.split("/").at(-1)!.replace(/\.png$/, "") : "" } })),
-      { kind: "accessibility", path: accessibility, metadata: { sourceFingerprint: source.fingerprint, passed: true, tests: ["SampleAppTests.fixturePasses"] } },
-      { kind: "performance", path: performance, metadata: { sourceFingerprint: source.fingerprint, passed: true, metrics: { xcodeTestDurationMs: integration.commands.reduce((total, result) => total + result.durationMs, 0) } } },
+      { kind: "accessibility", path: accessibility, metadata: { sourceFingerprint: source.fingerprint, passed: true, tests: ["SampleAppTests.testAccessibilityAudit"], testIdentifier: "SampleAppTests.testAccessibilityAudit", auditAPI: "XCUIApplication.performAccessibilityAudit", auditIssues: 0 } },
+      { kind: "performance", path: performance, metadata: { sourceFingerprint: source.fingerprint, passed: true, testIdentifier: "SampleAppTests.testLaunchPerformance", metric: "Duration (AppLaunch)", metrics: { xcodeTestDurationMs: integration.commands.reduce((total, result) => total + result.durationMs, 0) } } },
     ] });
     assert.equal(release.success, true, release.commands.map((result) => result.stderrTail).join("\n"));
     const candidate = await createCandidate(repository, session, release.verificationFingerprint, "testflight-internal");

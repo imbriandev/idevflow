@@ -88,3 +88,11 @@ Exit: all quality gates pass and a real app reaches verified TestFlight handoff.
 - Add domain scenario evaluations and legacy-reference coverage ledger.
 
 Exit: skills and workers can load relevant SwiftUI, SwiftData, concurrency, testing, accessibility, privacy, monetization, release, widget, App Intent, product, and audit guidance without context flooding or legacy runtime dependence.
+
+## Milestone 10 — Context and XCTest Evidence Enforcement ✅ Complete
+
+- Record specialist-context receipts for high/critical verification and review, bound into verification fingerprints.
+- Require a distinct critical ship receipt for release verification.
+- Require fresh xcresult-backed XCTest accessibility audit and performance metric evidence against project-owned budgets.
+
+Exit: a release candidate cannot rely on self-attested context, accessibility, or performance metadata.

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { writeFileAtomically } from "../state/atomic-file.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
-export const CONFIG_SCHEMA_VERSION = 4 as const;
+export const CONFIG_SCHEMA_VERSION = 5 as const;
 
 export interface XcodeConfig {
   readonly container?: string;
@@ -23,6 +23,11 @@ export interface VerificationConfig {
   readonly artifactRetentionDays: number;
   readonly requireXcresult: boolean;
   readonly requiredScreenshotVariants: readonly string[];
+}
+
+export interface QualityConfig {
+  readonly requireXCTestEvidence: boolean;
+  readonly performanceBudgets: Readonly<Record<string, number>>;
 }
 
 export interface DocumentConfig {
@@ -63,6 +68,7 @@ export interface PiIosConfig {
   readonly xcode: XcodeConfig;
   readonly simulator: SimulatorConfig;
   readonly verification: VerificationConfig;
+  readonly quality: QualityConfig;
   readonly documents: DocumentConfig;
   readonly release: ReleaseConfig;
   readonly pipeline: PipelineConfig;
@@ -83,6 +89,7 @@ export const DEFAULT_CONFIG: PiIosConfig = {
     requireXcresult: true,
     requiredScreenshotVariants: ["compact-light", "compact-dark", "accessibility-xxxl"],
   },
+  quality: { requireXCTestEvidence: true, performanceBudgets: {} },
   documents: {
     productMemory: "docs/pi-ios/product-memory.json",
     slcSpec: "docs/pi-ios/slc.json",
@@ -157,6 +164,13 @@ export function validateConfig(value: unknown): PiIosConfig {
     throw new SafetyKernelError("Pi iOS config verification.requiredScreenshotVariants must be a non-empty string array");
   }
 
+  if (!config.quality || typeof config.quality !== "object") throw new SafetyKernelError("Pi iOS config quality must be an object");
+  if (typeof config.quality.requireXCTestEvidence !== "boolean") throw new SafetyKernelError("Pi iOS config quality.requireXCTestEvidence must be boolean");
+  if (!config.quality.performanceBudgets || typeof config.quality.performanceBudgets !== "object" || Array.isArray(config.quality.performanceBudgets)) throw new SafetyKernelError("Pi iOS config quality.performanceBudgets must be an object");
+  for (const [metric, budget] of Object.entries(config.quality.performanceBudgets)) {
+    if (!metric.trim() || !Number.isFinite(budget) || budget <= 0) throw new SafetyKernelError("Pi iOS config quality.performanceBudgets requires non-empty metric names and positive finite budgets");
+  }
+
   if (!config.documents || typeof config.documents !== "object") throw new SafetyKernelError("Pi iOS config documents must be an object");
   for (const key of ["productMemory", "slcSpec", "workGraph", "privacyReview", "monetization", "releaseManifest"] as const) {
     const path = optionalString(config.documents[key], `documents.${key}`)!;
@@ -212,6 +226,7 @@ function migrateLegacy(raw: Record<string, unknown>): PiIosConfig {
     xcode: { ...DEFAULT_CONFIG.xcode, ...(typeof raw.xcode === "object" ? raw.xcode : {}) },
     simulator: { ...DEFAULT_CONFIG.simulator, ...(typeof raw.simulator === "object" ? raw.simulator : {}) },
     verification: { ...DEFAULT_CONFIG.verification, ...(typeof raw.verification === "object" ? raw.verification : {}) },
+    quality: { ...DEFAULT_CONFIG.quality, ...(typeof raw.quality === "object" ? raw.quality : {}) },
     documents: { ...DEFAULT_CONFIG.documents, ...(typeof raw.documents === "object" ? raw.documents : {}) },
     release: { ...DEFAULT_CONFIG.release, ...(typeof raw.release === "object" ? raw.release : {}) },
     pipeline: { ...DEFAULT_CONFIG.pipeline, ...(typeof raw.pipeline === "object" ? raw.pipeline : {}) },
@@ -231,7 +246,7 @@ export async function discoverConfigMigration(primaryRoot: string): Promise<Conf
     validateConfig(raw);
     return { needed: false, fromVersion: CONFIG_SCHEMA_VERSION, toVersion: CONFIG_SCHEMA_VERSION };
   }
-  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3) {
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3 && raw.schemaVersion !== 4) {
     throw new SafetyKernelError(`No migration path from config schema ${String(raw.schemaVersion)}`);
   }
   return {

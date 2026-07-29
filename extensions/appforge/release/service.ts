@@ -14,6 +14,7 @@ import { withFileLock } from "../state/file-lock.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { sourceFingerprint } from "../verification/fingerprint.ts";
 import { missingRequiredProofs } from "../verification/profiles.ts";
+import { validateXCTestMetadata } from "../verification/xctest-evidence.ts";
 import { VerificationReceiptStore } from "../verification/receipts.ts";
 import type { ArtifactRecord } from "../verification/types.ts";
 import { loadReleaseManifest, validateMonetizationGate, validatePrivacyGate, type MonetizationGate, type PrivacyGate, type ReleaseManifest } from "./gates.ts";
@@ -116,6 +117,17 @@ async function createCandidateLocked(
   }
   const missingProofs = missingRequiredProofs("release", verification.proofs, config.verification.requiredScreenshotVariants);
   if (missingProofs.length) throw new SafetyKernelError(`Candidate release evidence is missing proof: ${missingProofs.join(", ")}`);
+  if (config.quality.requireXCTestEvidence) {
+    const accessibility = verification.proofs.find((proof) => proof.kind === "accessibility");
+    const performance = verification.proofs.find((proof) => proof.kind === "performance");
+    if (!accessibility || !performance) throw new SafetyKernelError("Candidate release evidence requires XCTest accessibility and performance proof");
+    validateXCTestMetadata("accessibility", accessibility.metadata);
+    validateXCTestMetadata("performance", performance.metadata);
+    const summaries = verification.artifacts.filter((artifact) => artifact.kind === "summary").map((artifact) => artifact.path);
+    if (!summaries.some((path) => path.endsWith("quality.tests.json")) || !summaries.some((path) => path.endsWith("quality.metrics.json"))) {
+      throw new SafetyKernelError("Candidate release evidence requires parsed fresh XCTest test and metrics summaries");
+    }
+  }
   const target = requestedTarget ?? config.release.defaultTarget;
   const [privacy, monetization, release] = await Promise.all([
     validatePrivacyGate(session.worktreePath, config.documents.privacyReview),

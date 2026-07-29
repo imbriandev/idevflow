@@ -26,7 +26,7 @@ describe("configuration", () => {
     assert.equal((await discoverConfigMigration(root)).needed, true);
     const migrated = await applyConfigMigration(root);
     assert.equal(migrated.baseBranch, "trunk");
-    assert.equal(migrated.schemaVersion, 4);
+    assert.equal(migrated.schemaVersion, 5);
     assert.equal(JSON.parse(await readFile(`${path}.v0.backup`, "utf8")).schemaVersion, 0);
   });
 
@@ -44,7 +44,7 @@ describe("configuration", () => {
       verificationTimeoutSeconds: 1_800,
     }), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 4);
+    assert.equal(migrated.schemaVersion, 5);
     assert.deepEqual(migrated.verification.requiredScreenshotVariants, ["compact-light", "compact-dark", "accessibility-xxxl"]);
   });
 
@@ -58,7 +58,7 @@ describe("configuration", () => {
     delete legacy.release;
     await writeFile(path, JSON.stringify(legacy), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 4);
+    assert.equal(migrated.schemaVersion, 5);
     assert.equal(migrated.documents.workGraph, "docs/pi-ios/work-graph.json");
     assert.equal(migrated.release.defaultTarget, "testflight-internal");
   });
@@ -72,9 +72,22 @@ describe("configuration", () => {
     delete legacy.pipeline;
     await writeFile(path, JSON.stringify(legacy), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 4);
+    assert.equal(migrated.schemaVersion, 5);
     assert.equal(migrated.pipeline.maxConcurrency, 2);
     assert.equal(migrated.pipeline.maxRepairCycles, 2);
+  });
+
+  it("migrates the specialist-knowledge schema with XCTest quality defaults", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
+    roots.push(root);
+    const path = join(root, ".appforge", "config.json");
+    await initializeConfig(root);
+    const legacy = { ...DEFAULT_CONFIG, schemaVersion: 4 } as Record<string, unknown>;
+    delete legacy.quality;
+    await writeFile(path, JSON.stringify(legacy), "utf8");
+    const migrated = await applyConfigMigration(root);
+    assert.equal(migrated.schemaVersion, 5);
+    assert.equal(migrated.quality.requireXCTestEvidence, true);
   });
 
   it("rejects unknown schemas and unsafe lease values", () => {

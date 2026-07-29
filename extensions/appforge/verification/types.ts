@@ -26,6 +26,7 @@ export interface VerificationReceipt {
   readonly sourceFingerprint: string;
   readonly sourceCommit: string;
   readonly configurationFingerprint: string;
+  readonly contextReceiptFingerprint?: string;
   readonly project?: XcodeProjectDescriptor;
   readonly toolchain: ToolchainDescriptor;
   readonly simulator?: SimulatorLease;

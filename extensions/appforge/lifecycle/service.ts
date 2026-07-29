@@ -4,6 +4,7 @@ import { mkdir, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { loadConfig } from "../config/config.ts";
+import { requireContextReceipt } from "../context/receipts.ts";
 import { loadDefinedProduct } from "../documents/product.ts";
 import { integrateSession, integrationHead, type IntegrationReceipt } from "../git/integration.ts";
 import { pathIsClaimed } from "../git/claims.ts";
@@ -189,10 +190,11 @@ export async function recordReview(repository: RepositoryDescriptor, piSessionId
   const verification = await new VerificationReceiptStore(repository).validated(verificationFingerprint);
   const verificationSession = verification ? (await new SessionRegistry(repository).load()).sessions[verification.sessionId] : undefined;
   const currentSource = verificationSession ? await sourceFingerprint(verificationSession) : undefined;
-  if (!verification || !verification.success || verification.sourceCommit !== commit || currentSource?.fingerprint !== verification.sourceFingerprint || currentSource.commit !== commit || VERIFICATION_PROFILES.indexOf(verification.profile) < VERIFICATION_PROFILES.indexOf("integration")) {
+  if (!verification || !verification.success || !verificationSession || verification.sourceCommit !== commit || currentSource?.fingerprint !== verification.sourceFingerprint || currentSource.commit !== commit || VERIFICATION_PROFILES.indexOf(verification.profile) < VERIFICATION_PROFILES.indexOf("integration")) {
     throw new SafetyKernelError("Review requires integration-or-stronger verification for the current clean integrated commit");
   }
-  await transition(repository, "reviewing", `reviewing integrated commit ${commit}`, actor(piSessionId));
+  await requireContextReceipt(repository, { session: verificationSession, stage: "review", risk: verificationSession.risk });
+  await transition(repository, "reviewing",  `reviewing integrated commit ${commit}`, actor(piSessionId));
   if (verdict.verdict !== "pass") {
     const target = verdict.verdict === "fix_required" ? "fix_required" : verdict.verdict === "manual_decision_required" ? "manual_decision_required" : "blocked";
     await transition(repository, target, verdict.summary, actor(piSessionId));

@@ -1,8 +1,19 @@
-import Testing
+import XCTest
 
-struct SampleAppTests {
-    @Test
-    func fixturePasses() {
-        #expect(1 + 1 == 2)
+final class SampleAppTests: XCTestCase {
+    func testFixturePasses() {
+        XCTAssertEqual(1 + 1, 2)
+    }
+
+    func testAccessibilityAudit() throws {
+        let app = XCUIApplication()
+        app.launch()
+        try app.performAccessibilityAudit()
+    }
+
+    func testLaunchPerformance() {
+        measure(metrics: [XCTApplicationLaunchMetric()]) {
+            XCUIApplication().launch()
+        }
     }
 }

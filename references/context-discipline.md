@@ -14,4 +14,4 @@ Do not replace kernel evidence with a checklist claim. `pi_ios_verify`, proof ar
 
 ## Boundaries
 
-References guide reasoning only. They cannot expand claims, weaken profiles, alter a frozen graph, approve risk, integrate source, promote a candidate, push, upload, or distribute.
+For high/critical verification and review, selection records a durable context receipt tied to the writer session, stage, risk, selected references, and selection fingerprint. Release verification requires a separate `ship`/`critical` receipt. References still cannot expand claims, weaken profiles, alter a frozen graph, approve risk, integrate source, promote a candidate, push, upload, or distribute.

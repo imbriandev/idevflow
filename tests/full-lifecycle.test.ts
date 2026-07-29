@@ -34,7 +34,7 @@ async function fakeVerification(repository: Awaited<ReturnType<typeof discoverRe
   if (project && profile === "release") {
     const directory = join(repository.primaryRoot, ".appforge", "artifacts", "fake-release", fingerprint);
     await mkdir(directory, { recursive: true });
-    for (const [name, kind] of [["build.xcresult", "xcresult"], ["test.xcresult", "xcresult"], ["summary.json", "summary"]] as const) {
+    for (const [name, kind] of [["build.xcresult", "xcresult"], ["test.xcresult", "xcresult"], ["summary.json", "summary"], ["quality.tests.json", "summary"], ["quality.metrics.json", "summary"]] as const) {
       const path = join(directory, name);
       await writeFile(path, name);
       artifacts.push(await hashArtifact(path, kind));
@@ -44,7 +44,7 @@ async function fakeVerification(repository: Awaited<ReturnType<typeof discoverRe
       await writeFile(path, JSON.stringify({ kind, variant }));
       const artifact = await hashArtifact(path, "proof");
       artifacts.push(artifact);
-      proofs.push({ kind, artifact, metadata: { sourceFingerprint: source.fingerprint, ...(variant ? { variant } : {}) } });
+      proofs.push({ kind, artifact, metadata: { sourceFingerprint: source.fingerprint, ...(variant ? { variant } : {}), ...(kind === "accessibility" ? { passed: true, tests: ["QualityTests.testAccessibility"], testIdentifier: "QualityTests.testAccessibility", auditAPI: "XCUIApplication.performAccessibilityAudit", auditIssues: 0 } : {}), ...(kind === "performance" ? { passed: true, metrics: { "Application Launch": 0.8 }, testIdentifier: "QualityTests.testLaunch", metric: "Application Launch" } : {}) } });
     }
   }
   const receipt: VerificationReceipt = {

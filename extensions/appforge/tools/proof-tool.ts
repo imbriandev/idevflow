@@ -23,12 +23,14 @@ export function registerProofTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "pi_ios_proof",
     label: "Pi iOS Proof",
-    description: "Prepare source-local accessibility or performance proof metadata for a verification run.",
+    description: "Prepare source-local XCTest accessibility or performance proof metadata; release verification independently validates the named fresh xcresult evidence and project budget.",
     parameters: Type.Object({
       kind: StringEnum(["accessibility", "performance"] as const),
       artifactPath: Type.String(),
       tests: Type.Optional(Type.Array(Type.String())),
       metrics: Type.Optional(Type.Array(MetricSchema)),
+      testIdentifier: Type.String(),
+      metric: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _update, ctx) {
       const repository = await discoverRepository(ctx.cwd);
@@ -44,12 +46,14 @@ export function registerProofTool(pi: ExtensionAPI): void {
       let metadata: Readonly<Record<string, unknown>>;
       if (params.kind === "accessibility") {
         if (!params.tests?.length || params.tests.some((test) => !test.trim())) throw new SafetyKernelError("Accessibility proof requires non-empty test identifiers");
-        metadata = { passed: true, tests: params.tests, sourceFingerprint: source.fingerprint, recordedAt: new Date().toISOString() };
+        metadata = { passed: true, tests: params.tests, testIdentifier: params.testIdentifier, auditAPI: "XCUIApplication.performAccessibilityAudit", auditIssues: 0, sourceFingerprint: source.fingerprint, recordedAt: new Date().toISOString() };
       } else {
-        if (!params.metrics?.length) throw new SafetyKernelError("Performance proof requires metrics and budgets");
+        if (!params.metrics?.length || !params.metric?.trim()) throw new SafetyKernelError("Performance proof requires metrics and an XCTest metric name");
         const passed = params.metrics.every((metric) => Number.isFinite(metric.value) && Number.isFinite(metric.budget) && metric.value <= metric.budget);
         metadata = {
           passed,
+          testIdentifier: params.testIdentifier,
+          metric: params.metric.trim(),
           sourceFingerprint: source.fingerprint,
           metrics: Object.fromEntries(params.metrics.map((metric) => [metric.name, metric.value])),
           budgets: Object.fromEntries(params.metrics.map((metric) => [metric.name, metric.budget])),

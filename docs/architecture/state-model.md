@@ -19,6 +19,7 @@ An installed project uses:
   sessions/
   graphs/
   receipts/verification/<fingerprint>.json
+  receipts/context/<session>-<stage>.json
   receipts/integration/<session>.json
   receipts/stages/<stage>-<commit>.json
   approvals/plan.json
@@ -71,6 +72,10 @@ idea
 Interrupt states are `blocked`, `fix_required`, `manual_decision_required`, `verification_failed`, `stale_candidate`, `conflicted`, and `parked`.
 
 Transitions are contract functions with explicit prerequisites and emitted events. A transition never parses an assistant response to discover whether prerequisites passed.
+
+## Specialist context receipts
+
+A selected specialist cold path becomes a durable context receipt only when attached to an eligible writer session. It records stage, risk, task, selected package-reference identifiers/relative paths, selection fingerprint, and timestamp under a context-receipt lock. High/critical verification and review require a matching receipt; release verification requires a separate `ship`/`critical` receipt. The verification fingerprint includes that selection fingerprint.
 
 ## Pipeline state
 

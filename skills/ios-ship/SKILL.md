@@ -12,7 +12,7 @@ Make a commit-bound Go/No-Go decision and prepare a deliberate TestFlight handof
 
 1. Resolve the exact candidate commit, target, graph revision, and prior review verdict.
 2. Reject stale candidates or evidence whose source/config/toolchain fingerprint differs.
-3. Prepare source-bound screenshot variants with `pi_ios_simulator`, accessibility/performance metadata with `pi_ios_proof`, then run fresh `pi_ios_verify` using the non-reusable `release` profile.
+3. Record a critical `stage=ship` context receipt with `pi_ios_context`. Prepare source-bound screenshot variants with `pi_ios_simulator`; prepare accessibility/performance inputs with `pi_ios_proof`, including the exact XCTest test identifiers and performance metric names. `pi_ios_verify` parses the fresh release xcresult, requires a passing `performAccessibilityAudit` test, and checks metric measurements against project-owned `quality.performanceBudgets`—metadata alone is not proof.
 4. Validate the configured privacy-review and release-manifest JSON. If StoreKit or RevenueCat is detected, require the reconciled monetization manifest and complete proof set.
 5. Call `pi_ios_release create_candidate` with the fresh release fingerprint. Present the exact candidate, target, gates, and known issues.
 6. Call `pi_ios_release approve` only when the founder is ready; use its expiring single-use token for exact local `promote`.

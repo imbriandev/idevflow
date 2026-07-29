@@ -44,7 +44,9 @@ Review the migration plan before applying it. Unknown future schemas fail closed
 
 ## Diagnostics and recovery
 
-Use `pi_ios_context` before non-trivial SwiftUI, persistence, concurrency, testing, privacy, monetization, accessibility, performance, widget, App Intent, audit, or release reasoning. It returns readable package-owned reference paths within a bounded cold-path budget; read only the selected material.
+Use `pi_ios_context` before non-trivial SwiftUI, persistence, concurrency, testing, privacy, monetization, accessibility, performance, widget, App Intent, audit, or release reasoning. It returns readable package-owned reference paths within a bounded cold-path budget; read only the selected material. When an eligible writer session exists, it also records the required context receipt for high/critical verification or review; release verification requires a separate `stage=ship`, `risk=critical` receipt.
+
+Release-quality verification defaults to `quality.requireXCTestEvidence=true`. Configure project-owned numeric budgets in `quality.performanceBudgets`, then provide source-bound proof metadata naming a passing XCTest accessibility-audit test and performance-metric test. Pi iOS parses the fresh release xcresult and rejects metadata-only evidence, missing named tests, missing XCTest APIs, absent measurements, or metric values over budget.
 
 Use `pi_ios_doctor status` for human-readable findings or `pi_ios_doctor report` for a structured metadata-only support report. The report intentionally excludes source text, task text, worker packets, logs, approvals, and credentials.
 

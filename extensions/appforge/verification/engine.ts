@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import type { PiIosConfig } from "../config/config.ts";
+import { requireContextReceipt } from "../context/receipts.ts";
 import { changedFiles } from "../git/changes.ts";
 import { hashArtifact } from "../artifacts/manifest.ts";
 import { assertArtifactContainsNoSecrets } from "../artifacts/security.ts";
@@ -20,6 +21,7 @@ import { collectProof, simulatorProof, type ProofInput } from "./proofs.ts";
 import { PROFILE_CONTRACTS, VERIFICATION_PROFILES, missingRequiredProofs, selectVerificationProfile, type VerificationProfile } from "./profiles.ts";
 import { VerificationReceiptStore } from "./receipts.ts";
 import type { ArtifactRecord, QualityProof, VerificationReceipt } from "./types.ts";
+import { assertPassedXCTest, assertPerformanceBudget, assertQualityTestSource } from "./xctest-evidence.ts";
 
 const PROFILE_RANK = new Map(VERIFICATION_PROFILES.map((profile, index) => [profile, index]));
 
@@ -81,6 +83,8 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
   const profile = chooseProfile(input.session, files, input.requestedProfile);
   const contract = PROFILE_CONTRACTS[profile];
   input.onProgress?.(`Selected ${profile} verification for ${files.length} changed file(s)`);
+  const source = await sourceFingerprint(input.session);
+  const contextReceipt = await requireContextReceipt(input.repository, { session: input.session, stage: input.session.stage, risk: input.session.risk, profile });
 
   const toolchain = await discoverToolchain(input.session.worktreePath);
   const project = profile === "docs" ? undefined : await discoverXcodeProject(input.session.worktreePath, input.config, systemProbe, profile === "release" ? "Release" : input.config.xcode.configuration);
@@ -99,7 +103,6 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
   }
 
   try {
-    const source = await sourceFingerprint(input.session);
     const staleProof = (input.proofs ?? []).find((proof) => proof.metadata.sourceFingerprint !== source.fingerprint);
     if (staleProof) throw new SafetyKernelError(`${staleProof.kind} proof is not bound to the current source fingerprint`);
     const proofDescriptors = await Promise.all((input.proofs ?? []).map(async (proof) => {
@@ -115,6 +118,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
       ...(simulator ? { simulator } : {}),
       profile,
       proofFingerprint,
+      ...(contextReceipt ? { contextReceiptFingerprint: contextReceipt.selectionFingerprint } : {}),
     });
     const receiptStore = new VerificationReceiptStore(input.repository);
     if (contract.reusable) {
@@ -141,6 +145,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
     const commands: SupervisedProcessResult[] = [];
     const artifacts: ArtifactRecord[] = [];
     let testEvidenceValid = true;
+    let testResultBundle: string | undefined;
     const startedAt = new Date().toISOString();
     const resources = join(input.repository.primaryRoot, ".appforge", "resources", input.session.id);
     const derivedData = join(resources, "DerivedData");
@@ -187,6 +192,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
       }
 
       if (action === "test" && hasResultBundle) {
+        testResultBundle = resultBundle;
         const summary = await runCommand({
           executable: "xcrun",
           args: ["xcresulttool", "get", "test-results", "summary", "--path", resultBundle, "--compact"],
@@ -234,6 +240,29 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
     }
 
     const success = testEvidenceValid && commands.length > 0 && commands.every((command) => command.code === 0 && !command.timedOut && !command.cancelled);
+    if (success && profile === "release" && input.config.quality.requireXCTestEvidence) {
+      if (!testResultBundle) throw new SafetyKernelError("Release quality proof requires a fresh XCTest result bundle");
+      const accessibility = providedProofs.find((proof) => proof.kind === "accessibility");
+      const performance = providedProofs.find((proof) => proof.kind === "performance");
+      if (!accessibility || !performance) throw new SafetyKernelError("Release quality proof requires accessibility and performance inputs");
+      const tests = await runCommand({ executable: "xcrun", args: ["xcresulttool", "get", "test-results", "tests", "--path", testResultBundle, "--compact"], cwd: input.session.worktreePath, timeoutMs: 60_000, stdoutPath: join(artifactDirectory, "quality.tests.json"), stderrPath: join(artifactDirectory, "quality.tests.stderr.log") }, input.signal);
+      commands.push(tests); artifacts.push(await hashArtifact(tests.stdoutPath, "summary"), await hashArtifact(tests.stderrPath, "stderr"));
+      if (tests.code !== 0) throw new SafetyKernelError("Could not read XCTest test evidence from the fresh xcresult");
+      const testResults = JSON.parse(await readFile(tests.stdoutPath, "utf8")) as unknown;
+      const accessibilityIdentifier = String(accessibility.metadata.testIdentifier ?? "");
+      await assertQualityTestSource(input.session.worktreePath, "accessibility", accessibilityIdentifier);
+      assertPassedXCTest(testResults, accessibilityIdentifier);
+      const performanceIdentifier = String(performance.metadata.testIdentifier ?? "");
+      const metric = String(performance.metadata.metric ?? "");
+      await assertQualityTestSource(input.session.worktreePath, "performance", performanceIdentifier);
+      assertPassedXCTest(testResults, performanceIdentifier);
+      const budget = input.config.quality.performanceBudgets[metric];
+      if (!budget) throw new SafetyKernelError(`No project-owned performance budget configured for XCTest metric ${metric}`);
+      const metrics = await runCommand({ executable: "xcrun", args: ["xcresulttool", "get", "test-results", "metrics", "--path", testResultBundle, "--compact"], cwd: input.session.worktreePath, timeoutMs: 60_000, stdoutPath: join(artifactDirectory, "quality.metrics.json"), stderrPath: join(artifactDirectory, "quality.metrics.stderr.log") }, input.signal);
+      commands.push(metrics); artifacts.push(await hashArtifact(metrics.stdoutPath, "summary"), await hashArtifact(metrics.stderrPath, "stderr"));
+      if (metrics.code !== 0) throw new SafetyKernelError("Could not read XCTest performance evidence from the fresh xcresult");
+      assertPerformanceBudget(JSON.parse(await readFile(metrics.stdoutPath, "utf8")) as unknown, performanceIdentifier, metric, budget);
+    }
     const proofs = [...providedProofs];
     if (success && simulator) {
       proofs.push(await simulatorProof({
@@ -264,6 +293,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
       sourceFingerprint: source.fingerprint,
       sourceCommit: source.commit,
       configurationFingerprint: fingerprints.configFingerprint,
+      ...(contextReceipt ? { contextReceiptFingerprint: contextReceipt.selectionFingerprint } : {}),
       ...(project ? { project } : {}),
       toolchain,
       ...(simulator ? { simulator } : {}),

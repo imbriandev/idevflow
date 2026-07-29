@@ -20,7 +20,7 @@ A successful build is not product proof. For a primary flow or release profile:
 3. run `XCUIApplication.performAccessibilityAudit()` where a UI audit is required and retain evidence;
 4. collect launch/interaction metrics with project-owned budgets where performance is claimed or gated.
 
-Do not invent looser budgets or metadata to turn a missing measurement into a pass. Proof metadata, artifact hashes, source fingerprint, and verification receipt must agree.
+For release verification, accessibility metadata names a passing XCTest test containing `XCUIApplication.performAccessibilityAudit()` and `auditIssues=0`. Performance metadata names a passing XCTest metric test; Pi iOS parses fresh xcresult measurements and compares their maximum to `quality.performanceBudgets` in project config. Do not invent looser budgets or metadata to turn a missing measurement into a pass. Proof metadata, artifact hashes, source fingerprint, context receipt, and verification receipt must agree.
 
 ## Failure handling
 

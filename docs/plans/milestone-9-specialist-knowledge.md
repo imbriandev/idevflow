@@ -12,7 +12,7 @@ v1.0.0 proved deterministic workflow safety, but its stage skills lacked the leg
 - 3,200 for critical/release work;
 - stage defaults first, then required release/privacy/testing references, then directly matched surfaces.
 
-It returns an absolute package path plus relative audit path, reason, selected/deferred references, estimated budget, and detected surfaces. It does not read project source, change state, or grant any authority. Workers receive this tool in their restricted allowlist and must select context before loading specialist material.
+It returns an absolute package path plus relative audit path, reason, selected/deferred references, estimated budget, and detected surfaces. It does not read project source or grant authority. Milestone 10 adds an atomic session-bound context receipt for high-risk/release enforcement. Workers receive this tool in their restricted allowlist and must select context before loading specialist material.
 
 ## Ported expert reasoning
 

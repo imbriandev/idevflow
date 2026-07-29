@@ -4,6 +4,7 @@ import { hashArtifact } from "../artifacts/manifest.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import type { ProofKind } from "./profiles.ts";
 import type { QualityProof } from "./types.ts";
+import { validateXCTestMetadata } from "./xctest-evidence.ts";
 
 export interface ProofInput {
   readonly kind: Exclude<ProofKind, "simulator">;
@@ -22,10 +23,12 @@ function validateMetadata(kind: ProofInput["kind"], path: string, metadata: Read
     if (metadata.passed !== true || !Array.isArray(metadata.tests) || metadata.tests.length === 0 || metadata.tests.some((test) => typeof test !== "string" || !test)) {
       throw new SafetyKernelError("Accessibility proof requires passed=true and non-empty tests metadata");
     }
+    validateXCTestMetadata(kind, metadata);
   } else if (kind === "performance") {
     if (metadata.passed !== true || !metadata.metrics || typeof metadata.metrics !== "object" || Object.values(metadata.metrics as Record<string, unknown>).some((value) => typeof value !== "number" || !Number.isFinite(value))) {
       throw new SafetyKernelError("Performance proof requires passed=true and finite numeric metrics metadata");
     }
+    validateXCTestMetadata(kind, metadata);
   }
 }
 

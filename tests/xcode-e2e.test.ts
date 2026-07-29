@@ -7,6 +7,8 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { validateArtifact } from "../extensions/appforge/artifacts/manifest.ts";
 import { initializeConfig, loadConfig } from "../extensions/appforge/config/config.ts";
+import { selectKnowledge } from "../extensions/appforge/context/knowledge.ts";
+import { recordContextReceipt } from "../extensions/appforge/context/receipts.ts";
 import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
 import { finishSession, runPostflight, writePreflight } from "../extensions/appforge/sessions/service.ts";
 import { SessionRegistry } from "../extensions/appforge/sessions/registry.ts";
@@ -45,6 +47,7 @@ describe("real Xcode verification", () => {
     await writeFile(source, (await readFile(source, "utf8")).replace("verification fixture", "verified fixture"));
 
     const config = await loadConfig(repository.primaryRoot);
+    await recordContextReceipt(repository, { session, stage: "build", risk: "high", task: session.task, selection: selectKnowledge({ stage: "build", risk: "high", task: session.task }) });
     const first = await verifySession({ repository, config, session });
     assert.equal(first.success, true, JSON.stringify({ commands: first.commands.map((command) => ({ code: command.code, signal: command.signal, stderr: command.stderrTail.slice(-2000) })), proofs: first.proofs.map((proof) => proof.kind) }, null, 2));
     assert.equal(first.profile, "integration");

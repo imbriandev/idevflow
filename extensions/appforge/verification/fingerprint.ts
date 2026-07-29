@@ -27,6 +27,7 @@ export function verificationFingerprint(input: {
   readonly simulator?: SimulatorLease;
   readonly profile: VerificationProfile;
   readonly proofFingerprint?: string;
+  readonly contextReceiptFingerprint?: string;
 }): { fingerprint: string; configFingerprint: string } {
   const configFingerprint = createHash("sha256").update(JSON.stringify(input.config)).digest("hex");
   const value = {
@@ -37,6 +38,7 @@ export function verificationFingerprint(input: {
     destination: input.simulator ? `${input.simulator.udid}:${input.simulator.runtimeVersion}` : "host",
     profile: input.profile,
     proofFingerprint: input.proofFingerprint ?? null,
+    contextReceiptFingerprint: input.contextReceiptFingerprint ?? null,
   };
   return { fingerprint: createHash("sha256").update(JSON.stringify(value)).digest("hex"), configFingerprint };
 }
