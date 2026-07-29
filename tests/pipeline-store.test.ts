@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { appendFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { PipelineStore } from "../extensions/appforge/pipeline/store.ts";
-import { PIPELINE_SCHEMA_VERSION } from "../extensions/appforge/pipeline/types.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { PipelineStore } from "../extensions/pi-ios/pipeline/store.ts";
+import { PIPELINE_SCHEMA_VERSION } from "../extensions/pi-ios/pipeline/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

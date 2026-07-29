@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { rm } from "node:fs/promises";
-import { initializeConfig } from "../extensions/appforge/config/config.ts";
-import { loadContextReceipt } from "../extensions/appforge/context/receipts.ts";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { writePreflight } from "../extensions/appforge/sessions/service.ts";
-import { RuntimeStore } from "../extensions/appforge/state/runtime-store.ts";
-import { registerContextTool } from "../extensions/appforge/tools/context-tool.ts";
+import { initializeConfig } from "../extensions/pi-ios/config/config.ts";
+import { loadContextReceipt } from "../extensions/pi-ios/context/receipts.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { writePreflight } from "../extensions/pi-ios/sessions/service.ts";
+import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
+import { registerContextTool } from "../extensions/pi-ios/tools/context-tool.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -35,5 +35,7 @@ describe("specialist context tool", () => {
     const result = await registeredTool().execute("id", { stage: "build", risk: "high", task: "Migrate SwiftData records", surfaces: ["swiftdata"] }, undefined, undefined, { cwd: fixture.root, isProjectTrusted: () => true, sessionManager: { getSessionId: () => "context-tool" } });
     assert.equal(result.details.receipt.sessionId, session.id);
     assert.equal((await loadContextReceipt(repository, session.id, "build"))?.risk, "high");
+    const planning = await registeredTool().execute("id", { stage: "plan", risk: "medium", task: "Plan a future SwiftUI change", surfaces: ["swiftui"] }, undefined, undefined, { cwd: fixture.root, isProjectTrusted: () => true, sessionManager: { getSessionId: () => "context-tool" } });
+    assert.equal(planning.details.receipt, undefined);
   });
 });

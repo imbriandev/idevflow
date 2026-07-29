@@ -5,7 +5,7 @@
 An installed project uses:
 
 ```text
-.appforge/
+.pi-ios/
   config.json
   state/events.jsonl
   state/snapshot.json

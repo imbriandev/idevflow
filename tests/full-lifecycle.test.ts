@@ -5,20 +5,20 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { hashArtifact } from "../extensions/appforge/artifacts/manifest.ts";
-import { initializeConfig } from "../extensions/appforge/config/config.ts";
-import { loadDefinedProduct } from "../extensions/appforge/documents/product.ts";
-import { approvePlan, integrateCurrentStage, recordReview } from "../extensions/appforge/lifecycle/service.ts";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { createCandidate, createTestFlightHandoff, issuePromotionApproval, promoteCandidate } from "../extensions/appforge/release/service.ts";
-import { SessionRegistry } from "../extensions/appforge/sessions/registry.ts";
-import { finishSession, runPostflight, writePreflight } from "../extensions/appforge/sessions/service.ts";
-import type { WriterSession } from "../extensions/appforge/sessions/types.ts";
-import { RuntimeStore } from "../extensions/appforge/state/runtime-store.ts";
-import { sourceFingerprint } from "../extensions/appforge/verification/fingerprint.ts";
-import type { VerificationProfile } from "../extensions/appforge/verification/profiles.ts";
-import { VerificationReceiptStore } from "../extensions/appforge/verification/receipts.ts";
-import type { ArtifactRecord, QualityProof, VerificationReceipt } from "../extensions/appforge/verification/types.ts";
+import { hashArtifact } from "../extensions/pi-ios/artifacts/manifest.ts";
+import { initializeConfig } from "../extensions/pi-ios/config/config.ts";
+import { loadDefinedProduct } from "../extensions/pi-ios/documents/product.ts";
+import { approvePlan, integrateCurrentStage, recordReview } from "../extensions/pi-ios/lifecycle/service.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { createCandidate, createTestFlightHandoff, issuePromotionApproval, promoteCandidate } from "../extensions/pi-ios/release/service.ts";
+import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
+import { finishSession, runPostflight, writePreflight } from "../extensions/pi-ios/sessions/service.ts";
+import type { WriterSession } from "../extensions/pi-ios/sessions/types.ts";
+import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
+import { sourceFingerprint } from "../extensions/pi-ios/verification/fingerprint.ts";
+import type { VerificationProfile } from "../extensions/pi-ios/verification/profiles.ts";
+import { VerificationReceiptStore } from "../extensions/pi-ios/verification/receipts.ts";
+import type { ArtifactRecord, QualityProof, VerificationReceipt } from "../extensions/pi-ios/verification/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -32,7 +32,7 @@ async function fakeVerification(repository: Awaited<ReturnType<typeof discoverRe
   const artifacts: ArtifactRecord[] = [];
   const proofs: QualityProof[] = [];
   if (project && profile === "release") {
-    const directory = join(repository.primaryRoot, ".appforge", "artifacts", "fake-release", fingerprint);
+    const directory = join(repository.primaryRoot, ".pi-ios", "artifacts", "fake-release", fingerprint);
     await mkdir(directory, { recursive: true });
     for (const [name, kind] of [["build.xcresult", "xcresult"], ["test.xcresult", "xcresult"], ["summary.json", "summary"], ["quality.tests.json", "summary"], ["quality.metrics.json", "summary"]] as const) {
       const path = join(directory, name);

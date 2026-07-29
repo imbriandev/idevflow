@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { writeFile } from "node:fs/promises";
-import { DEFAULT_CONFIG } from "../extensions/appforge/config/config.ts";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { discoverSimulatorDevices, selectSimulator } from "../extensions/appforge/simulator/devices.ts";
-import { SimulatorLeaseStore } from "../extensions/appforge/simulator/leases.ts";
-import { captureSimulatorScreenshot } from "../extensions/appforge/simulator/service.ts";
-import type { SimulatorDevice } from "../extensions/appforge/simulator/types.ts";
-import type { CommandProbe } from "../extensions/appforge/xcode/discovery.ts";
+import { DEFAULT_CONFIG } from "../extensions/pi-ios/config/config.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { discoverSimulatorDevices, selectSimulator } from "../extensions/pi-ios/simulator/devices.ts";
+import { SimulatorLeaseStore } from "../extensions/pi-ios/simulator/leases.ts";
+import { captureSimulatorScreenshot } from "../extensions/pi-ios/simulator/service.ts";
+import type { SimulatorDevice } from "../extensions/pi-ios/simulator/types.ts";
+import type { CommandProbe } from "../extensions/pi-ios/xcode/discovery.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

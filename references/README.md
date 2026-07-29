@@ -14,6 +14,5 @@ These are cold-path reasoning references for the seven Pi skills. They are delib
 | `review-audit.md` | personas, severity, focused and deep audit method |
 | `release-testflight.md` | candidate Go/No-Go and explicit manual TestFlight boundary |
 | `native-integrations.md` | App Intents, WidgetKit, interactive editors, legacy platform code |
-| `legacy-coverage.md` | disposition of every legacy AppForge reference |
 
 References improve expert reasoning but do not grant authority. Source ownership, verification, approvals, integration, and release remain enforced by typed Pi iOS tools.

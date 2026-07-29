@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runSupervised } from "../extensions/appforge/process/supervisor.ts";
+import { runSupervised } from "../extensions/pi-ios/process/supervisor.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

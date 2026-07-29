@@ -3,8 +3,8 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildWorkerPacket, writeWorkerPacket } from "../extensions/appforge/workers/packets.ts";
-import { PiWorkerLauncher } from "../extensions/appforge/workers/runner.ts";
+import { buildWorkerPacket, writeWorkerPacket } from "../extensions/pi-ios/workers/packets.ts";
+import { PiWorkerLauncher } from "../extensions/pi-ios/workers/runner.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

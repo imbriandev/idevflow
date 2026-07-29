@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
-import { registerPipelineTool } from "../extensions/appforge/tools/pipeline-tool.ts";
-import { registerReleaseTool } from "../extensions/appforge/tools/release-tool.ts";
+import { registerPipelineTool } from "../extensions/pi-ios/tools/pipeline-tool.ts";
+import { registerReleaseTool } from "../extensions/pi-ios/tools/release-tool.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

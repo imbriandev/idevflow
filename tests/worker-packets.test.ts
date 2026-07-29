@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildWorkerPacket, packetDigest, readWorkerPacket, writeWorkerPacket } from "../extensions/appforge/workers/packets.ts";
+import { buildWorkerPacket, packetDigest, readWorkerPacket, writeWorkerPacket } from "../extensions/pi-ios/workers/packets.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

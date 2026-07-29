@@ -3,11 +3,11 @@ import { afterEach, describe, it } from "node:test";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { initializeConfig } from "../extensions/appforge/config/config.ts";
-import { registerToolGate } from "../extensions/appforge/policy/tool-gate.ts";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { writePreflight } from "../extensions/appforge/sessions/service.ts";
-import { RuntimeStore } from "../extensions/appforge/state/runtime-store.ts";
+import { initializeConfig } from "../extensions/pi-ios/config/config.ts";
+import { registerToolGate } from "../extensions/pi-ios/policy/tool-gate.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { writePreflight } from "../extensions/pi-ios/sessions/service.ts";
+import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -70,11 +70,11 @@ describe("tool gate", () => {
   it("allows a worker to read only package-owned Markdown specialist references before preflight", async () => {
     const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
     process.env.PI_IOS_WORKER_PACKET = "/packet.json";
-    process.env.PI_IOS_WORKER_EXTENSION = join(process.cwd(), "extensions", "appforge", "index.ts");
+    process.env.PI_IOS_WORKER_EXTENSION = join(process.cwd(), "extensions", "pi-ios", "index.ts");
     const gate = captureGate(); const ctx = context(fixture.root);
     const reference: Record<string, unknown> = { path: join(process.cwd(), "references", "swiftui-experience.md") };
     assert.equal(await gate({ toolName: "read", input: reference }, ctx), undefined);
-    const nonReference = await gate({ toolName: "read", input: { path: join(process.cwd(), "extensions", "appforge", "index.ts") } }, ctx);
+    const nonReference = await gate({ toolName: "read", input: { path: join(process.cwd(), "extensions", "pi-ios", "index.ts") } }, ctx);
     assert.equal(nonReference?.block, true);
   });
 

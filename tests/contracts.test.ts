@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isStage, STAGES, STAGE_CONTRACTS } from "../extensions/appforge/lifecycle/contracts.ts";
+import { isStage, STAGES, STAGE_CONTRACTS } from "../extensions/pi-ios/lifecycle/contracts.ts";
 
 describe("stage contracts", () => {
   it("defines exactly seven unique lifecycle stages", () => {

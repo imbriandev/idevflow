@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Pi iOS has repeatable local and macOS CI gates, adversarial recovery coverage, mock-agent authority evaluations, confirmation-gate tests, metadata-only diagnostics, and installation/release operating documentation. The package remains a TypeScript Pi extension with no AppForge Python runtime dependency.
+Pi iOS has repeatable local and macOS CI gates, adversarial recovery coverage, mock-agent authority evaluations, confirmation-gate tests, metadata-only diagnostics, and installation/release operating documentation. The package remains a self-contained TypeScript Pi extension.
 
 ## Fault containment and recovery
 

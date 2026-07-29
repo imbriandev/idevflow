@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { missingRequiredProofs, PROFILE_CONTRACTS, selectVerificationProfile } from "../extensions/appforge/verification/profiles.ts";
+import { missingRequiredProofs, PROFILE_CONTRACTS, selectVerificationProfile } from "../extensions/pi-ios/verification/profiles.ts";
 
 describe("verification policy", () => {
   it("selects adaptive profiles from stage, risk, and changed surface", () => {

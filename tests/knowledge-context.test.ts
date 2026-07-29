@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { KNOWLEDGE_REFERENCES, detectKnowledgeSurfaces, selectKnowledge } from "../extensions/appforge/context/knowledge.ts";
+import { KNOWLEDGE_REFERENCES, detectKnowledgeSurfaces, selectKnowledge } from "../extensions/pi-ios/context/knowledge.ts";
 
 const root = process.cwd();
 
@@ -25,14 +25,11 @@ describe("specialist knowledge routing", () => {
     assert.equal(selection.references.some((reference) => reference.id === "native-integrations"), false);
   });
 
-  it("keeps skills and the legacy coverage ledger aligned with the specialist knowledge base", async () => {
+  it("keeps skills and the package-owned specialist knowledge base aligned", async () => {
     await Promise.all(KNOWLEDGE_REFERENCES.map((reference) => access(join(root, reference.path))));
     for (const stage of ["define", "plan", "build", "test", "review", "ship", "learn"]) {
       const skill = await readFile(join(root, "skills", `ios-${stage}`, "SKILL.md"), "utf8");
       assert.match(skill, /pi_ios_context/);
     }
-    const ledger = await readFile(join(root, "references", "legacy-coverage.md"), "utf8");
-    assert.equal((ledger.match(/^\| `[^`]+\.md` \|/gm) ?? []).length, 44);
-    assert.match(ledger, /No legacy Python script/);
   });
 });

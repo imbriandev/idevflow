@@ -3,7 +3,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 
-const RUNTIME_FORBIDDEN = /\bpython(?:3)?\b|\bpip(?:3)?\b|iosflow_runtime|\.py(?:\b|['"`])/i;
+const RETIRED_IDENTIFIERS = [".app" + "forge", "App" + "Forge", "iosflow" + "_runtime"];
+const RUNTIME_FORBIDDEN = new RegExp(["\\bpython(?:3)?\\b", "\\bpip(?:3)?\\b", "iosflow" + "_runtime", "\\.py(?:\\b|['\"`])"].join("|"), "i");
 
 async function files(root: string): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true });
@@ -11,16 +12,25 @@ async function files(root: string): Promise<string[]> {
   return nested.flat();
 }
 
-describe("stable cutover gates", () => {
-  it("ships no Python or AppForge runtime dependency", async () => {
+describe("package identity gates", () => {
+  it("ships only the Pi iOS TypeScript runtime and current namespace", async () => {
     const root = process.cwd();
-    const runtimeFiles = [...await files(join(root, "extensions")), ...await files(join(root, "skills")), join(root, "package.json")];
-    for (const path of runtimeFiles) {
+    const publicFiles = [
+      ...await files(join(root, "extensions")),
+      ...await files(join(root, "skills")),
+      ...await files(join(root, "references")),
+      ...await files(join(root, "docs")),
+      join(root, "README.md"),
+      join(root, "package.json"),
+      join(root, ".npmignore"),
+    ];
+    const retired = new RegExp(RETIRED_IDENTIFIERS.join("|"), "i");
+    for (const path of publicFiles) {
       const content = await readFile(path, "utf8");
-      assert.doesNotMatch(content, RUNTIME_FORBIDDEN, `forbidden Python runtime reference in ${path}`);
+      assert.doesNotMatch(content, RUNTIME_FORBIDDEN, `forbidden non-TypeScript runtime reference in ${path}`);
+      assert.doesNotMatch(content, retired, `retired identifier in ${path}`);
     }
-    const manifest = JSON.parse(await readFile(join(root, "package.json"), "utf8")) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string>; scripts?: Record<string, string> };
-    const values = [...Object.keys(manifest.dependencies ?? {}), ...Object.keys(manifest.devDependencies ?? {}), ...Object.values(manifest.scripts ?? {})].join("\n");
-    assert.doesNotMatch(values, RUNTIME_FORBIDDEN);
+    const extensionDirectories = await readdir(join(root, "extensions"));
+    assert.deepEqual(extensionDirectories, ["pi-ios"]);
   });
 });

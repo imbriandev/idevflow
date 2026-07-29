@@ -6,7 +6,7 @@ Pi iOS can execute an approved frozen work graph with isolated Pi subprocess wor
 
 ## Coordinator authority
 
-`pi_ios_pipeline` supports status, create, run, reconcile, high-risk approval, explicit lost-worker retry, pause, resume, takeover, and cancel. A hash-chained pipeline journal and atomic snapshot live under `.appforge/pipeline/`. The coordinator lease is bound to one Pi session and is extended for the bounded run window. Takeover requires an expired lease, an interactive confirmation, and a reason.
+`pi_ios_pipeline` supports status, create, run, reconcile, high-risk approval, explicit lost-worker retry, pause, resume, takeover, and cancel. A hash-chained pipeline journal and atomic snapshot live under `.pi-ios/pipeline/`. The coordinator lease is bound to one Pi session and is extended for the bounded run window. Takeover requires an expired lease, an interactive confirmation, and a reason.
 
 Creation freezes:
 

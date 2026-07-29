@@ -1,98 +1,36 @@
-# Implementation Plan
+# Pi iOS Implementation Plan
 
 ## Completion standard
 
-The rewrite is complete only when it can take a real trusted iOS repository through define, plan approval, isolated build, test, review, combined verification, ship approval, and TestFlight handoff without invoking AppForge's Python runtime.
+Pi iOS is complete when it can take a trusted iOS repository through define, plan approval, isolated build, test, review, combined verification, ship approval, and a verified manual TestFlight handoff using its TypeScript safety kernel.
 
-## Milestone 1 — Specification freeze
+## Delivered capabilities
 
-- Inventory reference commands, services, data models, policies, and failure modes.
-- Define typed stage contracts and lifecycle transitions.
-- Record security invariants and release boundaries.
-- Build and maintain the parity matrix.
+| Capability | Evidence |
+| --- | --- |
+| Deterministic lifecycle, worktrees, claims, leases, and recovery | hash-chained state, adversarial fault tests, and controlled writer sessions |
+| Xcode/simulator verification | commit-bound builds, tests, xcresults, screenshots, and leases |
+| Release readiness | privacy/monetization gates, approvals, local promotion, and manual handoff |
+| Multi-agent delivery | immutable packets, bounded workers/repair, integration epochs, and combined verification |
+| Specialist reasoning | bounded package-owned context selection and scenario evaluations |
+| XCTest quality enforcement | fresh accessibility-audit and performance-metric evidence against project-owned budgets |
+| Package identity | Pi-native TypeScript source under `extensions/pi-ios/` and local runtime under `.pi-ios/` |
 
-Exit: every reference capability is classified as required, redesigned, intentionally omitted, or deferred with rationale.
+## Ongoing standards
 
-## Milestone 2 — Package foundation
+- Keep deterministic enforcement outside model prose.
+- Keep all local runtime state ignored, permission-minimized, and outside product source.
+- Keep package documentation current-state and user-oriented.
+- Treat versioned durable state, privacy, signing, payment, and release changes as high risk.
+- Keep Git push, App Store Connect upload, and tester distribution as explicit manual boundaries.
 
-- Pi package manifest and TypeScript checks.
-- Seven lifecycle commands and `/ios` dashboard command.
-- Seven valid Agent Skills.
-- Session mirror and status UI.
-- Configuration schema and discovery contract.
+## Verification baseline
 
-Exit: package installs locally, reloads, exposes resources, and passes automated tests.
-
-## Milestone 3 — Safety kernel
-
-- Event journal, snapshot, cross-process lock, and migrations.
-- Repository identity and baseline checks.
-- Worktree/session lifecycle, path claims, leases, and heartbeat.
-- Write/edit/bash interception and command policy.
-- Preflight, postflight, status, doctor, and crash recovery.
-
-Exit: adversarial tests cannot write outside authorization or lose unintegrated work.
-
-## Milestone 4 — Xcode verification ✅ Complete
-
-- Project/workspace/scheme/destination discovery.
-- Cancellable process supervision with timeouts and redaction.
-- Simulator leases and managed resource isolation.
-- Verification profiles and adaptive policy.
-- xcresult, screenshot, accessibility, and performance evidence.
-- Fingerprinted receipts and artifact retention.
-
-Exit: fixture apps and a real sample app produce commit-bound evidence.
-
-## Milestone 5 — Full lifecycle ✅ Complete
-
-- Product memory and SLC documents.
-- Architecture plans and machine-readable work graphs.
-- Build/test/review stage receipts.
-- Privacy, monetization, and release gates.
-- Candidate creation, ship approval, promotion, and handoff.
-
-Exit: one single-agent golden path succeeds end to end.
-
-## Milestone 6 — Multi-agent pipeline ✅ Complete
-
-- Worker task packets and isolated Pi processes.
-- Dependency scheduler and bounded concurrency.
-- Review verdict schema and repair budgets.
-- Integration epochs, candidate snapshot checks, and batch splitting.
-- Reconciliation across worker crash and extension reload.
-
-Exit: independent slices run concurrently and integrate without authority leakage.
-
-## Milestone 7 — Production hardening ✅ Complete
-
-- Fault injection and recovery tests.
-- Behavioral workflow evaluations with mock agents.
-- macOS/Xcode CI and simulator end-to-end suite.
-- TUI interaction tests and non-interactive fail-closed tests.
-- Installation, migration, diagnostics, versioning, and release documentation.
-
-Exit: all quality gates pass and a real app reaches verified TestFlight handoff.
-
-## Milestone 8 — Cutover ✅ Complete
-
-- Run the full parity matrix.
-- Run the workflow on a real app.
-- Confirm no Python invocation or AppForge runtime dependency.
-- Tag the first stable package release.
-
-## Milestone 9 — Specialist Knowledge Parity ✅ Complete
-
-- Port the legacy workflow’s expert iOS reasoning into curated package-owned cold references.
-- Add deterministic stage/risk/surface context selection and bounded worker access.
-- Add domain scenario evaluations and legacy-reference coverage ledger.
-
-Exit: skills and workers can load relevant SwiftUI, SwiftData, concurrency, testing, accessibility, privacy, monetization, release, widget, App Intent, product, and audit guidance without context flooding or legacy runtime dependence.
-
-## Milestone 10 — Context and XCTest Evidence Enforcement ✅ Complete
-
-- Record specialist-context receipts for high/critical verification and review, bound into verification fingerprints.
-- Require a distinct critical ship receipt for release verification.
-- Require fresh xcresult-backed XCTest accessibility audit and performance metric evidence against project-owned budgets.
-
-Exit: a release candidate cannot rely on self-attested context, accessibility, or performance metadata.
+```bash
+npm run check
+PI_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+pi -e . --list-models
+npm pack --dry-run --json
+git diff --check
+npm audit --omit=dev
+```

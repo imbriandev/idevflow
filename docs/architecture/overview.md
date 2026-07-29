@@ -53,12 +53,12 @@ Workers can produce source commits and receipts. They cannot integrate, approve 
 
 ### Project state
 
-Durable state belongs to `.appforge/` in the iOS app repository, independently of Pi conversation sessions. Pi custom entries mirror session-local UI state but are not the source of truth.
+Durable state belongs to `.pi-ios/` in the iOS app repository, independently of Pi conversation sessions. Pi custom entries mirror session-local UI state but are not the source of truth.
 
 ## Package topology
 
 ```text
-extensions/appforge/
+extensions/pi-ios/
   commands/       command registration and argument handling
   lifecycle/      contracts, transitions, risk, and policy
   state/          event journal, snapshots, locking, migrations

@@ -3,14 +3,14 @@ import { describe, it } from "node:test";
 import { mkdtemp, mkdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertNoClaimConflicts, claimsOverlap, normalizeClaim, pathIsClaimed, resolveSafeWritePath } from "../extensions/appforge/git/claims.ts";
+import { assertNoClaimConflicts, claimsOverlap, normalizeClaim, pathIsClaimed, resolveSafeWritePath } from "../extensions/pi-ios/git/claims.ts";
 
 describe("path claims", () => {
   it("normalizes repository-relative claims and rejects escapes", () => {
     assert.equal(normalizeClaim("Sources/Feature", "/repo/worktree"), "Sources/Feature");
     assert.throws(() => normalizeClaim("../secret", "/repo/worktree"));
     assert.throws(() => normalizeClaim(".", "/repo/worktree"));
-    assert.throws(() => normalizeClaim(".appforge/state", "/repo/worktree"), /protected control state/);
+    assert.throws(() => normalizeClaim(".pi-ios/state", "/repo/worktree"), /protected control state/);
   });
 
   it("blocks write paths that cross symbolic links", async () => {

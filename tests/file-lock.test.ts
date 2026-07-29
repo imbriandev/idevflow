@@ -4,8 +4,8 @@ import { mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { acquireFileLock } from "../extensions/appforge/state/file-lock.ts";
-import { LockTimeoutError } from "../extensions/appforge/state/errors.ts";
+import { acquireFileLock } from "../extensions/pi-ios/state/file-lock.ts";
+import { LockTimeoutError } from "../extensions/pi-ios/state/errors.ts";
 
 const roots: string[] = [];
 

@@ -4,12 +4,12 @@ import { afterEach, describe, it } from "node:test";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { DEFAULT_CONFIG } from "../extensions/appforge/config/config.ts";
-import { diagnoseSessions, repairExpiredSessions } from "../extensions/appforge/recovery/doctor.ts";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/appforge/sessions/registry.ts";
-import { heartbeatSession } from "../extensions/appforge/sessions/service.ts";
-import type { WriterSession } from "../extensions/appforge/sessions/types.ts";
+import { DEFAULT_CONFIG } from "../extensions/pi-ios/config/config.ts";
+import { diagnoseSessions, repairExpiredSessions } from "../extensions/pi-ios/recovery/doctor.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
+import { heartbeatSession } from "../extensions/pi-ios/sessions/service.ts";
+import type { WriterSession } from "../extensions/pi-ios/sessions/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);

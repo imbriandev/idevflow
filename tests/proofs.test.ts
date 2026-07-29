@@ -3,8 +3,8 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { validateArtifact } from "../extensions/appforge/artifacts/manifest.ts";
-import { collectProof } from "../extensions/appforge/verification/proofs.ts";
+import { validateArtifact } from "../extensions/pi-ios/artifacts/manifest.ts";
+import { collectProof } from "../extensions/pi-ios/verification/proofs.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

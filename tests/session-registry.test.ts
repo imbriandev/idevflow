@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { appendFile } from "node:fs/promises";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/appforge/sessions/registry.ts";
-import type { WriterSession } from "../extensions/appforge/sessions/types.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
+import type { WriterSession } from "../extensions/pi-ios/sessions/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

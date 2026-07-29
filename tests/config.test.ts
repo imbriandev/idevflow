@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyConfigMigration, DEFAULT_CONFIG, discoverConfigMigration, initializeConfig, loadConfig, validateConfig } from "../extensions/appforge/config/config.ts";
+import { applyConfigMigration, DEFAULT_CONFIG, discoverConfigMigration, initializeConfig, loadConfig, validateConfig } from "../extensions/pi-ios/config/config.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
@@ -14,14 +14,14 @@ describe("configuration", () => {
     roots.push(root);
     assert.deepEqual(await loadConfig(root), DEFAULT_CONFIG);
     assert.deepEqual(await initializeConfig(root), DEFAULT_CONFIG);
-    assert.deepEqual(JSON.parse(await readFile(join(root, ".appforge", "config.json"), "utf8")), DEFAULT_CONFIG);
+    assert.deepEqual(JSON.parse(await readFile(join(root, ".pi-ios", "config.json"), "utf8")), DEFAULT_CONFIG);
   });
 
   it("backs up and migrates a schema-zero config", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
     roots.push(root);
     await initializeConfig(root);
-    const path = join(root, ".appforge", "config.json");
+    const path = join(root, ".pi-ios", "config.json");
     await writeFile(path, JSON.stringify({ schemaVersion: 0, baseBranch: "trunk", leaseSeconds: 600 }), "utf8");
     assert.equal((await discoverConfigMigration(root)).needed, true);
     const migrated = await applyConfigMigration(root);
@@ -34,7 +34,7 @@ describe("configuration", () => {
     const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
     roots.push(root);
     await initializeConfig(root);
-    const path = join(root, ".appforge", "config.json");
+    const path = join(root, ".pi-ios", "config.json");
     await writeFile(path, JSON.stringify({
       schemaVersion: 1,
       baseBranch: "main",
@@ -51,7 +51,7 @@ describe("configuration", () => {
   it("migrates the milestone-4 schema with lifecycle defaults", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
     roots.push(root);
-    const path = join(root, ".appforge", "config.json");
+    const path = join(root, ".pi-ios", "config.json");
     await initializeConfig(root);
     const legacy = { ...DEFAULT_CONFIG, schemaVersion: 2 } as Record<string, unknown>;
     delete legacy.documents;
@@ -66,7 +66,7 @@ describe("configuration", () => {
   it("migrates the milestone-5 schema with pipeline defaults", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
     roots.push(root);
-    const path = join(root, ".appforge", "config.json");
+    const path = join(root, ".pi-ios", "config.json");
     await initializeConfig(root);
     const legacy = { ...DEFAULT_CONFIG, schemaVersion: 3 } as Record<string, unknown>;
     delete legacy.pipeline;
@@ -80,7 +80,7 @@ describe("configuration", () => {
   it("migrates the specialist-knowledge schema with XCTest quality defaults", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
     roots.push(root);
-    const path = join(root, ".appforge", "config.json");
+    const path = join(root, ".pi-ios", "config.json");
     await initializeConfig(root);
     const legacy = { ...DEFAULT_CONFIG, schemaVersion: 4 } as Record<string, unknown>;
     delete legacy.quality;

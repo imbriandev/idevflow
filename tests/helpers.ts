@@ -9,7 +9,7 @@ const execFileAsync = promisify(execFile);
 export async function createGitFixture(): Promise<{ root: string; cleanup(): Promise<void> }> {
   const root = await mkdtemp(join(tmpdir(), "pi-ios-test-"));
   await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
-  await writeFile(join(root, ".gitignore"), ".appforge/\n", "utf8");
+  await writeFile(join(root, ".gitignore"), ".pi-ios/\n", "utf8");
   await writeFile(join(root, "README.md"), "# Fixture\n", "utf8");
   await execFileAsync("git", ["add", "."], { cwd: root });
   await execFileAsync(

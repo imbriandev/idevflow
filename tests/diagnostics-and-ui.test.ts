@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { randomUUID } from "node:crypto";
-import { createDiagnosticReport } from "../extensions/appforge/recovery/report.ts";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/appforge/sessions/registry.ts";
-import type { WriterSession } from "../extensions/appforge/sessions/types.ts";
-import { registerPipelineTool } from "../extensions/appforge/tools/pipeline-tool.ts";
-import { registerReleaseTool } from "../extensions/appforge/tools/release-tool.ts";
+import { createDiagnosticReport } from "../extensions/pi-ios/recovery/report.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
+import type { WriterSession } from "../extensions/pi-ios/sessions/types.ts";
+import { registerPipelineTool } from "../extensions/pi-ios/tools/pipeline-tool.ts";
+import { registerReleaseTool } from "../extensions/pi-ios/tools/release-tool.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { access, mkdir, mkdtemp, rm, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pruneExpiredArtifactDirectories } from "../extensions/appforge/artifacts/retention.ts";
+import { pruneExpiredArtifactDirectories } from "../extensions/pi-ios/artifacts/retention.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

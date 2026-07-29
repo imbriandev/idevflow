@@ -23,11 +23,11 @@ npm run check
 pi -e . --list-models
 ```
 
-Pi discovers the extension and seven `ios-*` skills from `package.json`. The extension does not invoke or install AppForge's Python runtime.
+Pi discovers the extension and seven `ios-*` skills from `package.json`. The package executes as TypeScript within Pi.
 
 ## First project initialization
 
-In a trusted Git project, use `pi_ios_runtime` to initialize state. Pi iOS creates ignored local state under `.appforge/`; tracked product and plan documents are created only through the lifecycle tools.
+In a trusted Git project, use `pi_ios_runtime` to initialize state. Pi iOS creates ignored local state under `.pi-ios/`; tracked product and plan documents are created only through the lifecycle tools.
 
 Before a writer stage, the project must have a clean baseline and valid Git identity. Preflight creates a sibling isolated worktree, so the original checkout is not the writer's mutable directory.
 
@@ -35,8 +35,8 @@ Before a writer stage, the project must have a clean baseline and valid Git iden
 
 Configuration is versioned. `pi_ios_runtime` exposes migration discovery and application. Applying a migration:
 
-1. validates the legacy object;
-2. copies the old configuration to `.appforge/config.json.v<old>.backup`;
+1. validates the existing configuration object;
+2. copies the old configuration to `.pi-ios/config.json.v<old>.backup`;
 3. atomically writes the current schema;
 4. never changes source, writer worktrees, packet files, receipts, or Git refs.
 

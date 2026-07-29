@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertPassedXCTest, assertPerformanceBudget, assertQualityTestSource, validateXCTestMetadata } from "../extensions/appforge/verification/xctest-evidence.ts";
+import { assertPassedXCTest, assertPerformanceBudget, assertQualityTestSource, validateXCTestMetadata } from "../extensions/pi-ios/verification/xctest-evidence.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

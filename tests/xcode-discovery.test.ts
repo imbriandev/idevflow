@@ -3,8 +3,8 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_CONFIG } from "../extensions/appforge/config/config.ts";
-import { discoverXcodeProject, type CommandProbe } from "../extensions/appforge/xcode/discovery.ts";
+import { DEFAULT_CONFIG } from "../extensions/pi-ios/config/config.ts";
+import { discoverXcodeProject, type CommandProbe } from "../extensions/pi-ios/xcode/discovery.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

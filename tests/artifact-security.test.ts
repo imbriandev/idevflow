@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertArtifactContainsNoSecrets } from "../extensions/appforge/artifacts/security.ts";
+import { assertArtifactContainsNoSecrets } from "../extensions/pi-ios/artifacts/security.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));

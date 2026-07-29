@@ -4,12 +4,12 @@ import { afterEach, describe, it } from "node:test";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
-import { initializeConfig, loadConfig } from "../extensions/appforge/config/config.ts";
-import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
-import { RuntimeStore } from "../extensions/appforge/state/runtime-store.ts";
-import { SessionRegistry } from "../extensions/appforge/sessions/registry.ts";
-import { finishSession, runPostflight, writePreflight } from "../extensions/appforge/sessions/service.ts";
-import { verifySession } from "../extensions/appforge/verification/engine.ts";
+import { initializeConfig, loadConfig } from "../extensions/pi-ios/config/config.ts";
+import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
+import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
+import { finishSession, runPostflight, writePreflight } from "../extensions/pi-ios/sessions/service.ts";
+import { verifySession } from "../extensions/pi-ios/verification/engine.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);

@@ -28,7 +28,7 @@ Status: Implemented
 - Shared Git-common-directory identity across worktrees.
 - Base/integration branch-name validation and base commit discovery.
 - Live clean, committed primary-baseline contract.
-- Local `.appforge/` exclusion through Git metadata without editing tracked ignore files.
+- Local `.pi-ios/` exclusion through Git metadata without editing tracked ignore files.
 - Read-only runtime, baseline, and writer status through `/ios` and `pi_ios_runtime`.
 
 ## Slice 3.3 — Sessions, worktrees, claims, and leases
