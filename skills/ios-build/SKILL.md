@@ -15,8 +15,8 @@ Implement one approved slice and produce commit-bound evidence.
 3. Read the narrow source and test neighborhood.
 4. Implement the smallest complete vertical behavior; preserve Swift concurrency isolation and explicit state ownership.
 5. Add focused tests when they provide a stable behavioral seam.
-6. Run adaptive verification selected by risk and changed surface.
-7. Run postflight, record changed files and evidence, commit in the worker worktree, and submit for controlled integration.
+6. Call `pi_ios_verify`; accept the adaptive minimum profile and preserve its verification fingerprint.
+7. Call `pi_ios_session postflight` with evidence and that exact fingerprint. Finish only if source and artifacts remain unchanged, then submit the commit for controlled integration.
 
 ## Guardrails
 
@@ -27,4 +27,4 @@ Implement one approved slice and produce commit-bound evidence.
 
 ## Output
 
-Report session, claims, implementation, changed files, tests, verification receipt, documentation sync, risks, and integration state.
+Report session, claims, implementation, changed files, tests, verification profile and fingerprint, artifact paths, documentation sync, risks, and integration state.

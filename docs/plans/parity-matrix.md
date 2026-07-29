@@ -11,16 +11,16 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Git | Clean baseline and repository identity | `git/` | Safety baseline implemented |
 | Worktrees | Isolated branch/worktree per writer | `git/` | Implemented |
 | Claims | Path ownership and overlap detection | `git/` | Implemented |
-| Leases | Session, coordinator, worker, simulator leases | `state/`, `simulator/` | Writer leases implemented; coordinator/simulator pending |
+| Leases | Session, coordinator, worker, simulator leases | `state/`, `simulator/` | Writer and simulator leases implemented; coordinator pending |
 | Preflight | Stage/risk/scope/write authorization | `lifecycle/` | Implemented |
-| Postflight | Changed-file and evidence attestation | `lifecycle/` | Safety receipt implemented; Xcode evidence pending |
+| Postflight | Changed-file and evidence attestation | `lifecycle/` | Verification-bound postflight implemented |
 | Recovery | Status, doctor, stale/orphan handling | `state/` | Implemented without destructive cleanup |
-| Process | Cancellation, timeout, redaction, truncation | `process/` | Managed exec timeout/truncation implemented; artifact redaction pending |
-| Xcode | Project, scheme, destination discovery | `xcode/` | Pending |
-| Simulator | Exclusive lease, boot, release | `simulator/` | Pending |
-| Verification | quick/slice/integration/release profiles | `verification/` | Pending |
-| Receipts | Source/toolchain/config-bound reuse | `verification/` | Pending |
-| Quality | Simulator, screenshot, accessibility, performance | `verification/` | Pending |
+| Process | Cancellation, timeout, redaction, truncation | `process/` | Implemented with secret-scanned artifacts |
+| Xcode | Project, scheme, destination discovery | `xcode/` | Implemented and real-app tested |
+| Simulator | Exclusive lease, boot, release | `simulator/` | Implemented with screenshot capture |
+| Verification | quick/slice/integration/release profiles | `verification/` | Implemented with adaptive minimum strength |
+| Receipts | Source/toolchain/config-bound reuse | `verification/` | Implemented; release reuse forbidden |
+| Quality | Simulator, screenshot, accessibility, performance | `verification/` | Proof contracts and release gate implemented |
 | Automation | Frozen work graph and approval | `pipeline/` | Pending |
 | Workers | Isolated Pi worker execution | `workers/` | Pending |
 | Pipeline | build-test-review and bounded repair | `pipeline/` | Pending |
@@ -33,4 +33,4 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Context | Triggered references and context budget | `lifecycle/` | Pending |
 | Packaging | Local, Git, and eventual npm installation | package root | Foundation |
 | Migration | Schema/config migration without source loss | `state/` | Config migration foundation implemented |
-| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/` | Milestone-3 adversarial/integration coverage implemented |
+| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/` | Milestone-4 unit/integration plus real Xcode E2E implemented |

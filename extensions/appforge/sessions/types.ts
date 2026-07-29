@@ -7,6 +7,9 @@ export interface PostflightReceipt {
   readonly evidence: string;
   readonly changedFiles: readonly string[];
   readonly diffHash: string;
+  readonly verificationReceiptId: string;
+  readonly verificationFingerprint: string;
+  readonly verificationProfile: string;
   readonly recordedAt: string;
 }
 

@@ -13,6 +13,9 @@ import { RuntimeStore } from "../state/runtime-store.ts";
 import { SessionRegistry } from "./registry.ts";
 import { leaseIsValid, type PostflightReceipt, type WriterSession } from "./types.ts";
 import { createWriterWorktree } from "./worktree.ts";
+import { sourceFingerprint } from "../verification/fingerprint.ts";
+import { VERIFICATION_PROFILES, selectVerificationProfile } from "../verification/profiles.ts";
+import { VerificationReceiptStore } from "../verification/receipts.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -99,6 +102,7 @@ export async function runPostflight(
   repository: RepositoryDescriptor,
   session: WriterSession,
   evidence: string,
+  verificationFingerprint: string,
 ): Promise<PostflightReceipt> {
   if (session.status !== "active") throw new SafetyKernelError(`Postflight requires an active session, found ${session.status}`);
   if (!leaseIsValid(session)) throw new SafetyKernelError(`Session ${session.id} lease expired before postflight`);
@@ -107,10 +111,24 @@ export async function runPostflight(
   if (!files.length) throw new SafetyKernelError("Postflight found no changed files");
   assertChangedFilesClaimed(files, session.claims);
   await diffCheck(session.worktreePath);
+  if (!verificationFingerprint.trim()) throw new SafetyKernelError("Postflight requires a verification fingerprint");
+  const verification = await new VerificationReceiptStore(repository).validated(verificationFingerprint);
+  if (!verification || verification.sessionId !== session.id) throw new SafetyKernelError("Postflight verification receipt is missing, invalid, or belongs to another session");
+  const source = await sourceFingerprint(session);
+  if (verification.sourceFingerprint !== source.fingerprint || verification.sourceCommit !== source.commit) {
+    throw new SafetyKernelError("Postflight source does not match the verification receipt");
+  }
+  const requiredProfile = selectVerificationProfile({ stage: session.stage, risk: session.risk, changedFiles: files });
+  if (VERIFICATION_PROFILES.indexOf(verification.profile) < VERIFICATION_PROFILES.indexOf(requiredProfile)) {
+    throw new SafetyKernelError(`Verification profile ${verification.profile} is weaker than required ${requiredProfile}`);
+  }
   const receipt: PostflightReceipt = {
     evidence: evidence.trim(),
     changedFiles: files,
     diffHash: await fingerprintChanges(session.worktreePath, files),
+    verificationReceiptId: verification.id,
+    verificationFingerprint: verification.verificationFingerprint,
+    verificationProfile: verification.profile,
     recordedAt: new Date().toISOString(),
   };
   await new SessionRegistry(repository).recordPostflight(session.id, receipt, actor(session.piSessionId));

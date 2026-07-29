@@ -20,6 +20,7 @@ export function registerSessionTool(pi: ExtensionAPI): void {
     parameters: Type.Object({
       action: StringEnum(["status", "heartbeat", "resume", "park", "postflight", "finish"] as const),
       evidence: Type.Optional(Type.String()),
+      verificationFingerprint: Type.Optional(Type.String()),
       message: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _update, ctx) {
@@ -40,7 +41,7 @@ export function registerSessionTool(pi: ExtensionAPI): void {
         const state = await registry.changeStatus(session.id, "parked", params.message?.trim() || "parked by owning Pi session", `pi-session:${session.piSessionId}`);
         session = state.sessions[session.id]!;
       } else if (params.action === "postflight") {
-        const receipt = await runPostflight(repository, session, params.evidence ?? "");
+        const receipt = await runPostflight(repository, session, params.evidence ?? "", params.verificationFingerprint ?? "");
         return {
           content: [{ type: "text", text: `Postflight passed for ${receipt.changedFiles.length} changed file(s). Receipt ${receiptFingerprint(receipt)}.` }],
           details: { sessionId: session.id, receipt },

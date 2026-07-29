@@ -109,6 +109,14 @@ When a Pi iOS stage is active, built-in `edit` and `write` calls are redirected 
 
 Postflight records changed paths, evidence, and a content fingerprint. Finish rejects source drift, unexpected HEAD changes, out-of-claim commit paths, and changes left by commit hooks before marking a commit ready for later integration.
 
+## Xcode verification harness
+
+The verification kernel discovers the project container, scheme, build settings, Apple toolchain, and an exclusive simulator destination. It runs shell-free supervised commands with isolated DerivedData, cancellation, timeout, bounded diagnostics, redacted complete logs, xcresult output, and post-run artifact secret scanning.
+
+Adaptive profiles select the minimum allowed strength from stage, risk, and changed files. Receipts bind source and dirty content to configuration, project, toolchain, simulator destination, profile, proof files, and artifact hashes. Exact non-release receipts may be reused only while every artifact remains intact; release proof is always fresh.
+
+Postflight accepts a verification fingerprint rather than prose. It validates receipt ownership, source identity, minimum profile, and artifact integrity before recording its own commit-bound attestation.
+
 ## Release boundary
 
 The default result is a verified TestFlight handoff. The kernel prepares and validates the candidate, archive readiness, privacy state, known issues, and evidence bundle. Upload or distribution remains a separate explicit capability and approval boundary.

@@ -16,8 +16,11 @@ import {
 import { registerDoctorTool } from "./tools/doctor-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
 import { registerPreflightTool } from "./tools/preflight-tool.ts";
+import { registerProofTool } from "./tools/proof-tool.ts";
 import { registerRuntimeTool } from "./tools/runtime-tool.ts";
 import { registerSessionTool } from "./tools/session-tool.ts";
+import { registerSimulatorTool } from "./tools/simulator-tool.ts";
+import { registerVerificationTool } from "./tools/verification-tool.ts";
 import { formatDashboard, updateStatus } from "./ui/status.ts";
 
 export default function piIosExtension(pi: ExtensionAPI): void {
@@ -39,6 +42,9 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   registerPreflightTool(pi, () => state);
   registerSessionTool(pi);
   registerExecTool(pi);
+  registerSimulatorTool(pi);
+  registerProofTool(pi);
+  registerVerificationTool(pi);
   registerDoctorTool(pi);
   registerToolGate(pi, () => state);
   registerStageCommands(

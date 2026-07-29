@@ -14,9 +14,10 @@ An installed project uses:
   state/sessions/snapshot.json
   sessions/
   graphs/
-  receipts/
-  evidence/
-  artifacts/
+  receipts/verification/<fingerprint>.json
+  evidence/<session>/
+  artifacts/verification/<fingerprint>/
+  resources/<session>/
   logs/
 ```
 

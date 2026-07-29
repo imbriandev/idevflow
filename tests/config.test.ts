@@ -26,12 +26,30 @@ describe("configuration", () => {
     assert.equal((await discoverConfigMigration(root)).needed, true);
     const migrated = await applyConfigMigration(root);
     assert.equal(migrated.baseBranch, "trunk");
-    assert.equal(migrated.schemaVersion, 1);
+    assert.equal(migrated.schemaVersion, 2);
     assert.equal(JSON.parse(await readFile(`${path}.v0.backup`, "utf8")).schemaVersion, 0);
   });
 
+  it("migrates the milestone-3 schema with verification defaults", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
+    roots.push(root);
+    await initializeConfig(root);
+    const path = join(root, ".appforge", "config.json");
+    await writeFile(path, JSON.stringify({
+      schemaVersion: 1,
+      baseBranch: "main",
+      integrationBranch: "pi-ios/integration",
+      remote: "origin",
+      leaseSeconds: 14_400,
+      verificationTimeoutSeconds: 1_800,
+    }), "utf8");
+    const migrated = await applyConfigMigration(root);
+    assert.equal(migrated.schemaVersion, 2);
+    assert.deepEqual(migrated.verification.requiredScreenshotVariants, ["compact-light", "compact-dark", "accessibility-xxxl"]);
+  });
+
   it("rejects unknown schemas and unsafe lease values", () => {
-    assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, schemaVersion: 2 }));
+    assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, schemaVersion: 99 }));
     assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, leaseSeconds: 1 }));
   });
 });

@@ -15,8 +15,8 @@ Turn uncertainty into reproducible evidence.
 3. Isolate the smallest root cause using focused diagnostics.
 4. Obtain write authorization before adding tests or fixes.
 5. Add the narrowest stable regression proof and repair the verified cause.
-6. Re-run focused checks, then the risk-selected integration surface.
-7. Store xcresult, simulator, screenshot, accessibility, or performance artifacts when required.
+6. Re-run focused checks through `pi_ios_verify`; do not request a profile weaker than policy selects.
+7. Inspect xcresult summaries and provide source-bound simulator, screenshot, accessibility, or performance proof when the selected profile requires it. Pass the successful verification fingerprint to postflight.
 
 ## Guardrails
 

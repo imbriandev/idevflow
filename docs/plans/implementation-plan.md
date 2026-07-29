@@ -33,7 +33,7 @@ Exit: package installs locally, reloads, exposes resources, and passes automated
 
 Exit: adversarial tests cannot write outside authorization or lose unintegrated work.
 
-## Milestone 4 — Xcode verification
+## Milestone 4 — Xcode verification ✅ Complete
 
 - Project/workspace/scheme/destination discovery.
 - Cancellable process supervision with timeouts and redaction.

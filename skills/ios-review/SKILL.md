@@ -11,7 +11,7 @@ Produce a bounded, evidence-linked verdict for the current source commit.
 ## Workflow
 
 1. Identify the exact commit, diff, acceptance criteria, and requested review surfaces.
-2. Inspect code and existing evidence without silently expanding to a repository-wide audit.
+2. Inspect code and validate the current verification receipt and artifact hashes without silently expanding to a repository-wide audit.
 3. Prioritize correctness, data loss, privacy, accessibility, and primary-flow failures before polish.
 4. Cite actionable findings with file and line, impact, evidence, and smallest responsible route.
 5. Separate blockers, important findings, polish, and non-findings.

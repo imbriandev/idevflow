@@ -4,11 +4,12 @@ import { afterEach, describe, it } from "node:test";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
-import { initializeConfig } from "../extensions/appforge/config/config.ts";
+import { initializeConfig, loadConfig } from "../extensions/appforge/config/config.ts";
 import { discoverRepository } from "../extensions/appforge/repository/discovery.ts";
 import { RuntimeStore } from "../extensions/appforge/state/runtime-store.ts";
 import { SessionRegistry } from "../extensions/appforge/sessions/registry.ts";
 import { finishSession, runPostflight, writePreflight } from "../extensions/appforge/sessions/service.ts";
+import { verifySession } from "../extensions/appforge/verification/engine.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -42,10 +43,17 @@ describe("writer session service", () => {
     assert.notEqual(session.worktreePath, fixture.root);
     await writeFile(`${session.worktreePath}/README.md`, "# Updated\n", "utf8");
     await writeFile(`${session.worktreePath}/outside.txt`, "scope drift\n", "utf8");
-    await assert.rejects(runPostflight(repository, session, "focused proof"), /outside claimed paths/);
+    await assert.rejects(runPostflight(repository, session, "focused proof", "missing"), /outside claimed paths/);
     await rm(`${session.worktreePath}/outside.txt`);
 
-    const receipt = await runPostflight(repository, session, "focused proof");
+    const config = await loadConfig(repository.primaryRoot);
+    const verification = await verifySession({ repository, config, session });
+    assert.equal(verification.success, true);
+    await writeFile(verification.artifacts[0]!.path, "tampered\n");
+    await assert.rejects(runPostflight(repository, session, "focused proof", verification.verificationFingerprint), /missing, invalid/);
+    const freshVerification = await verifySession({ repository, config, session });
+    assert.equal(freshVerification.reused, false);
+    const receipt = await runPostflight(repository, session, "focused proof", freshVerification.verificationFingerprint);
     assert.deepEqual(receipt.changedFiles, ["README.md"]);
     session = (await new SessionRegistry(repository).findByPiSession("pi-one"))!;
     const commit = await finishSession(repository, session, "test: update fixture");

@@ -12,7 +12,7 @@ Make a commit-bound Go/No-Go decision and prepare a deliberate TestFlight handof
 
 1. Resolve the exact candidate commit, target, graph revision, and prior review verdict.
 2. Reject stale candidates or evidence whose source/config/toolchain fingerprint differs.
-3. Run fresh release verification and validate required xcresult, simulator, screenshot, accessibility, and performance proof.
+3. Prepare source-bound screenshot variants with `pi_ios_simulator`, accessibility/performance metadata with `pi_ios_proof`, then run fresh `pi_ios_verify` using the non-reusable `release` profile.
 4. Review privacy manifests, permissions, entitlements, data handling, signing, versioning, and known issues.
 5. For paid apps, prove purchase, cancel, pending, restore, expiration, offline entitlement, and disclosure behavior.
 6. Present Go/No-Go with accepted risks and request a candidate-bound promotion approval.
@@ -26,4 +26,4 @@ Make a commit-bound Go/No-Go decision and prepare a deliberate TestFlight handof
 
 ## Output
 
-Report candidate, target, evidence manifest, privacy and monetization status, blockers, known issues, Go/No-Go, approvals, and handoff steps.
+Report candidate, target, release verification fingerprint, xcresult and proof manifest, privacy and monetization status, blockers, known issues, Go/No-Go, approvals, and handoff steps.
