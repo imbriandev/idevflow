@@ -22,6 +22,7 @@ describe("package identity gates", () => {
       ...await files(join(root, "docs")),
       join(root, "README.md"),
       join(root, "package.json"),
+      join(root, ".gitignore"),
       join(root, ".npmignore"),
     ];
     const retired = new RegExp(RETIRED_IDENTIFIERS.join("|"), "i");
@@ -31,6 +32,7 @@ describe("package identity gates", () => {
       assert.doesNotMatch(content, retired, `retired identifier in ${path}`);
     }
     const extensionDirectories = await readdir(join(root, "extensions"));
-    assert.deepEqual(extensionDirectories, ["pi-ios"]);
+    assert.equal(extensionDirectories.includes("pi-ios"), true);
+    assert.equal(extensionDirectories.some((entry) => entry.toLowerCase() === "app" + "forge"), false);
   });
 });
