@@ -2,6 +2,8 @@ import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
+import { applyConfigMigration, discoverConfigMigration, initializeConfig, loadConfig } from "../config/config.ts";
+import { inspectBaseline } from "../git/baseline.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 
@@ -16,25 +18,40 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
       "Use pi_ios_runtime initialize only in a trusted Git project and before future write-capable kernel operations.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["status", "initialize"] as const),
+      action: StringEnum(["status", "initialize", "migrate"] as const),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const repository = await discoverRepository(ctx.cwd);
       const store = new RuntimeStore(repository);
-      if (params.action === "initialize" && !ctx.isProjectTrusted()) {
-        throw new Error("Refusing to initialize Pi iOS state in an untrusted project");
+      if (params.action !== "status" && !ctx.isProjectTrusted()) {
+        throw new Error(`Refusing to ${params.action} Pi iOS state in an untrusted project`);
+      }
+      if (params.action === "migrate") {
+        if (!ctx.hasUI) throw new Error("Config migration fails closed without interactive approval");
+        const approved = await ctx.ui.confirm("Migrate Pi iOS config?", "A backup will be written before applying the versioned migration.");
+        if (!approved) return { content: [{ type: "text", text: "Pi iOS config migration cancelled." }], details: { migrated: false } };
       }
       const state = params.action === "initialize"
         ? await store.initialize(`pi-session:${ctx.sessionManager.getSessionId()}`)
         : await store.status();
+      const migration = await discoverConfigMigration(repository.primaryRoot);
+      const config = params.action === "initialize"
+        ? await initializeConfig(repository.primaryRoot)
+        : params.action === "migrate"
+          ? await applyConfigMigration(repository.primaryRoot)
+          : migration.config ?? await loadConfig(repository.primaryRoot);
+      const baseline = await inspectBaseline(repository, config);
       const text = state
-        ? `Pi iOS runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}`
+        ? `Pi iOS runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}; baseline ${baseline.ready ? "ready" : "blocked"}.`
         : "Pi iOS runtime is not initialized for this repository.";
       return {
         content: [{ type: "text", text }],
         details: {
           initialized: state !== null,
           state,
+          config,
+          migration,
+          baseline,
           repository: {
             worktreeRoot: repository.worktreeRoot,
             primaryRoot: repository.primaryRoot,

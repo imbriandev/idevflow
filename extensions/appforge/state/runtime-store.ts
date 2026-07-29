@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { access, mkdir, open, readFile, stat, truncate } from "node:fs/promises";
 import { join } from "node:path";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
+import { ensureRuntimeExcluded } from "../repository/exclude.ts";
 import { writeFileAtomically } from "./atomic-file.ts";
 import { JournalCorruptionError, RevisionConflictError } from "./errors.ts";
 import { withFileLock, type FileLockOptions } from "./file-lock.ts";
@@ -242,6 +243,7 @@ export class RuntimeStore {
   }
 
   async initialize(actor: string): Promise<RuntimeState> {
+    await ensureRuntimeExcluded(this.repository);
     await mkdir(this.stateDirectory, { recursive: true, mode: 0o700 });
     return withFileLock(
       this.lockPath,

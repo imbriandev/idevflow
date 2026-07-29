@@ -1,7 +1,8 @@
 export const STAGES = ["define", "plan", "build", "test", "review", "ship", "learn"] as const;
 
 export type Stage = (typeof STAGES)[number];
-export type Risk = "low" | "medium" | "high" | "critical";
+export const RISKS = ["low", "medium", "high", "critical"] as const;
+export type Risk = (typeof RISKS)[number];
 
 export interface StageContract {
   readonly stage: Stage;

@@ -101,6 +101,14 @@ templates/        project memory and evidence templates
 9. No crash recovery operation deletes unintegrated work.
 10. No LLM prose alone advances a lifecycle transition.
 
+## Safety-kernel implementation
+
+Milestone 3 establishes two hash-chained project journals: lifecycle state and writer-session ownership. The kernel creates writer branches and sibling worktrees, serializes path claims under a cross-process lock, refreshes leases on active turns, and preserves parked, stale, conflicted, or orphaned source for diagnosis.
+
+When a Pi iOS stage is active, built-in `edit` and `write` calls are redirected to the authorized worktree only after symlink-safe containment and claim checks. Direct Bash is limited to a strict read-only subset. Build and test processes use a managed typed tool with fixed executable policy, worktree cwd, timeout, cancellation, and output truncation.
+
+Postflight records changed paths, evidence, and a content fingerprint. Finish rejects source drift, unexpected HEAD changes, out-of-claim commit paths, and changes left by commit hooks before marking a commit ready for later integration.
+
 ## Release boundary
 
 The default result is a verified TestFlight handoff. The kernel prepares and validates the candidate, archive readiness, privacy state, known issues, and evidence bundle. Upload or distribution remains a separate explicit capability and approval boundary.

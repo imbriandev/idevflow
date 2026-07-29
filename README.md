@@ -33,7 +33,19 @@ The project is a ground-up TypeScript implementation. AppForge is a behavioral r
 /ios:learn
 ```
 
-The extension also provides `/ios` for current workflow status.
+The extension also provides `/ios` for current workflow, runtime, baseline, and writer status.
+
+## Safety-kernel tools
+
+The agent uses typed tools rather than ad-hoc shell mutation:
+
+- `pi_ios_runtime` — status, initialize, or migrate local runtime state.
+- `pi_ios_preflight` — authorize a stage, create a worktree, and claim paths.
+- `pi_ios_session` — status, heartbeat, park/resume, postflight, and finish.
+- `pi_ios_exec` — run allowlisted Git, Swift, Xcode, and simulator commands in the writer worktree.
+- `pi_ios_doctor` — diagnose or conservatively repair stale registry state.
+
+During an active stage, direct writes are blocked until preflight and restricted to claimed paths. Mutating Bash is blocked; managed execution is routed through `pi_ios_exec`.
 
 ## Development
 
@@ -50,4 +62,5 @@ pi -e .
 - [Rewrite parity matrix](docs/plans/parity-matrix.md)
 - [Implementation plan](docs/plans/implementation-plan.md)
 - [Milestone 3 safety-kernel execution](docs/plans/milestone-3-safety-kernel.md)
+- [Security notes](docs/security.md)
 - [ADR-0001: Pi-native TypeScript kernel](docs/decisions/0001-pi-native-typescript-kernel.md)

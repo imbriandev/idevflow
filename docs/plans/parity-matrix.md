@@ -8,14 +8,14 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Skills | Progressive stage expertise | `skills/` | Foundation |
 | Contracts | Ready, done, forbidden, evidence, backward route | `lifecycle/` | Foundation |
 | State | Atomic, recoverable, versioned project state | `state/` | Foundation implemented |
-| Git | Clean baseline and repository identity | `git/` | Discovery implemented; baseline pending |
-| Worktrees | Isolated branch/worktree per writer | `git/` | Pending |
-| Claims | Path ownership and overlap detection | `git/` | Pending |
-| Leases | Session, coordinator, worker, simulator leases | `state/`, `simulator/` | Runtime lock implemented; leases pending |
-| Preflight | Stage/risk/scope/write authorization | `lifecycle/` | Pending |
-| Postflight | Changed-file and evidence attestation | `lifecycle/` | Pending |
-| Recovery | Status, doctor, stale/orphan handling | `state/` | Pending |
-| Process | Cancellation, timeout, redaction, truncation | `process/` | Pending |
+| Git | Clean baseline and repository identity | `git/` | Safety baseline implemented |
+| Worktrees | Isolated branch/worktree per writer | `git/` | Implemented |
+| Claims | Path ownership and overlap detection | `git/` | Implemented |
+| Leases | Session, coordinator, worker, simulator leases | `state/`, `simulator/` | Writer leases implemented; coordinator/simulator pending |
+| Preflight | Stage/risk/scope/write authorization | `lifecycle/` | Implemented |
+| Postflight | Changed-file and evidence attestation | `lifecycle/` | Safety receipt implemented; Xcode evidence pending |
+| Recovery | Status, doctor, stale/orphan handling | `state/` | Implemented without destructive cleanup |
+| Process | Cancellation, timeout, redaction, truncation | `process/` | Managed exec timeout/truncation implemented; artifact redaction pending |
 | Xcode | Project, scheme, destination discovery | `xcode/` | Pending |
 | Simulator | Exclusive lease, boot, release | `simulator/` | Pending |
 | Verification | quick/slice/integration/release profiles | `verification/` | Pending |
@@ -32,5 +32,5 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Observability | Bounded events, metrics, debug report | `state/` | Pending |
 | Context | Triggered references and context budget | `lifecycle/` | Pending |
 | Packaging | Local, Git, and eventual npm installation | package root | Foundation |
-| Migration | Schema/config migration without source loss | `state/` | Pending |
-| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/` | State/lock/repository tests implemented |
+| Migration | Schema/config migration without source loss | `state/` | Config migration foundation implemented |
+| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/` | Milestone-3 adversarial/integration coverage implemented |

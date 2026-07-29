@@ -10,6 +10,8 @@ An installed project uses:
   state/events.jsonl
   state/snapshot.json
   state/locks/
+  state/sessions/events.jsonl
+  state/sessions/snapshot.json
   sessions/
   graphs/
   receipts/
@@ -22,7 +24,7 @@ The directory contains generated local runtime data and is ignored by default. D
 
 ## Event journal
 
-`events.jsonl` is append-only. Every event contains:
+The lifecycle and writer-session journals are append-only. Every event contains:
 
 - schema version
 - event id and timestamp
@@ -33,7 +35,7 @@ The directory contains generated local runtime data and is ignored by default. D
 - typed payload
 - optional Git commit and graph fingerprint
 
-A snapshot records the last applied event id and derived state. Writes use a repository lock, temporary file, fsync where meaningful, and atomic rename.
+A snapshot records the last applied event id and derived state. Writes use domain-specific repository locks, temporary files, fsync boundaries, and atomic rename. Writer claims are checked and appended while holding the same registry lock, preventing concurrent ownership races.
 
 ## Lifecycle states
 
