@@ -50,7 +50,7 @@ The agent uses typed tools rather than ad-hoc shell mutation:
 - `pi_ios_simulator` — lease, boot, inspect, release, and capture named screenshots.
 - `pi_ios_proof` — prepare source-bound accessibility and performance evidence.
 - `pi_ios_verify` — run adaptive build/test verification and emit a fingerprinted receipt.
-- `pi_ios_doctor` — diagnose or conservatively repair stale registry state.
+- `pi_ios_doctor` — diagnose, emit a metadata-only support report, or conservatively repair stale registry state.
 
 During an active stage, direct writes are blocked until preflight and restricted to claimed paths. Mutating Bash is blocked; managed execution is routed through `pi_ios_exec`.
 
@@ -74,5 +74,8 @@ pi -e .
 - [Milestone 4 Xcode verification](docs/plans/milestone-4-xcode-verification.md)
 - [Milestone 5 full lifecycle](docs/plans/milestone-5-full-lifecycle.md)
 - [Milestone 6 multi-agent pipeline](docs/plans/milestone-6-multi-agent-pipeline.md)
+- [Milestone 7 production hardening](docs/plans/milestone-7-production-hardening.md)
 - [Security notes](docs/security.md)
+- [Installation and upgrade](docs/installation.md)
+- [Release process](docs/release-process.md)
 - [ADR-0001: Pi-native TypeScript kernel](docs/decisions/0001-pi-native-typescript-kernel.md)

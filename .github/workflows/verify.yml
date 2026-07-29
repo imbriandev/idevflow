@@ -1,0 +1,40 @@
+name: Verify Pi iOS
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  unit-and-package:
+    name: Typecheck, tests, extension, package
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: pi -e . --list-models
+      - run: npm pack --dry-run --json
+      - run: git diff --check
+
+  xcode-e2e:
+    name: Real Xcode simulator verification
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: xcodebuild -version
+      - run: PI_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts

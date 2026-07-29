@@ -14,7 +14,7 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Leases | Session, coordinator, worker, simulator leases | `state/`, `simulator/`, `pipeline/` | Implemented with bounded takeover and worker-loss reconciliation |
 | Preflight | Stage/risk/scope/write authorization | `lifecycle/` | Implemented |
 | Postflight | Changed-file and evidence attestation | `lifecycle/` | Verification-bound postflight implemented |
-| Recovery | Status, doctor, stale/orphan handling | `state/` | Implemented without destructive cleanup |
+| Recovery | Status, doctor, stale/orphan handling | `state/`, `recovery/` | Non-destructive recovery, metadata-only diagnostics report, and corruption fault coverage implemented |
 | Process | Cancellation, timeout, redaction, truncation | `process/` | Implemented with secret-scanned artifacts |
 | Xcode | Project, scheme, destination discovery | `xcode/` | Implemented and real-app tested |
 | Simulator | Exclusive lease, boot, release | `simulator/` | Implemented with screenshot capture |
@@ -29,8 +29,8 @@ This is a living acceptance ledger. `Pending` means the behavior has not yet bee
 | Monetization | StoreKit readiness and optional reconciliation | `release/` | Detection, not-required, and manifest reconciliation gate implemented |
 | Release | Candidate-bound approval and promotion | `release/` | Expiring single-use approval and exact local promotion implemented |
 | TestFlight | Verified manual handoff by default | `release/` | Evidence package and explicit no-upload boundary implemented |
-| Observability | Bounded events, metrics, debug report | `state/`, `pipeline/` | Hash-chained pipeline events, worker logs, dashboard and doctor diagnostics implemented; aggregate metrics/debug export remain Milestone 7 |
+| Observability | Bounded events, metrics, debug report | `state/`, `pipeline/`, `recovery/` | Hash-chained events, bounded worker logs, dashboard, doctor diagnostics, and versioned metadata-only report implemented |
 | Context | Triggered references and context budget | `lifecycle/` | Stage contracts and progressive skills implemented; specialist cold references pending |
-| Packaging | Local, Git, and eventual npm installation | package root | Foundation |
-| Migration | Schema/config migration without source loss | `state/` | Config migration foundation implemented |
-| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/` | Single-agent and parallel multi-agent golden paths, process/recovery faults, and real Xcode E2E implemented |
+| Packaging | Local, Git, and eventual npm installation | package root | Local/Git loading, package smoke validation, installation/migration, and release-process documentation implemented |
+| Migration | Schema/config migration without source loss | `state/`, `config/` | Versioned backup-and-atomic config migration and operator documentation implemented |
+| Tests | Unit, integration, fault, Pi, Xcode E2E | `tests/`, `.github/` | Golden paths, corruption/recovery faults, mock-agent authority, UI fail-closed, package smoke, and macOS Xcode E2E CI implemented |

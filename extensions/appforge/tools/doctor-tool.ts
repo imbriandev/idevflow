@@ -2,16 +2,21 @@ import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { diagnosePipelines, diagnoseSessions, repairExpiredSessions } from "../recovery/doctor.ts";
+import { createDiagnosticReport } from "../recovery/report.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 
 export function registerDoctorTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "pi_ios_doctor",
     label: "Pi iOS Doctor",
-    description: "Diagnose writer sessions and conservatively mark expired sessions stale without deleting branches or worktrees.",
-    parameters: Type.Object({ action: StringEnum(["status", "repair"] as const) }),
+    description: "Diagnose runtime, workers, pipelines, and candidate state; optionally mark only expired writer sessions stale without deleting source.",
+    parameters: Type.Object({ action: StringEnum(["status", "report", "repair"] as const) }),
     async execute(_id, params, _signal, _update, ctx) {
       const repository = await discoverRepository(ctx.cwd);
+      if (params.action === "report") {
+        const report = await createDiagnosticReport(repository);
+        return { content: [{ type: "text", text: `Pi iOS diagnostic report: ${report.health}; ${report.sessions.total} writer session(s), ${report.pipelines.total} pipeline(s), ${report.diagnostics.length} diagnostic(s).` }], details: { report } };
+      }
       if (params.action === "repair") {
         if (!ctx.isProjectTrusted()) throw new Error("Doctor repair requires a trusted project");
         if (!ctx.hasUI) throw new Error("Doctor repair fails closed without interactive approval");
