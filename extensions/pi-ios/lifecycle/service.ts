@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { loadConfig } from "../config/config.ts";
 import { requireContextReceipt } from "../context/receipts.ts";
-import { loadDefinedProduct, validateIdeaQuality } from "../documents/product.ts";
+import { loadDefinedProduct, validateIdeaQuality, validateLearningUpdate } from "../documents/product.ts";
 import { integrateSession, integrationHead, type IntegrationReceipt } from "../git/integration.ts";
 import { pathIsClaimed } from "../git/claims.ts";
 import { loadWorkGraph } from "../planning/work-graph.ts";
@@ -43,6 +43,7 @@ export interface StageReceipt {
   readonly sliceId?: string;
   readonly sessionId?: string;
   readonly founderAcceptedAssumptionIds?: readonly string[];
+  readonly founderAcceptedCritique?: true;
   readonly integration?: IntegrationReceipt;
   readonly verdict?: ReviewVerdict;
   readonly recordedAt: string;
@@ -119,7 +120,7 @@ export async function approvePlan(repository: RepositoryDescriptor, approvedBy: 
   return approval;
 }
 
-export async function integrateCurrentStage(repository: RepositoryDescriptor, session: WriterSession, evidence: string, requestedSliceId?: string, founderAcceptedAssumptionIds: readonly string[] = []): Promise<StageReceipt> {
+export async function integrateCurrentStage(repository: RepositoryDescriptor, session: WriterSession, evidence: string, requestedSliceId?: string, founderAcceptedAssumptionIds: readonly string[] = [], founderAcceptedCritique = false): Promise<StageReceipt> {
   if (!evidence.trim()) throw new SafetyKernelError("Stage integration requires evidence");
   if (!["define", "plan", "build", "test", "learn"].includes(session.stage)) throw new SafetyKernelError(`Stage ${session.stage} does not produce an integration receipt`);
   const runtime = await new RuntimeStore(repository).status();
@@ -130,11 +131,16 @@ export async function integrateCurrentStage(repository: RepositoryDescriptor, se
   const product = await loadDefinedProduct(session.worktreePath, config.documents);
   let acceptedIdeaClaims: readonly string[] | undefined;
   if (session.stage === "define") {
+    if (!founderAcceptedCritique) throw new SafetyKernelError("Definition requires interactive founder acceptance of the skeptical critique");
     const quality = validateIdeaQuality(product.memory, product.slc);
     const accepted = new Set(founderAcceptedAssumptionIds);
     const missingAcceptance = quality.unresolvedCriticalAssumptionIds.filter((id) => !accepted.has(id));
     if (missingAcceptance.length) throw new SafetyKernelError(`Definition requires explicit founder acceptance for unresolved high-impact assumptions: ${missingAcceptance.join(", ")}`);
     acceptedIdeaClaims = quality.unresolvedCriticalAssumptionIds;
+  }
+  if (session.stage === "learn") {
+    const previous = await loadDefinedProduct(repository.primaryRoot, config.documents);
+    validateLearningUpdate(previous.memory, product.memory);
   }
   let graphFingerprint: string | undefined;
   let sliceId: string | undefined;
@@ -161,7 +167,7 @@ export async function integrateCurrentStage(repository: RepositoryDescriptor, se
   const integration = await integrateSession(repository, config, session);
   const receipt: StageReceipt = {
     schemaVersion: 1, id: randomUUID(), stage: session.stage as StageReceipt["stage"], outcome: "pass", sourceCommit: integration.integratedCommit,
-    verificationFingerprint, evidence: evidence.trim(), ...(graphFingerprint ? { graphFingerprint } : {}), ...(sliceId ? { sliceId } : {}), ...(acceptedIdeaClaims?.length ? { founderAcceptedAssumptionIds: acceptedIdeaClaims } : {}), sessionId: session.id, integration, recordedAt: new Date().toISOString(),
+    verificationFingerprint, evidence: evidence.trim(), ...(graphFingerprint ? { graphFingerprint } : {}), ...(sliceId ? { sliceId } : {}), ...(acceptedIdeaClaims?.length ? { founderAcceptedAssumptionIds: acceptedIdeaClaims } : {}), ...(session.stage === "define" ? { founderAcceptedCritique: true as const } : {}), sessionId: session.id, integration, recordedAt: new Date().toISOString(),
   };
   await writeStageReceipt(repository, receipt);
   const by = actor(session.piSessionId);

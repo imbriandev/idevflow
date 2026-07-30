@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { validateIdeaQuality, validateProductMemory, validateSlcSpec } from "../extensions/pi-ios/documents/product.ts";
+import { validateIdeaQuality, validateLearningUpdate, validateProductMemory, validateSlcSpec } from "../extensions/pi-ios/documents/product.ts";
 import { validateWorkGraph } from "../extensions/pi-ios/planning/work-graph.ts";
 
 const memory = {
@@ -12,9 +12,11 @@ const memory = {
     learningQuestion: "Will founders complete a verified handoff in their first session?",
     primaryAssumptionId: "assumption-1",
     claims: [
-      { id: "evidence-1", claim: "Founder reports release uncertainty", kind: "founder_evidence", source: "Founder interview, 2026-07-30", confidence: "medium", impact: "medium", validationPlan: "Compare onboarding completion in TestFlight", status: "open" },
-      { id: "assumption-1", claim: "A guided handoff reduces uncertainty", kind: "assumption", confidence: "low", impact: "high", validationPlan: "Ask beta testers after one handoff", status: "open" },
+      { id: "evidence-1", claim: "Founder reports release uncertainty", kind: "founder_evidence", source: "Founder interview, 2026-07-30", confidence: "medium", impact: "medium", validationPlan: "Compare onboarding completion in TestFlight", status: "open", scope: "product", sourceUrls: [], learningEvidenceIds: [] },
+      { id: "assumption-1", claim: "A guided handoff reduces uncertainty", kind: "assumption", confidence: "low", impact: "high", validationPlan: "Ask beta testers after one handoff", status: "open", scope: "product", sourceUrls: [], learningEvidenceIds: [] },
     ],
+    skepticalCritique: { alternative: "Continue using a release checklist", adoptionRisk: "Founders may not trust a new workflow", invalidatingSignal: "Testers prefer their existing checklist", unresolvedClaimIds: ["assumption-1"] },
+    learningEvidence: [],
   },
 };
 const slc = {
@@ -44,12 +46,26 @@ describe("product memory and work graph", () => {
     const unsourced = clone(memory);
     delete (unsourced.ideaValidation.claims[0] as { source?: string }).source;
     assert.throws(() => validateProductMemory(unsourced), /source is required/);
+    const uncitedMarketClaim = clone(memory);
+    uncitedMarketClaim.ideaValidation.claims[0]!.scope = "market";
+    assert.throws(() => validateProductMemory(uncitedMarketClaim), /HTTPS source URL/);
     const resolvedPrimary = clone(memory);
     resolvedPrimary.ideaValidation.claims[1]!.status = "confirmed";
-    assert.throws(() => validateProductMemory(resolvedPrimary), /primaryAssumptionId/);
+    assert.throws(() => validateIdeaQuality(validateProductMemory(resolvedPrimary), validateSlcSpec(slc)), /learning evidence/);
     const incompleteSlc = clone(slc);
     incompleteSlc.experienceExpectations.privacy = "";
     assert.throws(() => validateSlcSpec(incompleteSlc), /privacy/);
+  });
+
+  it("requires evidence-linked claim conclusions during learning", () => {
+    const previous = validateProductMemory(memory);
+    const next = clone(memory) as any;
+    next.ideaValidation.claims[1]!.status = "confirmed";
+    next.ideaValidation.claims[1]!.learningEvidenceIds = ["beta-1"];
+    next.ideaValidation.skepticalCritique.unresolvedClaimIds = [];
+    next.ideaValidation.learningEvidence = [{ id: "beta-1", kind: "tester_feedback", source: "Beta interview", finding: "The handoff felt clearer" }];
+    validateLearningUpdate(previous, validateProductMemory(next));
+    assert.throws(() => validateLearningUpdate(previous, previous), /at least one existing claim status/);
   });
 
   it("keeps legacy documents readable but rejects them for new definition quality gates", () => {

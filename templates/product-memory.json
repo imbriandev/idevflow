@@ -20,8 +20,18 @@
         "confidence": "low",
         "impact": "medium",
         "validationPlan": "",
-        "status": "open"
+        "status": "open",
+        "scope": "product",
+        "sourceUrls": [],
+        "learningEvidenceIds": []
       }
-    ]
+    ],
+    "skepticalCritique": {
+      "alternative": "",
+      "adoptionRisk": "",
+      "invalidatingSignal": "",
+      "unresolvedClaimIds": []
+    },
+    "learningEvidence": []
   }
 }

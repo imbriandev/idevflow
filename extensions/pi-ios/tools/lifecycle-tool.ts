@@ -62,10 +62,19 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
       const session = await registry.findLatestByPiSession(ctx.sessionManager.getSessionId());
       if (!session) throw new SafetyKernelError("No writer session is available for stage integration");
       let founderAcceptedAssumptionIds: readonly string[] = [];
+      let founderAcceptedCritique = false;
       if (session.stage === "define") {
         const config = await loadConfig(repository.primaryRoot);
         const product = await loadDefinedProduct(session.worktreePath, config.documents);
         const quality = validateIdeaQuality(product.memory, product.slc);
+        if (product.memory.schemaVersion !== 2) throw new SafetyKernelError("Definition requires schema version 2 idea-validation documents");
+        if (!ctx.hasUI) throw new SafetyKernelError("Definition integration fails closed without interactive founder confirmation");
+        const critique = product.memory.ideaValidation.skepticalCritique;
+        founderAcceptedCritique = await ctx.ui.confirm(
+          "Accept skeptical idea critique?",
+          `Alternative: ${critique.alternative}\nAdoption risk: ${critique.adoptionRisk}\nInvalidating signal: ${critique.invalidatingSignal}`,
+        );
+        if (!founderAcceptedCritique) return { content: [{ type: "text", text: "Definition integration cancelled; revise the skeptical critique or product bet." }], details: { integrated: false } };
         if (quality.unresolvedCriticalAssumptionIds.length) {
           if (!ctx.hasUI) throw new SafetyKernelError("Definition with unresolved high-impact assumptions fails closed without interactive founder confirmation");
           const confirmed = await ctx.ui.confirm(
@@ -76,7 +85,7 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
           founderAcceptedAssumptionIds = quality.unresolvedCriticalAssumptionIds;
         }
       }
-      const receipt = await integrateCurrentStage(repository, session, params.evidence ?? "", params.sliceId, founderAcceptedAssumptionIds);
+      const receipt = await integrateCurrentStage(repository, session, params.evidence ?? "", params.sliceId, founderAcceptedAssumptionIds, founderAcceptedCritique);
       return { content: [{ type: "text", text: `Integrated ${receipt.stage} commit ${receipt.sourceCommit}; stage receipt ${receipt.id}.` }], details: { receipt } };
     },
   });

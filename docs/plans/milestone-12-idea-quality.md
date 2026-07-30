@@ -19,13 +19,17 @@ Make the define stage honest, testable, and founder-controlled without pretendin
 
 This gate does not score product-market fit, fabricate research, browse competitors, or treat model critique as evidence. It validates honesty and completeness of the product bet, not whether the bet will win.
 
-## M12b follow-up
+## M12b delivered
 
-- Source-cited market/competitor research contract, only when a reviewed research capability exists.
-- Required skeptical critique pass with founder-visible unresolved assumptions.
-- Learning-stage updates that mark original claims confirmed, weakened, or disproven using feedback and metrics.
+- Market/competitor claims carry a scope and require at least one founder-provided HTTPS source URL. Pi does not claim to have performed research and no unreviewed browsing capability was added.
+- A required skeptical critique records the viable alternative, adoption risk, invalidating signal, and unresolved high-impact claims. Definition integration requires an interactive founder acceptance of that critique.
+- Learning evidence is typed as founder feedback, tester feedback, metric, or incident. Any original claim moving from `open` to `confirmed`, `weakened`, or `disproven` must link this evidence, and learn-stage integration rejects a no-op claim status update.
+
+## Remaining follow-up
+
 - Behavioral evaluations for solution-first ideas, fabricated claims, scope creep, ambiguous monetization, and privacy/trust risks.
+- A reviewed research capability may later populate the same source contract; it must retain citations and never convert model inference into evidence.
 
 ## Evidence
 
-`tests/product-planning.test.ts` covers evidence/source requirements, primary hypothesis validity, experience expectations, legacy compatibility, and quality-gate rejection. `tests/full-lifecycle.test.ts` proves that a high-impact open assumption cannot integrate until the exact claim is accepted.
+`tests/product-planning.test.ts` covers evidence/source requirements, primary hypothesis validity, citation policy, experience expectations, learning-evidence linkage, legacy compatibility, and quality-gate rejection. `tests/full-lifecycle.test.ts` proves that a high-impact open assumption cannot integrate until the exact claim is accepted and that the later learning update concludes that claim from tester feedback.

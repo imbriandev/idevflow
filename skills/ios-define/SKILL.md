@@ -13,11 +13,13 @@ Turn uncertainty into the smallest coherent product commitment.
 1. Read existing product memory, specs, feedback, and status before asking questions already answered by the repository.
 2. State the target user, painful situation, current workaround, product promise, and evidence versus assumptions.
 3. Record each material claim in `ideaValidation.claims` as `founder_evidence`, `observed_feedback`, `assumption`, or `unknown`. Evidence and feedback require a founder-provided source; never turn an assumption into a fact.
-4. Give every claim a confidence, impact, current status, and falsifiable validation plan. Select one open assumption/unknown as `primaryAssumptionId` and state its TestFlight `learningQuestion`.
-5. Define one Simple, Lovable, Complete path that finishes a real job. Include explicit empty, loading, failure, accessibility, privacy, and trust expectations that affect the promise.
-6. List explicit non-goals. Ask the founder to accept or revise every unresolved high/critical assumption before integration; the lifecycle tool confirms this interactively and records accepted claim IDs in the stage receipt.
-7. Through write preflight, create the schema-version-2 configured `productMemory` and `slcSpec` JSON documents (defaults: `docs/pi-ios/product-memory.json` and `docs/pi-ios/slc.json`).
-8. Run docs verification, postflight, finish, then `pi_ios_lifecycle integrate`. Use lifecycle status to report the validated product fingerprint. Recommend `/ios:plan` only after lifecycle reaches `defined`.
+4. Give every claim a confidence, impact, current status, and falsifiable validation plan. Market or competitor claims require founder-provided HTTPS source URLs; do not imply that Pi has performed research. Select one open assumption/unknown as `primaryAssumptionId` and state its TestFlight `learningQuestion`.
+5. Write the required skeptical critique: a viable alternative/workaround, adoption risk, invalidating signal, and every unresolved high/critical claim. Present it to the founder before integration.
+6. Define one Simple, Lovable, Complete path that finishes a real job. Include explicit empty, loading, failure, accessibility, privacy, and trust expectations that affect the promise.
+7. List explicit non-goals. Ask the founder to accept or revise the skeptical critique and every unresolved high/critical assumption before integration; the lifecycle tool confirms this interactively and records accepted claim IDs in the stage receipt.
+8. Through write preflight, create the schema-version-2 configured `productMemory` and `slcSpec` JSON documents (defaults: `docs/pi-ios/product-memory.json` and `docs/pi-ios/slc.json`).
+9. In `learn`, add founder/tester feedback, metric, or incident evidence and link it before changing any original claim to confirmed, weakened, or disproven.
+10. Run docs verification, postflight, finish, then `pi_ios_lifecycle integrate`. Use lifecycle status to report the validated product fingerprint. Recommend `/ios:plan` only after lifecycle reaches `defined`.
 
 ## Specialist context
 

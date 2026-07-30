@@ -12,6 +12,8 @@ type ClaimKind = "founder_evidence" | "observed_feedback" | "assumption" | "unkn
 type ClaimStatus = "open" | "confirmed" | "weakened" | "disproven";
 type Confidence = "low" | "medium" | "high";
 type Impact = "low" | "medium" | "high" | "critical";
+type ClaimScope = "product" | "market" | "competitor";
+type LearningEvidenceKind = "founder_feedback" | "tester_feedback" | "metric" | "incident";
 
 interface ProductCore {
   readonly product: { readonly name: string; readonly targetUser: string; readonly problem: string; readonly promise: string };
@@ -32,6 +34,9 @@ export interface IdeaClaim {
   readonly impact: Impact;
   readonly validationPlan: string;
   readonly status: ClaimStatus;
+  readonly scope: ClaimScope;
+  readonly sourceUrls: readonly string[];
+  readonly learningEvidenceIds: readonly string[];
 }
 
 export interface ProductMemory extends ProductCore {
@@ -40,6 +45,13 @@ export interface ProductMemory extends ProductCore {
     readonly learningQuestion: string;
     readonly primaryAssumptionId: string;
     readonly claims: readonly IdeaClaim[];
+    readonly skepticalCritique: {
+      readonly alternative: string;
+      readonly adoptionRisk: string;
+      readonly invalidatingSignal: string;
+      readonly unresolvedClaimIds: readonly string[];
+    };
+    readonly learningEvidence: readonly { readonly id: string; readonly kind: LearningEvidenceKind; readonly source: string; readonly finding: string }[];
   };
 }
 
@@ -101,6 +113,11 @@ function strings(value: unknown, label: string, minimum = 1): string[] {
   return result;
 }
 
+function optionalStrings(value: unknown, label: string): string[] {
+  if (value === undefined) return [];
+  return strings(value, label, 0);
+}
+
 function enumValue<T extends string>(value: unknown, allowed: readonly T[], label: string): T {
   if (typeof value !== "string" || !allowed.includes(value as T)) throw new SafetyKernelError(`${label} is invalid`);
   return value as T;
@@ -137,6 +154,9 @@ function claims(value: unknown): IdeaClaim[] {
       impact: enumValue(claim.impact, ["low", "medium", "high", "critical"] as const, `ideaValidation.claims[${index}].impact`),
       validationPlan: text(claim.validationPlan, `ideaValidation.claims[${index}].validationPlan`),
       status: enumValue(claim.status, ["open", "confirmed", "weakened", "disproven"] as const, `ideaValidation.claims[${index}].status`),
+      scope: enumValue(claim.scope, ["product", "market", "competitor"] as const, `ideaValidation.claims[${index}].scope`),
+      sourceUrls: optionalStrings(claim.sourceUrls, `ideaValidation.claims[${index}].sourceUrls`),
+      learningEvidenceIds: optionalStrings(claim.learningEvidenceIds, `ideaValidation.claims[${index}].learningEvidenceIds`),
     };
   });
   if (new Set(result.map((claim) => claim.id)).size !== result.length) throw new SafetyKernelError("Idea claim ids must be unique");
@@ -152,8 +172,27 @@ export function validateProductMemory(value: unknown): ProductMemoryDocument {
   const validatedClaims = claims(validation.claims);
   const primaryAssumptionId = text(validation.primaryAssumptionId, "ideaValidation.primaryAssumptionId");
   const primary = validatedClaims.find((claim) => claim.id === primaryAssumptionId);
-  if (!primary || (primary.kind !== "assumption" && primary.kind !== "unknown") || primary.status !== "open") throw new SafetyKernelError("ideaValidation.primaryAssumptionId must reference an open assumption or unknown claim");
-  return { schemaVersion: PRODUCT_MEMORY_SCHEMA_VERSION, ...core, ideaValidation: { learningQuestion: text(validation.learningQuestion, "ideaValidation.learningQuestion"), primaryAssumptionId, claims: validatedClaims } };
+  if (!primary || (primary.kind !== "assumption" && primary.kind !== "unknown")) throw new SafetyKernelError("ideaValidation.primaryAssumptionId must reference an assumption or unknown claim");
+  for (const claim of validatedClaims) {
+    if ((claim.scope === "market" || claim.scope === "competitor") && (!claim.sourceUrls.length || claim.sourceUrls.some((url) => !/^https:\/\/[^\s]+$/i.test(url)))) {
+      throw new SafetyKernelError(`Market or competitor claim ${claim.id} requires at least one HTTPS source URL`);
+    }
+  }
+  const critique = object(validation.skepticalCritique, "ideaValidation.skepticalCritique");
+  const unresolvedClaimIds = strings(critique.unresolvedClaimIds, "ideaValidation.skepticalCritique.unresolvedClaimIds", 0);
+  const knownClaimIds = new Set(validatedClaims.map((claim) => claim.id));
+  if (unresolvedClaimIds.some((id) => !knownClaimIds.has(id))) throw new SafetyKernelError("skepticalCritique references an unknown claim");
+  const learningEvidence = Array.isArray(validation.learningEvidence) ? validation.learningEvidence.map((item, index) => {
+    const evidence = object(item, `ideaValidation.learningEvidence[${index}]`);
+    return { id: text(evidence.id, `ideaValidation.learningEvidence[${index}].id`), kind: enumValue(evidence.kind, ["founder_feedback", "tester_feedback", "metric", "incident"] as const, `ideaValidation.learningEvidence[${index}].kind`), source: text(evidence.source, `ideaValidation.learningEvidence[${index}].source`), finding: text(evidence.finding, `ideaValidation.learningEvidence[${index}].finding`) };
+  }) : [];
+  if (new Set(learningEvidence.map((item) => item.id)).size !== learningEvidence.length) throw new SafetyKernelError("Learning evidence ids must be unique");
+  const learningIds = new Set(learningEvidence.map((item) => item.id));
+  for (const claim of validatedClaims) {
+    if (claim.learningEvidenceIds.some((id) => !learningIds.has(id))) throw new SafetyKernelError(`Claim ${claim.id} references unknown learning evidence`);
+    if (claim.status !== "open" && !claim.learningEvidenceIds.length) throw new SafetyKernelError(`Claim ${claim.id} requires learning evidence before it can be ${claim.status}`);
+  }
+  return { schemaVersion: PRODUCT_MEMORY_SCHEMA_VERSION, ...core, ideaValidation: { learningQuestion: text(validation.learningQuestion, "ideaValidation.learningQuestion"), primaryAssumptionId, claims: validatedClaims, skepticalCritique: { alternative: text(critique.alternative, "ideaValidation.skepticalCritique.alternative"), adoptionRisk: text(critique.adoptionRisk, "ideaValidation.skepticalCritique.adoptionRisk"), invalidatingSignal: text(critique.invalidatingSignal, "ideaValidation.skepticalCritique.invalidatingSignal"), unresolvedClaimIds }, learningEvidence } };
 }
 
 function slcCore(raw: Record<string, unknown>): SlcCore {
@@ -194,10 +233,25 @@ export function validateIdeaQuality(memory: ProductMemoryDocument, slc: SlcSpecD
   }
   const evidence = memory.ideaValidation.claims.filter((claim) => claim.kind === "founder_evidence" || claim.kind === "observed_feedback");
   if (!evidence.length) throw new SafetyKernelError("Idea validation requires at least one founder evidence or observed feedback claim");
+  const primary = memory.ideaValidation.claims.find((claim) => claim.id === memory.ideaValidation.primaryAssumptionId)!;
+  if (primary.status !== "open") throw new SafetyKernelError("A new definition requires an open primary assumption or unknown claim");
   const unresolvedCriticalAssumptionIds = memory.ideaValidation.claims
     .filter((claim) => (claim.kind === "assumption" || claim.kind === "unknown") && claim.status === "open" && (claim.impact === "high" || claim.impact === "critical"))
     .map((claim) => claim.id);
+  if (unresolvedCriticalAssumptionIds.some((id) => !memory.ideaValidation.skepticalCritique.unresolvedClaimIds.includes(id))) {
+    throw new SafetyKernelError("Skeptical critique must name every unresolved high-impact assumption");
+  }
   return { unresolvedCriticalAssumptionIds };
+}
+
+export function validateLearningUpdate(previous: ProductMemoryDocument, next: ProductMemoryDocument): void {
+  if (previous.schemaVersion !== PRODUCT_MEMORY_SCHEMA_VERSION || next.schemaVersion !== PRODUCT_MEMORY_SCHEMA_VERSION) {
+    throw new SafetyKernelError("Learning updates require schema version 2 idea-validation documents");
+  }
+  const oldClaims = new Map(previous.ideaValidation.claims.map((claim) => [claim.id, claim]));
+  const changed = next.ideaValidation.claims.filter((claim) => oldClaims.get(claim.id)?.status !== claim.status);
+  if (!changed.length) throw new SafetyKernelError("Learning integration must update at least one existing claim status from feedback or metrics");
+  if (changed.some((claim) => claim.status === "open" || !claim.learningEvidenceIds.length)) throw new SafetyKernelError("Learning claim conclusions require linked feedback or metric evidence");
 }
 
 function projectPath(root: string, configured: string): { absolute: string; relative: string } {
