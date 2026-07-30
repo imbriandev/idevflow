@@ -1,21 +1,15 @@
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { registerStageCommands } from "./commands/register-stage-commands.ts";
+import { coordinatorBrief } from "./coordinator/prompt.ts";
+import { inspectCoordinator, isLikelyPiIosIntent } from "./coordinator/service.ts";
 import { registerToolGate } from "./policy/tool-gate.ts";
 import { loadConfig } from "./config/config.ts";
-import { inspectBaseline } from "./git/baseline.ts";
 import { STAGE_CONTRACTS } from "./lifecycle/contracts.ts";
 import { discoverRepository } from "./repository/discovery.ts";
-import { loadCandidate } from "./release/service.ts";
-import { PipelineStore } from "./pipeline/store.ts";
 import { SessionRegistry } from "./sessions/registry.ts";
 import { heartbeatSession } from "./sessions/service.ts";
-import { RuntimeStore } from "./state/runtime-store.ts";
-import {
-  emptySessionState,
-  restoreSessionState,
-  type SessionState,
-} from "./state/session-state.ts";
+import { emptySessionState, restoreSessionState, type SessionState } from "./state/session-state.ts";
 import { registerContextTool } from "./tools/context-tool.ts";
 import { registerDoctorTool } from "./tools/doctor-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
@@ -29,7 +23,7 @@ import { registerRuntimeTool } from "./tools/runtime-tool.ts";
 import { registerSessionTool } from "./tools/session-tool.ts";
 import { registerSimulatorTool } from "./tools/simulator-tool.ts";
 import { registerVerificationTool } from "./tools/verification-tool.ts";
-import { formatDashboard, updateStatus } from "./ui/status.ts";
+import { formatCoordinatorDashboard, updateCoordinatorStatus, updateStatus } from "./ui/status.ts";
 import { heartbeatPipelineWorker } from "./workers/service.ts";
 
 export default function piIosExtension(pi: ExtensionAPI): void {
@@ -39,9 +33,7 @@ export default function piIosExtension(pi: ExtensionAPI): void {
     try {
       const repository = await discoverRepository(ctx.cwd);
       const session = await new SessionRegistry(repository).findLatestByPiSession(ctx.sessionManager.getSessionId());
-      if (session?.status === "active") {
-        await heartbeatSession(repository, session, await loadConfig(repository.primaryRoot));
-      }
+      if (session?.status === "active") await heartbeatSession(repository, session, await loadConfig(repository.primaryRoot));
     } catch {
       // No initialized Git project or writer session: there is no lease to refresh.
     }
@@ -61,35 +53,19 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   registerVerificationTool(pi);
   registerDoctorTool(pi);
   registerToolGate(pi, () => state);
-  registerStageCommands(
-    pi,
-    () => state,
-    (next) => {
-      state = next;
-    },
-  );
+  registerStageCommands(pi, () => state, (next) => { state = next; });
 
   pi.registerCommand("ios", {
-    description: "Show Pi iOS workflow status and recommended next action",
+    description: "Show the state-aware Pi iOS coordinator dashboard",
     handler: async (_args, ctx) => {
-      const lines = [formatDashboard(state)];
       try {
         const repository = await discoverRepository(ctx.cwd);
-        const runtime = await new RuntimeStore(repository).status();
-        const config = await loadConfig(repository.primaryRoot);
-        const baseline = await inspectBaseline(repository, config);
-        const writer = await new SessionRegistry(repository).findLatestByPiSession(ctx.sessionManager.getSessionId());
-        const candidate = await loadCandidate(repository);
-        const pipelines = await new PipelineStore(repository).list();
-        lines.push(`Runtime: ${runtime ? `r${runtime.revision} · ${runtime.lifecycle}` : "not initialized"}`);
-        lines.push(`Baseline: ${baseline.ready ? "ready" : baseline.problems.join("; ")}`);
-        lines.push(`Writer: ${writer ? `${writer.id} · ${writer.status} · ${writer.branch}` : "none"}`);
-        lines.push(`Pipelines: ${pipelines.length ? pipelines.map((pipeline) => `${pipeline.id}:${pipeline.status}`).join(", ") : "none"}`);
-        lines.push(`Candidate: ${candidate ? `${candidate.status} · ${candidate.commit.slice(0, 12)} · ${candidate.target}` : "none"}`);
+        const snapshot = await inspectCoordinator(repository, ctx.sessionManager.getSessionId());
+        updateCoordinatorStatus(ctx, snapshot);
+        ctx.ui.notify(formatCoordinatorDashboard(snapshot), "info");
       } catch (error) {
-        lines.push(`Project status unavailable: ${(error as Error).message}`);
+        ctx.ui.notify(`Pi iOS project status unavailable: ${(error as Error).message}`, "warning");
       }
-      ctx.ui.notify(lines.join("\n"), "info");
     },
   });
 
@@ -97,6 +73,13 @@ export default function piIosExtension(pi: ExtensionAPI): void {
     state = restoreSessionState(ctx);
     updateStatus(ctx, state);
     await refreshWriterLease(ctx);
+    try {
+      const repository = await discoverRepository(ctx.cwd);
+      const snapshot = await inspectCoordinator(repository, ctx.sessionManager.getSessionId());
+      if (snapshot.initialized) updateCoordinatorStatus(ctx, snapshot);
+    } catch {
+      // Pi remains available outside a trusted or initialized project.
+    }
   });
 
   pi.on("turn_start", async (_event, ctx) => {
@@ -106,20 +89,24 @@ export default function piIosExtension(pi: ExtensionAPI): void {
         const repository = await discoverRepository(ctx.cwd);
         await heartbeatPipelineWorker(repository, ctx.sessionManager.getSessionId());
       } catch {
-        // The worker tool will surface an authoritative capability error before submission.
+        // The worker tool surfaces an authoritative capability error before submission.
       }
     }
   });
 
-  pi.on("before_agent_start", async () => {
-    if (!state.stage) return;
-    const contract = STAGE_CONTRACTS[state.stage];
-    return {
-      message: {
-        customType: "pi-ios-stage-contract",
-        content: `Active Pi iOS stage: ${state.stage}. ${contract.purpose} Forbidden actions: ${contract.forbidden.join("; ")}. For non-trivial iOS domain work, call pi_ios_context with stage, risk, task, and surfaces; read only its selected package references. Deterministic gates remain authoritative.`,
-        display: false,
-      },
-    };
+  pi.on("before_agent_start", async (event, ctx) => {
+    if (state.stage) {
+      const contract = STAGE_CONTRACTS[state.stage];
+      return { message: { customType: "pi-ios-stage-contract", content: `Active Pi iOS stage: ${state.stage}. ${contract.purpose} Forbidden actions: ${contract.forbidden.join("; ")}. For non-trivial iOS domain work, call pi_ios_context with stage, risk, task, and surfaces; read only its selected package references. Deterministic gates remain authoritative.`, display: false } };
+    }
+    try {
+      const repository = await discoverRepository(ctx.cwd);
+      const snapshot = await inspectCoordinator(repository, ctx.sessionManager.getSessionId());
+      if (!snapshot.initialized && !isLikelyPiIosIntent(event.prompt)) return;
+      updateCoordinatorStatus(ctx, snapshot);
+      return { message: { customType: "pi-ios-coordinator", content: coordinatorBrief(snapshot), display: false } };
+    } catch {
+      // A non-Git or unavailable project should not change ordinary Pi conversation behavior.
+    }
   });
 }

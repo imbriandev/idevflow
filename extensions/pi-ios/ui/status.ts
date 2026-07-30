@@ -1,4 +1,5 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { CoordinatorSnapshot } from "../coordinator/service.ts";
 import { STAGE_CONTRACTS } from "../lifecycle/contracts.ts";
 import type { SessionState } from "../state/session-state.ts";
 
@@ -13,16 +14,25 @@ export function updateStatus(ctx: ExtensionContext, state: SessionState): void {
 }
 
 export function formatDashboard(state: SessionState): string {
-  if (!state.stage) {
-    return "Pi iOS is idle. Start with /ios:define or inspect an existing app with /ios:plan.";
-  }
+  if (!state.stage) return "Pi iOS is idle.";
   const contract = STAGE_CONTRACTS[state.stage];
-  const request = state.request?.trim() || "(no explicit request)";
+  return [`Stage override: ${state.stage}`, `Purpose: ${contract.purpose}`, `Next: ${contract.defaultNext}`].join("\n");
+}
+
+export function formatCoordinatorDashboard(snapshot: CoordinatorSnapshot): string {
   return [
-    `Stage: ${state.stage}`,
-    `Purpose: ${contract.purpose}`,
-    `Request: ${request}`,
-    `Started: ${state.startedAt ?? "unknown"}`,
-    `Next: ${contract.defaultNext}`,
+    `Lifecycle: ${snapshot.lifecycle ?? "not initialized"}${snapshot.revision ? ` · r${snapshot.revision}` : ""}`,
+    `Next safe action: ${snapshot.route}`,
+    `Reason: ${snapshot.reason}`,
+    `Baseline: ${snapshot.baselineReady ? "ready" : "blocked"}`,
+    `Writer: ${snapshot.activeWriter ? "active" : "none"}`,
+    `Pipeline: ${snapshot.activePipeline ? "active" : "none"}`,
+    `Worker policy: ${snapshot.workerRecommendation.mode}`,
+    ...(snapshot.candidateStatus ? [`Candidate: ${snapshot.candidateStatus}`] : []),
   ].join("\n");
+}
+
+export function updateCoordinatorStatus(ctx: ExtensionContext, snapshot: CoordinatorSnapshot): void {
+  const lifecycle = snapshot.lifecycle ?? "setup";
+  ctx.ui.setStatus(STATUS_KEY, ctx.ui.theme.fg("accent", `Pi iOS · ${lifecycle} → ${snapshot.route}`));
 }

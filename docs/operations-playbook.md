@@ -2,6 +2,8 @@
 
 This guide explains how to operate Pi iOS from an idea through a verified TestFlight handoff. Pi iOS is in beta. Git push, App Store Connect upload, and tester distribution remain explicit founder decisions.
 
+Use one conversational coordinator agent for everyday work. It reads durable project state, recommends the next safe route, and can supervise the existing worker pipeline only after an approved plan. The seven `/ios:*` stage commands remain optional manual escape hatches; founders do not need to memorize them.
+
 ## 1. Prepare a project
 
 Before starting, make sure the project has:
@@ -27,7 +29,7 @@ The agent calls `pi_ios_runtime initialize`. Local state is stored under `.pi-io
 
 ## 2. Define — commit to the smallest product
 
-Run `/ios:define`, then describe the user, painful situation, current workaround, and desired outcome.
+Tell the coordinator about the user, painful situation, current workaround, and desired outcome. It routes an uninitialized or `idea` project to definition.
 
 Example:
 
@@ -39,7 +41,7 @@ The founder must make an explicit decision before changing the target user, mone
 
 ## 3. Plan — turn the SLC into a work graph
 
-Run `/ios:plan` after the definition is complete.
+After definition is integrated, ask the coordinator to plan the product. It routes a `defined` project to planning.
 
 Example:
 
@@ -51,7 +53,7 @@ Call out persistence migration, identity, payments, permissions, destructive dat
 
 ## 4. Build — implement one approved slice
 
-Run `/ios:build` with a specific slice from the work graph.
+After plan approval, ask the coordinator to build a specific slice or the approved plan.
 
 Example:
 
@@ -63,7 +65,7 @@ Each slice should deliver one complete vertical behavior with focused tests wher
 
 ## 5. Test — turn uncertainty into evidence
 
-Use `/ios:test` for bugs, flaky behavior, or an unproven claim.
+Tell the coordinator about bugs, flaky behavior, or an unproven claim.
 
 Example:
 
@@ -75,7 +77,7 @@ Primary-flow, accessibility, and performance claims need suitable simulator or X
 
 ## 6. Review — obtain an independent beta verdict
 
-Use `/ios:review` after integration verification.
+Ask the coordinator to review after integration verification.
 
 Example:
 
@@ -85,7 +87,7 @@ Review does not edit source. It produces an evidence-linked verdict with blocker
 
 ## 7. Ship — create a verified handoff, not an external release
 
-Use `/ios:ship` when the exact candidate has passed review.
+Ask the coordinator to prepare the beta when the exact candidate has passed review.
 
 Pi iOS requires fresh release verification, critical ship context, privacy/release metadata, screenshot variants, and XCTest quality evidence. Accessibility proof must use `XCUIApplication.performAccessibilityAudit`; performance proof must use a named XCTest metric and a project-owned budget.
 
@@ -97,7 +99,7 @@ Pi iOS does not push Git, archive or export an IPA, sign in to App Store Connect
 
 ## 8. Learn — decide the next iteration from feedback
 
-After a beta, run `/ios:learn` and provide feedback, incidents, metrics, or founder observations.
+After a beta, provide feedback, incidents, metrics, or founder observations to the coordinator.
 
 Example:
 
