@@ -64,6 +64,7 @@ pi -e .
 - [Clean-break namespace migration](docs/plans/milestone-11-clean-break.md)
 - [Security notes](docs/security.md)
 - [Installation and upgrade](docs/installation.md)
+- [Cài Pi iOS theo từng project](docs/local-project-install-playbook.md)
 - [Coordinator-first operations playbook](docs/operations-playbook.md)
 - [Release process](docs/release-process.md)
 - [Context and XCTest evidence enforcement](docs/plans/milestone-10-evidence-enforcement.md)
