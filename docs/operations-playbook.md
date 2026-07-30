@@ -1,135 +1,135 @@
 # Pi iOS Operations Playbook
 
-Hướng dẫn này mô tả cách vận hành Pi iOS từ ý tưởng đến TestFlight handoff. Pi iOS đang ở giai đoạn beta; mọi push, App Store Connect upload, và phân phối tester vẫn là quyết định manual của founder.
+This guide explains how to operate Pi iOS from an idea through a verified TestFlight handoff. Pi iOS is in beta. Git push, App Store Connect upload, and tester distribution remain explicit founder decisions.
 
-## 1. Chuẩn bị project
+## 1. Prepare a project
 
-Trước khi bắt đầu, project cần:
+Before starting, make sure the project has:
 
-- Git repository sạch với author identity hợp lệ;
-- Node.js 22+, Pi 0.82.1+, macOS/Xcode và iOS simulator khi cần app verification;
-- một Xcode app project tối thiểu trước build cho app mới.
+- a clean Git repository with a valid author identity;
+- Node.js 22+, Pi 0.82.1+, and macOS/Xcode with an iOS simulator when app verification is needed;
+- at least a minimal Xcode app project before building a new app.
 
-Mở Pi trong thư mục app:
+Start Pi in the app directory:
 
 ```bash
 cd /path/to/MyApp
 pi
 ```
 
-Pi iOS được cài global nên tự load. Nếu phiên hiện tại được mở trước khi cập nhật extension, chạy `/reload`.
+Pi iOS loads globally when installed. If the current Pi session was opened before an extension update, run `/reload`.
 
-Yêu cầu agent khởi tạo runtime:
+Ask the agent to initialize the runtime:
 
-> Khởi tạo Pi iOS runtime cho project này.
+> Initialize Pi iOS runtime for this project.
 
-Agent gọi `pi_ios_runtime initialize`. Local state nằm dưới `.pi-ios/`, được Git ignore. Không tự sửa nội dung thư mục này.
+The agent calls `pi_ios_runtime initialize`. Local state is stored under `.pi-ios/` and ignored by Git. Do not edit this directory directly.
 
-## 2. Define — cam kết sản phẩm nhỏ nhất
+## 2. Define — commit to the smallest product
 
-Chạy `/ios:define`, sau đó mô tả user, painful situation, current workaround và outcome mong muốn.
+Run `/ios:define`, then describe the user, painful situation, current workaround, and desired outcome.
 
-Ví dụ:
+Example:
 
-> Tôi muốn app giúp freelance designer ghi thời gian làm việc nhanh hơn. Hãy define Simple Lovable Complete scope cho beta đầu tiên.
+> I want an app that helps freelance designers capture work time faster. Define the Simple Lovable Complete scope for the first beta.
 
-Kết quả gồm target user, problem, promise, primary flow, empty/loading/failure/accessibility expectations, non-goals, assumptions và TestFlight learning question. Pi iOS ghi product documents tại `docs/pi-ios/product-memory.json` và `docs/pi-ios/slc.json`.
+The output includes the target user, problem, promise, primary flow, empty/loading/failure/accessibility expectations, non-goals, assumptions, and a TestFlight learning question. Pi iOS writes product documents at `docs/pi-ios/product-memory.json` and `docs/pi-ios/slc.json`.
 
-Founder phải trả lời rõ khi thay đổi target user, monetization hoặc product promise.
+The founder must make an explicit decision before changing the target user, monetization, or product promise.
 
-## 3. Plan — biến SLC thành work graph
+## 3. Plan — turn the SLC into a work graph
 
-Chạy `/ios:plan` sau khi define hoàn chỉnh.
+Run `/ios:plan` after the definition is complete.
 
-Ví dụ:
+Example:
 
-> Lập kế hoạch cho SLC đã define. Ưu tiên SwiftUI, local-first SwiftData, không login ở beta đầu.
+> Plan the defined SLC. Prefer SwiftUI and local-first SwiftData, with no login in the first beta.
 
-Plan tạo work graph với vertical slices, dependencies, path claims, risk, acceptance criteria và verification strategy. Agent trình bày graph fingerprint. Founder phải xác nhận plan rõ ràng; implementation chỉ bắt đầu sau plan approval.
+Planning creates a work graph with vertical slices, dependencies, path claims, risk, acceptance criteria, and verification strategy. The agent presents the graph fingerprint. The founder must explicitly approve the plan before implementation starts.
 
-Với persistence migration, identity, payment, permission, destructive data hoặc signing, nêu rõ scope để plan đánh dấu risk và stop condition phù hợp.
+Call out persistence migration, identity, payments, permissions, destructive data, or signing work so the plan can assign the appropriate risk and stop conditions.
 
-## 4. Build — triển khai một approved slice
+## 4. Build — implement one approved slice
 
-Chạy `/ios:build` với slice cụ thể từ work graph.
+Run `/ios:build` with a specific slice from the work graph.
 
-Ví dụ:
+Example:
 
-> Implement slice “Create and start a time entry” theo approved plan.
+> Implement the approved “Create and start a time entry” slice.
 
-Pi iOS tự thực hiện preflight, tạo isolated worktree, claim path, chọn specialist context, chạy verification, ghi postflight receipt và controlled integration. Không tự tạo worktree, không tự viết receipt, và không sửa ngoài path được claim.
+Pi iOS performs preflight, creates an isolated worktree, claims paths, selects specialist context, runs verification, records postflight evidence, and controls integration. Do not create worktrees or receipts manually, and do not modify paths outside the approved claim.
 
-Mỗi slice nên là một vertical behavior hoàn chỉnh, kèm focused tests khi có stable behavioral seam. Thay đổi architecture, payment, privacy, signing hoặc destructive behavior phải dừng để founder quyết định.
+Each slice should deliver one complete vertical behavior with focused tests where there is a stable behavioral seam. Architecture, payment, privacy, signing, or destructive-behavior changes require a founder decision.
 
-## 5. Test — biến uncertainty thành evidence
+## 5. Test — turn uncertainty into evidence
 
-Dùng `/ios:test` cho bug, flaky behavior hoặc claim chưa được chứng minh.
+Use `/ios:test` for bugs, flaky behavior, or an unproven claim.
 
-Ví dụ:
+Example:
 
-> Reproduce và sửa lỗi: force-close app làm timer đang chạy không được khôi phục.
+> Reproduce and fix this issue: force-closing the app prevents an active timer from being restored.
 
-Luồng bắt buộc là reproduce, bounded diagnosis, narrow repair, regression proof và verification receipt. “Không reproduce được” không phải pass; không giảm độ chặt của test để build xanh.
+The required flow is reproduction, bounded diagnosis, the smallest responsible repair, a regression proof, and a verification receipt. “Could not reproduce” is not a pass, and tests must not be weakened just to make a build green.
 
-Primary flow, accessibility hoặc performance claim cần simulator/XCTest evidence phù hợp, không chỉ build thành công.
+Primary-flow, accessibility, and performance claims need suitable simulator or XCTest evidence, not only a successful build.
 
-## 6. Review — verdict độc lập trước beta
+## 6. Review — obtain an independent beta verdict
 
-Dùng `/ios:review` sau integration verification.
+Use `/ios:review` after integration verification.
 
-Ví dụ:
+Example:
 
-> Review time-entry flow với focus SwiftUI state, accessibility, SwiftData persistence và privacy.
+> Review the time-entry flow with focus on SwiftUI state, accessibility, SwiftData persistence, and privacy.
 
-Review không sửa source. Nó tạo evidence-linked verdict gồm blockers, important findings, polish, residual risk và route sửa chữa. Nếu có finding cần repair, quay lại `/ios:build` hoặc `/ios:test`.
+Review does not edit source. It produces an evidence-linked verdict with blockers, important findings, polish, residual risk, and a repair route. Return to `/ios:build` or `/ios:test` for required repairs.
 
-## 7. Ship — verified handoff, không external distribution
+## 7. Ship — create a verified handoff, not an external release
 
-Dùng `/ios:ship` khi exact candidate đã review pass.
+Use `/ios:ship` when the exact candidate has passed review.
 
-Pi iOS yêu cầu fresh release verification, critical ship context, privacy/release metadata, screenshot variants và XCTest quality evidence. Accessibility proof phải dùng `XCUIApplication.performAccessibilityAudit`; performance proof phải dùng named XCTest metric và project-owned budget.
+Pi iOS requires fresh release verification, critical ship context, privacy/release metadata, screenshot variants, and XCTest quality evidence. Accessibility proof must use `XCUIApplication.performAccessibilityAudit`; performance proof must use a named XCTest metric and a project-owned budget.
 
-Nếu StoreKit hoặc RevenueCat có mặt, monetization manifest và restore/entitlement evidence phải đầy đủ.
+When StoreKit or RevenueCat is present, the monetization manifest and restore/entitlement evidence must be complete.
 
-Khi gates pass, Pi iOS tạo candidate. Founder xác nhận approval token cho exact candidate; `promote` chỉ thay đổi local base branch. `handoff` tạo package nêu evidence, known issues và các bước external còn lại.
+After all gates pass, Pi iOS creates a candidate. The founder approves an exact candidate using an expiring token; `promote` changes only the local base branch. `handoff` creates a package containing evidence, known issues, and the remaining external steps.
 
-Pi iOS không push Git, archive/export IPA, đăng nhập App Store Connect, upload build hoặc phân phối tester.
+Pi iOS does not push Git, archive or export an IPA, sign in to App Store Connect, upload builds, or distribute to testers.
 
-## 8. Learn — quyết định vòng tiếp theo từ feedback
+## 8. Learn — decide the next iteration from feedback
 
-Sau beta, chạy `/ios:learn` và cung cấp feedback, incidents, metrics hoặc founder observations.
+After a beta, run `/ios:learn` and provide feedback, incidents, metrics, or founder observations.
 
-Ví dụ:
+Example:
 
-> Đây là feedback TestFlight tuần đầu: [dán feedback]. Hãy phân loại now/later/not-do và đề xuất next bet.
+> Here is the first week of TestFlight feedback: [paste feedback]. Classify it as now/later/not-do and propose the next bet.
 
-Pi iOS giữ nguyên user language có giá trị, phân biệt evidence với hypothesis và route next focus về define, plan, build hoặc test.
+Pi iOS preserves valuable user language, separates evidence from hypotheses, and routes the next focus to define, plan, build, or test.
 
-## Theo dõi và recovery
+## Status and recovery
 
-Yêu cầu agent kiểm tra status, hoặc dùng tools:
+Ask the agent for the current status, or use these tools:
 
-- `pi_ios_runtime status` — runtime/lifecycle state;
+- `pi_ios_runtime status` — runtime and lifecycle state;
 - `pi_ios_doctor status` — human-readable diagnostics;
 - `pi_ios_doctor report` — metadata-only support report;
 - `pi_ios_pipeline status` — multi-agent pipeline state;
-- `pi_ios_pipeline reconcile` — detect/reconcile lost worker lease theo policy.
+- `pi_ios_pipeline reconcile` — detects and reconciles lost worker leases according to policy.
 
-Recovery không xóa unintegrated source, branches, worktrees, packets hoặc logs. Không xóa `.pi-ios/` khi còn active work.
+Recovery never deletes unintegrated source, branches, worktrees, packets, or logs. Do not delete `.pi-ios/` while work is active.
 
 ## Founder checklist
 
-1. Define: xác nhận user, promise và non-goals.
-2. Plan: approve frozen graph trước implementation.
-3. High-risk change: quyết định architecture/privacy/payment/signing/destructive scope.
-4. Review: chấp nhận hoặc route findings.
-5. Ship: approve exact candidate và target.
-6. External release: chủ động push/upload/distribute sau handoff.
+1. Define: confirm the user, promise, and non-goals.
+2. Plan: approve the frozen graph before implementation.
+3. High-risk work: decide architecture, privacy, payment, signing, and destructive-data scope.
+4. Review: accept the verdict or route findings to repair.
+5. Ship: approve the exact candidate and distribution target.
+6. External release: deliberately push, upload, and distribute after the handoff.
 
-## Quy tắc ngắn
+## Short rules
 
-- Không code trước approved plan.
-- Không claim pass khi chưa có Pi iOS receipt.
-- Không bypass worktree, path claim, verification hoặc approval gate.
-- Không coi build xanh là đủ cho accessibility, performance hay release-quality claim.
-- Không để agent tự push hoặc phân phối ra bên ngoài.
+- Do not code before the plan is approved.
+- Do not claim a gate passed without a Pi iOS receipt.
+- Do not bypass worktrees, path claims, verification, or approval gates.
+- Do not treat a green build as sufficient accessibility, performance, or release-quality evidence.
+- Do not let an agent push or distribute externally without an explicit founder decision.
