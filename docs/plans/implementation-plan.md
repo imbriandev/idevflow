@@ -15,6 +15,7 @@ Pi iOS is complete when it can take a trusted iOS repository through define, pla
 | Specialist reasoning | bounded package-owned context selection and scenario evaluations |
 | XCTest quality enforcement | fresh accessibility-audit and performance-metric evidence against project-owned budgets |
 | Package identity | Pi-native TypeScript source under `extensions/pi-ios/` and local runtime under `.pi-ios/` |
+| Idea Quality Gate (M12a) | evidence/assumption product records, required experience expectations, interactive acceptance of unresolved high-impact assumptions, and lifecycle tests |
 
 ## Ongoing standards
 

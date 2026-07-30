@@ -35,7 +35,7 @@ Example:
 
 > I want an app that helps freelance designers capture work time faster. Define the Simple Lovable Complete scope for the first beta.
 
-The output includes the target user, problem, promise, primary flow, empty/loading/failure/accessibility expectations, non-goals, assumptions, and a TestFlight learning question. Pi iOS writes product documents at `docs/pi-ios/product-memory.json` and `docs/pi-ios/slc.json`.
+The output includes the target user, problem, promise, primary flow, empty/loading/failure/accessibility/privacy/trust expectations, non-goals, and a TestFlight learning question. Material claims are explicitly labeled as founder evidence, observed feedback, assumptions, or unknowns; evidence/feedback must retain a founder-provided source. Unresolved high-impact assumptions require an interactive founder acceptance before definition integration. Pi iOS writes schema-version-2 product documents at `docs/pi-ios/product-memory.json` and `docs/pi-ios/slc.json`.
 
 The founder must make an explicit decision before changing the target user, monetization, or product promise.
 

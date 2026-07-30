@@ -67,3 +67,4 @@ pi -e .
 - [Coordinator-first operations playbook](docs/operations-playbook.md)
 - [Release process](docs/release-process.md)
 - [Context and XCTest evidence enforcement](docs/plans/milestone-10-evidence-enforcement.md)
+- [Idea Quality Gate](docs/plans/milestone-12-idea-quality.md)

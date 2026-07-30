@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "product": {
     "name": "",
     "targetUser": "",
@@ -7,5 +7,21 @@
     "promise": ""
   },
   "principles": [""],
-  "decisions": []
+  "decisions": [],
+  "ideaValidation": {
+    "learningQuestion": "",
+    "primaryAssumptionId": "",
+    "claims": [
+      {
+        "id": "",
+        "claim": "",
+        "kind": "founder_evidence",
+        "source": "",
+        "confidence": "low",
+        "impact": "medium",
+        "validationPlan": "",
+        "status": "open"
+      }
+    ]
+  }
 }

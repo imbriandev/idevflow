@@ -2,7 +2,7 @@ import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { loadConfig } from "../config/config.ts";
-import { loadDefinedProduct } from "../documents/product.ts";
+import { loadDefinedProduct, validateIdeaQuality } from "../documents/product.ts";
 import { approvePlan, integrateCurrentStage, recordReview } from "../lifecycle/service.ts";
 import { loadWorkGraph } from "../planning/work-graph.ts";
 import { discoverRepository } from "../repository/discovery.ts";
@@ -61,7 +61,22 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
       const registry = new SessionRegistry(repository);
       const session = await registry.findLatestByPiSession(ctx.sessionManager.getSessionId());
       if (!session) throw new SafetyKernelError("No writer session is available for stage integration");
-      const receipt = await integrateCurrentStage(repository, session, params.evidence ?? "", params.sliceId);
+      let founderAcceptedAssumptionIds: readonly string[] = [];
+      if (session.stage === "define") {
+        const config = await loadConfig(repository.primaryRoot);
+        const product = await loadDefinedProduct(session.worktreePath, config.documents);
+        const quality = validateIdeaQuality(product.memory, product.slc);
+        if (quality.unresolvedCriticalAssumptionIds.length) {
+          if (!ctx.hasUI) throw new SafetyKernelError("Definition with unresolved high-impact assumptions fails closed without interactive founder confirmation");
+          const confirmed = await ctx.ui.confirm(
+            "Accept unresolved idea assumptions?",
+            `Continue with the exact definition while these high-impact assumptions remain unproven: ${quality.unresolvedCriticalAssumptionIds.join(", ")}?`,
+          );
+          if (!confirmed) return { content: [{ type: "text", text: "Definition integration cancelled; unresolved assumptions remain open." }], details: { integrated: false, unresolvedCriticalAssumptionIds: quality.unresolvedCriticalAssumptionIds } };
+          founderAcceptedAssumptionIds = quality.unresolvedCriticalAssumptionIds;
+        }
+      }
+      const receipt = await integrateCurrentStage(repository, session, params.evidence ?? "", params.sliceId, founderAcceptedAssumptionIds);
       return { content: [{ type: "text", text: `Integrated ${receipt.stage} commit ${receipt.sourceCommit}; stage receipt ${receipt.id}.` }], details: { receipt } };
     },
   });

@@ -60,7 +60,7 @@ async function fakeVerification(repository: Awaited<ReturnType<typeof discoverRe
 
 async function completeWriterStage(
   repository: Awaited<ReturnType<typeof discoverRepository>>,
-  input: { piSessionId: string; stage: "define" | "plan" | "build" | "test" | "learn"; task: string; paths: string[]; write(session: WriterSession): Promise<void> },
+  input: { piSessionId: string; stage: "define" | "plan" | "build" | "test" | "learn"; task: string; paths: string[]; founderAcceptedAssumptionIds?: readonly string[]; write(session: WriterSession): Promise<void> },
 ): Promise<WriterSession> {
   let session = await writePreflight(repository, { ...input, risk: "medium" });
   await input.write(session);
@@ -69,7 +69,10 @@ async function completeWriterStage(
   session = (await new SessionRegistry(repository).findLatestByPiSession(input.piSessionId))!;
   await finishSession(repository, session, `test: complete ${input.stage}`);
   session = (await new SessionRegistry(repository).findLatestByPiSession(input.piSessionId))!;
-  await integrateCurrentStage(repository, session, `${input.stage} integrated evidence`);
+  if (input.founderAcceptedAssumptionIds?.length) {
+    await assert.rejects(integrateCurrentStage(repository, session, `${input.stage} integrated evidence`), /explicit founder acceptance/);
+  }
+  await integrateCurrentStage(repository, session, `${input.stage} integrated evidence`, undefined, input.founderAcceptedAssumptionIds);
   return (await new SessionRegistry(repository).findLatestByPiSession(input.piSessionId))!;
 }
 
@@ -84,11 +87,11 @@ describe("single-agent full lifecycle", () => {
     await new RuntimeStore(repository).initialize("test");
 
     const define = await completeWriterStage(repository, {
-      piSessionId: "golden", stage: "define", task: "define golden app", paths: ["docs/pi-ios/product-memory.json", "docs/pi-ios/slc.json"],
+      piSessionId: "golden", stage: "define", task: "define golden app", paths: ["docs/pi-ios/product-memory.json", "docs/pi-ios/slc.json"], founderAcceptedAssumptionIds: ["assumption-1"],
       async write(session) {
         await mkdir(join(session.worktreePath, "docs/pi-ios"), { recursive: true });
-        await writeFile(join(session.worktreePath, "docs/pi-ios/product-memory.json"), JSON.stringify({ schemaVersion: 1, product: { name: "Golden", targetUser: "Indie founders", problem: "Uncertain releases", promise: "A verified handoff" }, principles: ["Evidence first"], decisions: [] }));
-        await writeFile(join(session.worktreePath, "docs/pi-ios/slc.json"), JSON.stringify({ schemaVersion: 1, title: "Golden SLC", simple: ["One flow"], lovable: ["Clear status"], complete: ["Verified handoff"], nonGoals: ["Automatic upload"], successSignals: ["One beta handoff"], risks: ["Release drift"] }));
+        await writeFile(join(session.worktreePath, "docs/pi-ios/product-memory.json"), JSON.stringify({ schemaVersion: 2, product: { name: "Golden", targetUser: "Indie founders", problem: "Uncertain releases", promise: "A verified handoff" }, principles: ["Evidence first"], decisions: [], ideaValidation: { learningQuestion: "Will a founder complete one verified handoff?", primaryAssumptionId: "assumption-1", claims: [{ id: "evidence-1", claim: "Founder reports release uncertainty", kind: "founder_evidence", source: "Founder interview", confidence: "medium", impact: "medium", validationPlan: "Observe TestFlight completion", status: "open" }, { id: "assumption-1", claim: "A verified handoff reduces uncertainty", kind: "assumption", confidence: "low", impact: "high", validationPlan: "Ask beta testers after handoff", status: "open" }] } }));
+        await writeFile(join(session.worktreePath, "docs/pi-ios/slc.json"), JSON.stringify({ schemaVersion: 2, title: "Golden SLC", simple: ["One flow"], lovable: ["Clear status"], complete: ["Verified handoff"], nonGoals: ["Automatic upload"], successSignals: ["One beta handoff"], risks: ["Release drift"], experienceExpectations: { empty: "Explain how to start", loading: "Show verification progress", failure: "Preserve work and explain recovery", accessibility: "Label primary actions", privacy: "State local handling", trust: "Explain manual upload boundary" } }));
       },
     });
     assert.equal(define.status, "integrated");
@@ -143,7 +146,7 @@ describe("single-agent full lifecycle", () => {
     await completeWriterStage(repository, {
       piSessionId: "golden", stage: "learn", task: "record beta learning", paths: ["docs/pi-ios/product-memory.json"],
       async write(session) {
-        const updated = { schemaVersion: 1, product: { name: "Golden", targetUser: "Indie founders", problem: "Uncertain releases", promise: "A verified handoff" }, principles: ["Evidence first"], decisions: [{ id: "learning-1", decision: "Keep upload manual", rationale: "The handoff boundary was clear", status: "active" }] };
+        const updated = { schemaVersion: 2, product: { name: "Golden", targetUser: "Indie founders", problem: "Uncertain releases", promise: "A verified handoff" }, principles: ["Evidence first"], decisions: [{ id: "learning-1", decision: "Keep upload manual", rationale: "The handoff boundary was clear", status: "active" }], ideaValidation: { learningQuestion: "Will a founder complete one verified handoff?", primaryAssumptionId: "assumption-1", claims: [{ id: "evidence-1", claim: "Founder reports release uncertainty", kind: "founder_evidence", source: "Founder interview", confidence: "medium", impact: "medium", validationPlan: "Observe TestFlight completion", status: "open" }, { id: "assumption-1", claim: "A verified handoff reduces uncertainty", kind: "assumption", confidence: "low", impact: "medium", validationPlan: "Ask beta testers after handoff", status: "open" }] } };
         await writeFile(join(session.worktreePath, "docs/pi-ios/product-memory.json"), JSON.stringify(updated));
       },
     });
