@@ -24,6 +24,12 @@ The TypeScript extension owns:
 
 These behaviors must not depend on an LLM correctly remembering prose.
 
+### Conversational coordinator
+
+The coordinator is one founder-facing conversational layer, not a second workflow engine. At Pi interaction boundaries it projects sanitized durable runtime, baseline, writer-session, pipeline, and candidate state into a safe next-route brief. It prioritizes recovery of an owned writer or active pipeline over new work, and recommends worker delegation only for independent low/medium-risk slices of an exact approved graph.
+
+It cannot mutate lifecycle state or infer approval from prose. It creates no background daemon, retains no separate authoritative state, and does not expose task text, capabilities, credentials, or worktree paths in the founder dashboard. `/ios` renders the same safe projection; the seven stage commands remain manual escape hatches.
+
 ### Skills
 
 Skills provide progressively disclosed expertise for seven stages:
@@ -60,6 +66,7 @@ Durable state belongs to `.pi-ios/` in the iOS app repository, independently of 
 ```text
 extensions/pi-ios/
   commands/       command registration and argument handling
+  coordinator/    state projection, conversational brief, delegation policy
   lifecycle/      contracts, transitions, risk, and policy
   state/          event journal, snapshots, locking, migrations
   git/            worktrees, claims, integration, promotion
@@ -81,7 +88,7 @@ templates/        project memory and evidence templates
 - `registerCommand` exposes the lifecycle and dashboard commands.
 - `registerTool` exposes typed kernel operations to agents.
 - `tool_call` enforces write and shell policy before execution.
-- `before_agent_start` injects the current stage contract and bounded state.
+- `before_agent_start` refreshes owned leases and injects the current stage contract plus a sanitized coordinator route.
 - `session_start` restores the session mirror and dashboard.
 - `appendEntry` records branch-aware UI state, never authoritative project state.
 - `setStatus` and `setWidget` show stage and gate progress.

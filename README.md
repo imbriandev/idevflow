@@ -19,19 +19,18 @@ Pi iOS is a TypeScript Pi package for taking an indie iOS app from idea to a com
 - Swift 6.2 or newer
 - SwiftUI, SwiftData, Swift Concurrency, and Swift Testing
 
-## Lifecycle commands
+## Conversational coordinator
+
+Use Pi iOS conversationally: describe the product, the next change, a defect, or a beta decision. At each interaction boundary, the coordinator reads the durable `.pi-ios/` state and injects a safe next-route brief for the agent. `/ios` provides the corresponding dashboard for workflow, runtime, baseline, active writer, pipeline, and recovery status.
+
+The coordinator does not own authority: lifecycle transitions, founder approvals, worktree writes, integration, promotion, push, upload, and distribution remain kernel-gated operations. It also does not run in the background; it resumes solely from durable state on the next Pi interaction.
+
+The seven lifecycle commands remain optional manual escape hatches:
 
 ```text
-/ios:define
-/ios:plan
-/ios:build
-/ios:test
-/ios:review
-/ios:ship
-/ios:learn
+/ios:define  /ios:plan  /ios:build  /ios:test
+/ios:review  /ios:ship  /ios:learn
 ```
-
-The extension also provides `/ios` for current workflow, runtime, baseline, and writer status.
 
 ## Safety-kernel tools
 
@@ -65,6 +64,6 @@ pi -e .
 - [Clean-break namespace migration](docs/plans/milestone-11-clean-break.md)
 - [Security notes](docs/security.md)
 - [Installation and upgrade](docs/installation.md)
-- [Operations playbook](docs/operations-playbook.md)
+- [Coordinator-first operations playbook](docs/operations-playbook.md)
 - [Release process](docs/release-process.md)
 - [Context and XCTest evidence enforcement](docs/plans/milestone-10-evidence-enforcement.md)
