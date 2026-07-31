@@ -4,7 +4,7 @@ import { validateIdeaQuality, validateLearningUpdate, validateProductMemory, val
 import { validateWorkGraph } from "../extensions/pi-ios/planning/work-graph.ts";
 
 const memory = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   product: { name: "App", targetUser: "Founders", problem: "Risk", promise: "Proof" },
   principles: ["Narrow"],
   decisions: [],
@@ -17,6 +17,7 @@ const memory = {
     ],
     skepticalCritique: { alternative: "Continue using a release checklist", adoptionRisk: "Founders may not trust a new workflow", invalidatingSignal: "Testers prefer their existing checklist", unresolvedClaimIds: ["assumption-1"] },
     learningEvidence: [],
+    discovery: { disposition: "evidence_sufficient", rationale: "Founder evidence directly describes the problem", records: [] },
   },
 };
 const slc = {
@@ -57,6 +58,16 @@ describe("product memory and work graph", () => {
     assert.throws(() => validateSlcSpec(incompleteSlc), /privacy/);
   });
 
+  it("requires a complete discovery record for research or prototype dispositions", () => {
+    const missingResearch = clone(memory) as any;
+    missingResearch.ideaValidation.discovery.disposition = "research_completed";
+    assert.throws(() => validateProductMemory(missingResearch), /matching record/);
+    const incompletePrototype = clone(memory) as any;
+    incompletePrototype.ideaValidation.discovery.disposition = "prototype_completed";
+    incompletePrototype.ideaValidation.discovery.records = [{ id: "prototype-1", kind: "prototype", hypothesisClaimIds: ["assumption-1"], method: "click-through", source: "Founder test", finding: "Participant reached the primary screen", limitation: "One participant" }];
+    assert.throws(() => validateProductMemory(incompletePrototype), /artifactPath, userTask, and observedResult/);
+  });
+
   it("requires evidence-linked claim conclusions during learning", () => {
     const previous = validateProductMemory(memory);
     const next = clone(memory) as any;
@@ -72,7 +83,7 @@ describe("product memory and work graph", () => {
     const legacyMemory = { schemaVersion: 1, product: memory.product, principles: memory.principles, decisions: [] };
     const legacySlc = { schemaVersion: 1, title: slc.title, simple: slc.simple, lovable: slc.lovable, complete: slc.complete, nonGoals: slc.nonGoals, successSignals: slc.successSignals, risks: slc.risks };
     assert.equal(validateProductMemory(legacyMemory).schemaVersion, 1);
-    assert.throws(() => validateIdeaQuality(validateProductMemory(legacyMemory), validateSlcSpec(legacySlc)), /schema version 2/);
+    assert.throws(() => validateIdeaQuality(validateProductMemory(legacyMemory), validateSlcSpec(legacySlc)), /schema version 3/);
   });
 
   it("rejects stale, cyclic, and independently overlapping work graphs", () => {

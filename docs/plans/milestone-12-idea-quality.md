@@ -25,6 +25,13 @@ This gate does not score product-market fit, fabricate research, browse competit
 - A required skeptical critique records the viable alternative, adoption risk, invalidating signal, and unresolved high-impact claims. Definition integration requires an interactive founder acceptance of that critique.
 - Learning evidence is typed as founder feedback, tester feedback, metric, or incident. Any original claim moving from `open` to `confirmed`, `weakened`, or `disproven` must link this evidence, and learn-stage integration rejects a no-op claim status update.
 
+## M12c delivered
+
+- Product memory schema version 3 adds a discovery disposition: evidence sufficient, research complete, or prototype complete. Version-2 documents remain readable for current projects but cannot complete a new definition.
+- Research records bind a claim hypothesis to method, source, finding, and limitation.
+- Prototype records additionally require a repository-relative artifact path, user task, and observed result. Discovery is validation-only; it does not authorize production implementation or a browser/research agent.
+- A completed-research or completed-prototype disposition fails without a matching complete record.
+
 ## Remaining follow-up
 
 - Behavioral evaluations for solution-first ideas, fabricated claims, scope creep, ambiguous monetization, and privacy/trust risks.
@@ -32,4 +39,4 @@ This gate does not score product-market fit, fabricate research, browse competit
 
 ## Evidence
 
-`tests/product-planning.test.ts` covers evidence/source requirements, primary hypothesis validity, citation policy, experience expectations, learning-evidence linkage, legacy compatibility, and quality-gate rejection. `tests/full-lifecycle.test.ts` proves that a high-impact open assumption cannot integrate until the exact claim is accepted and that the later learning update concludes that claim from tester feedback.
+`tests/product-planning.test.ts` covers evidence/source requirements, primary hypothesis validity, citation policy, experience expectations, discovery record completeness, learning-evidence linkage, legacy compatibility, and quality-gate rejection. `tests/full-lifecycle.test.ts` proves that a high-impact open assumption cannot integrate until the exact claim is accepted, discovery evidence is bound into the definition, and the later learning update concludes that claim from tester feedback.

@@ -67,7 +67,7 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
         const config = await loadConfig(repository.primaryRoot);
         const product = await loadDefinedProduct(session.worktreePath, config.documents);
         const quality = validateIdeaQuality(product.memory, product.slc);
-        if (product.memory.schemaVersion !== 2) throw new SafetyKernelError("Definition requires schema version 2 idea-validation documents");
+        if (product.memory.schemaVersion !== 3) throw new SafetyKernelError("Definition requires schema version 3 discovery documents");
         if (!ctx.hasUI) throw new SafetyKernelError("Definition integration fails closed without interactive founder confirmation");
         const critique = product.memory.ideaValidation.skepticalCritique;
         founderAcceptedCritique = await ctx.ui.confirm(

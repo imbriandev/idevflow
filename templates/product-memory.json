@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "product": {
     "name": "",
     "targetUser": "",
@@ -32,6 +32,11 @@
       "invalidatingSignal": "",
       "unresolvedClaimIds": []
     },
-    "learningEvidence": []
+    "learningEvidence": [],
+    "discovery": {
+      "disposition": "evidence_sufficient",
+      "rationale": "",
+      "records": []
+    }
   }
 }

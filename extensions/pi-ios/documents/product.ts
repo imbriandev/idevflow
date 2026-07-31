@@ -5,7 +5,8 @@ import { SafetyKernelError } from "../state/errors.ts";
 
 export const LEGACY_PRODUCT_MEMORY_SCHEMA_VERSION = 1 as const;
 export const LEGACY_SLC_SPEC_SCHEMA_VERSION = 1 as const;
-export const PRODUCT_MEMORY_SCHEMA_VERSION = 2 as const;
+export const IDEA_QUALITY_PRODUCT_MEMORY_SCHEMA_VERSION = 2 as const;
+export const PRODUCT_MEMORY_SCHEMA_VERSION = 3 as const;
 export const SLC_SPEC_SCHEMA_VERSION = 2 as const;
 
 type ClaimKind = "founder_evidence" | "observed_feedback" | "assumption" | "unknown";
@@ -39,23 +40,31 @@ export interface IdeaClaim {
   readonly learningEvidenceIds: readonly string[];
 }
 
+interface IdeaValidationCore {
+  readonly learningQuestion: string;
+  readonly primaryAssumptionId: string;
+  readonly claims: readonly IdeaClaim[];
+  readonly skepticalCritique: { readonly alternative: string; readonly adoptionRisk: string; readonly invalidatingSignal: string; readonly unresolvedClaimIds: readonly string[] };
+  readonly learningEvidence: readonly { readonly id: string; readonly kind: LearningEvidenceKind; readonly source: string; readonly finding: string }[];
+}
+
+export interface LegacyIdeaQualityProductMemory extends ProductCore {
+  readonly schemaVersion: typeof IDEA_QUALITY_PRODUCT_MEMORY_SCHEMA_VERSION;
+  readonly ideaValidation: IdeaValidationCore;
+}
+
 export interface ProductMemory extends ProductCore {
   readonly schemaVersion: typeof PRODUCT_MEMORY_SCHEMA_VERSION;
-  readonly ideaValidation: {
-    readonly learningQuestion: string;
-    readonly primaryAssumptionId: string;
-    readonly claims: readonly IdeaClaim[];
-    readonly skepticalCritique: {
-      readonly alternative: string;
-      readonly adoptionRisk: string;
-      readonly invalidatingSignal: string;
-      readonly unresolvedClaimIds: readonly string[];
+  readonly ideaValidation: IdeaValidationCore & {
+    readonly discovery: {
+      readonly disposition: "evidence_sufficient" | "research_completed" | "prototype_completed";
+      readonly rationale: string;
+      readonly records: readonly { readonly id: string; readonly kind: "research" | "prototype"; readonly hypothesisClaimIds: readonly string[]; readonly method: string; readonly source: string; readonly finding: string; readonly limitation: string; readonly artifactPath?: string; readonly userTask?: string; readonly observedResult?: string }[];
     };
-    readonly learningEvidence: readonly { readonly id: string; readonly kind: LearningEvidenceKind; readonly source: string; readonly finding: string }[];
   };
 }
 
-export type ProductMemoryDocument = ProductMemory | LegacyProductMemory;
+export type ProductMemoryDocument = ProductMemory | LegacyIdeaQualityProductMemory | LegacyProductMemory;
 
 interface SlcCore {
   readonly title: string;
@@ -167,7 +176,7 @@ export function validateProductMemory(value: unknown): ProductMemoryDocument {
   const raw = object(value, "product memory");
   const core = productCore(raw);
   if (raw.schemaVersion === LEGACY_PRODUCT_MEMORY_SCHEMA_VERSION) return { schemaVersion: LEGACY_PRODUCT_MEMORY_SCHEMA_VERSION, ...core };
-  if (raw.schemaVersion !== PRODUCT_MEMORY_SCHEMA_VERSION) throw new SafetyKernelError("Unsupported product memory schema");
+  if (raw.schemaVersion !== IDEA_QUALITY_PRODUCT_MEMORY_SCHEMA_VERSION && raw.schemaVersion !== PRODUCT_MEMORY_SCHEMA_VERSION) throw new SafetyKernelError("Unsupported product memory schema");
   const validation = object(raw.ideaValidation, "ideaValidation");
   const validatedClaims = claims(validation.claims);
   const primaryAssumptionId = text(validation.primaryAssumptionId, "ideaValidation.primaryAssumptionId");
@@ -192,7 +201,23 @@ export function validateProductMemory(value: unknown): ProductMemoryDocument {
     if (claim.learningEvidenceIds.some((id) => !learningIds.has(id))) throw new SafetyKernelError(`Claim ${claim.id} references unknown learning evidence`);
     if (claim.status !== "open" && !claim.learningEvidenceIds.length) throw new SafetyKernelError(`Claim ${claim.id} requires learning evidence before it can be ${claim.status}`);
   }
-  return { schemaVersion: PRODUCT_MEMORY_SCHEMA_VERSION, ...core, ideaValidation: { learningQuestion: text(validation.learningQuestion, "ideaValidation.learningQuestion"), primaryAssumptionId, claims: validatedClaims, skepticalCritique: { alternative: text(critique.alternative, "ideaValidation.skepticalCritique.alternative"), adoptionRisk: text(critique.adoptionRisk, "ideaValidation.skepticalCritique.adoptionRisk"), invalidatingSignal: text(critique.invalidatingSignal, "ideaValidation.skepticalCritique.invalidatingSignal"), unresolvedClaimIds }, learningEvidence } };
+  const ideaValidation: IdeaValidationCore = { learningQuestion: text(validation.learningQuestion, "ideaValidation.learningQuestion"), primaryAssumptionId, claims: validatedClaims, skepticalCritique: { alternative: text(critique.alternative, "ideaValidation.skepticalCritique.alternative"), adoptionRisk: text(critique.adoptionRisk, "ideaValidation.skepticalCritique.adoptionRisk"), invalidatingSignal: text(critique.invalidatingSignal, "ideaValidation.skepticalCritique.invalidatingSignal"), unresolvedClaimIds }, learningEvidence };
+  if (raw.schemaVersion === IDEA_QUALITY_PRODUCT_MEMORY_SCHEMA_VERSION) return { schemaVersion: IDEA_QUALITY_PRODUCT_MEMORY_SCHEMA_VERSION, ...core, ideaValidation };
+  const discovery = object(validation.discovery, "ideaValidation.discovery");
+  const records = Array.isArray(discovery.records) ? discovery.records.map((item, index) => {
+    const record = object(item, `ideaValidation.discovery.records[${index}]`);
+    const kind = enumValue(record.kind, ["research", "prototype"] as const, `ideaValidation.discovery.records[${index}].kind`);
+    const hypothesisClaimIds = strings(record.hypothesisClaimIds, `ideaValidation.discovery.records[${index}].hypothesisClaimIds`);
+    if (hypothesisClaimIds.some((id) => !knownClaimIds.has(id))) throw new SafetyKernelError("Discovery record references an unknown claim");
+    const artifactPath = record.artifactPath === undefined ? undefined : text(record.artifactPath, `ideaValidation.discovery.records[${index}].artifactPath`);
+    if (artifactPath && (artifactPath.startsWith("/") || artifactPath.split(/[\\/]/).includes(".."))) throw new SafetyKernelError("Discovery artifact path must stay project-relative");
+    if (kind === "prototype" && (!artifactPath || !record.userTask || !record.observedResult)) throw new SafetyKernelError("Prototype discovery requires artifactPath, userTask, and observedResult");
+    return { id: text(record.id, `ideaValidation.discovery.records[${index}].id`), kind, hypothesisClaimIds, method: text(record.method, `ideaValidation.discovery.records[${index}].method`), source: text(record.source, `ideaValidation.discovery.records[${index}].source`), finding: text(record.finding, `ideaValidation.discovery.records[${index}].finding`), limitation: text(record.limitation, `ideaValidation.discovery.records[${index}].limitation`), ...(artifactPath ? { artifactPath } : {}), ...(record.userTask ? { userTask: text(record.userTask, `ideaValidation.discovery.records[${index}].userTask`) } : {}), ...(record.observedResult ? { observedResult: text(record.observedResult, `ideaValidation.discovery.records[${index}].observedResult`) } : {}) };
+  }) : [];
+  if (new Set(records.map((record) => record.id)).size !== records.length) throw new SafetyKernelError("Discovery record ids must be unique");
+  const disposition = enumValue(discovery.disposition, ["evidence_sufficient", "research_completed", "prototype_completed"] as const, "ideaValidation.discovery.disposition");
+  if ((disposition === "research_completed" && !records.some((record) => record.kind === "research")) || (disposition === "prototype_completed" && !records.some((record) => record.kind === "prototype"))) throw new SafetyKernelError("Discovery disposition requires a matching record");
+  return { schemaVersion: PRODUCT_MEMORY_SCHEMA_VERSION, ...core, ideaValidation: { ...ideaValidation, discovery: { disposition, rationale: text(discovery.rationale, "ideaValidation.discovery.rationale"), records } } };
 }
 
 function slcCore(raw: Record<string, unknown>): SlcCore {
@@ -229,7 +254,7 @@ export function validateSlcSpec(value: unknown): SlcSpecDocument {
 
 export function validateIdeaQuality(memory: ProductMemoryDocument, slc: SlcSpecDocument): IdeaQualityReport {
   if (memory.schemaVersion !== PRODUCT_MEMORY_SCHEMA_VERSION || slc.schemaVersion !== SLC_SPEC_SCHEMA_VERSION) {
-    throw new SafetyKernelError("New product definitions require product memory and SLC schema version 2 with idea validation fields");
+    throw new SafetyKernelError("New product definitions require product memory schema version 3 with discovery records and SLC schema version 2");
   }
   const evidence = memory.ideaValidation.claims.filter((claim) => claim.kind === "founder_evidence" || claim.kind === "observed_feedback");
   if (!evidence.length) throw new SafetyKernelError("Idea validation requires at least one founder evidence or observed feedback claim");
@@ -245,11 +270,13 @@ export function validateIdeaQuality(memory: ProductMemoryDocument, slc: SlcSpecD
 }
 
 export function validateLearningUpdate(previous: ProductMemoryDocument, next: ProductMemoryDocument): void {
-  if (previous.schemaVersion !== PRODUCT_MEMORY_SCHEMA_VERSION || next.schemaVersion !== PRODUCT_MEMORY_SCHEMA_VERSION) {
-    throw new SafetyKernelError("Learning updates require schema version 2 idea-validation documents");
+  if (previous.schemaVersion === LEGACY_PRODUCT_MEMORY_SCHEMA_VERSION || next.schemaVersion === LEGACY_PRODUCT_MEMORY_SCHEMA_VERSION || previous.schemaVersion !== next.schemaVersion) {
+    throw new SafetyKernelError("Learning updates require matching schema version 2 or 3 idea-validation documents");
   }
-  const oldClaims = new Map(previous.ideaValidation.claims.map((claim) => [claim.id, claim]));
-  const changed = next.ideaValidation.claims.filter((claim) => oldClaims.get(claim.id)?.status !== claim.status);
+  const previousIdea = previous as ProductMemory | LegacyIdeaQualityProductMemory;
+  const nextIdea = next as ProductMemory | LegacyIdeaQualityProductMemory;
+  const oldClaims = new Map(previousIdea.ideaValidation.claims.map((claim) => [claim.id, claim]));
+  const changed = nextIdea.ideaValidation.claims.filter((claim) => oldClaims.get(claim.id)?.status !== claim.status);
   if (!changed.length) throw new SafetyKernelError("Learning integration must update at least one existing claim status from feedback or metrics");
   if (changed.some((claim) => claim.status === "open" || !claim.learningEvidenceIds.length)) throw new SafetyKernelError("Learning claim conclusions require linked feedback or metric evidence");
 }
@@ -281,6 +308,13 @@ export async function loadDefinedProduct(root: string, paths: { readonly product
   }
   const memory = validateProductMemory(memoryValue);
   const slc = validateSlcSpec(slcValue);
-  const fingerprint = createHash("sha256").update(JSON.stringify({ memory, slc })).digest("hex");
+  const artifacts = memory.schemaVersion === PRODUCT_MEMORY_SCHEMA_VERSION
+    ? await Promise.all(memory.ideaValidation.discovery.records.filter((record) => record.artifactPath).map(async (record) => {
+      const path = projectPath(root, record.artifactPath!).absolute;
+      try { return { path: record.artifactPath!, hash: createHash("sha256").update(await readFile(path)).digest("hex") }; }
+      catch (error) { throw new SafetyKernelError(`Discovery prototype artifact is missing or unreadable: ${record.artifactPath}`, { cause: error }); }
+    }))
+    : [];
+  const fingerprint = createHash("sha256").update(JSON.stringify({ memory, slc, artifacts })).digest("hex");
   return { memory, slc, fingerprint, paths: { memory: memoryPath.relative, slc: slcPath.relative } };
 }
