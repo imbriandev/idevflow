@@ -1,9 +1,22 @@
 {
   "name": "idevflow",
-  "version": "0.3.0-beta.1",
+  "version": "0.3.0-beta.2",
   "description": "A Pi-native workflow for taking an indie Apple-platform app from idea to verified distribution handoff.",
   "type": "module",
-  "private": true,
+  "license": "MIT",
+  "author": "Brian <imbriandev@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imbriandev/idevflow.git"
+  },
+  "homepage": "https://github.com/imbriandev/idevflow#readme",
+  "bugs": {
+    "url": "https://github.com/imbriandev/idevflow/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta"
+  },
   "keywords": [
     "pi-package",
     "apple-platforms",

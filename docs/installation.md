@@ -7,6 +7,12 @@
 - macOS with Xcode 26+ and Swift 6.2+; iOS verification additionally requires an iOS 26+ simulator runtime
 - a Git repository with an explicit author identity for writer commits
 
+## Registry installation
+
+```bash
+pi install npm:idevflow@beta
+```
+
 ## Local installation
 
 ```bash

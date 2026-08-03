@@ -47,6 +47,14 @@ The seven lifecycle commands remain optional manual escape hatches:
 
 Push, App Store Connect upload, and tester distribution remain explicit manual boundaries.
 
+## Installation
+
+```bash
+pi install npm:idevflow@beta
+```
+
+Then open a trusted Apple-platform Git project and run `/idev` or describe the product/change conversationally. See [Installation and upgrade](docs/installation.md) for requirements and migration behavior.
+
 ## Development
 
 ```bash
