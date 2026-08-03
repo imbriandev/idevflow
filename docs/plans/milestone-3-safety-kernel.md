@@ -29,7 +29,7 @@ Status: Implemented
 - Base/integration branch-name validation and base commit discovery.
 - Live clean, committed primary-baseline contract.
 - Local `.idevflow/` exclusion through Git metadata without editing tracked ignore files.
-- Read-only runtime, baseline, and writer status through `/idevflow` and `idev_runtime`.
+- Read-only runtime, baseline, and writer status through `/idev` and `idev_runtime`.
 
 ## Slice 3.3 — Sessions, worktrees, claims, and leases
 

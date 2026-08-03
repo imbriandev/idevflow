@@ -32,7 +32,7 @@ It cannot mutate lifecycle state or infer approval from prose. It creates no bac
 
 ### Skills
 
-Skills provide progressively disclosed expertise for seven stages:
+Skills provide progressively disclosed Apple-platform expertise for seven stages:
 
 1. Define — product bet and Simple, Lovable, Complete scope.
 2. Plan — architecture and vertical slices.
@@ -42,7 +42,7 @@ Skills provide progressively disclosed expertise for seven stages:
 6. Ship — release verification and platform-specific handoff decision.
 7. Learn — feedback synthesis and next focus.
 
-Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools. For non-trivial Apple-platform work, `idev_context` deterministically selects a bounded cold path from the package-owned specialist knowledge base; skills then read only selected references. This improves domain reasoning without loading all guidance or granting authority.
+Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools. For non-trivial Apple-platform work, `idev_context` deterministically selects a bounded cold path from the package-owned specialist knowledge base; skills then read only selected references. The current reference set is iOS-focused while verification supports iOS, macOS, and universal projects. This improves domain reasoning without loading all guidance or granting authority.
 
 ### Worker runtime
 

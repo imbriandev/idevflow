@@ -9,7 +9,7 @@ iDevFlow is a TypeScript Pi package for taking an indie Apple-platform app from 
 - Every write is stage-, worktree-, and path-authorized.
 - Evidence is bound to source commit, configuration, toolchain, and destination.
 - Release promotion and distribution require separate approvals.
-- Skills provide iOS expertise; the extension kernel owns safety and lifecycle state.
+- Skills provide Apple-platform expertise; the extension kernel owns safety and lifecycle state.
 
 ## Target baseline
 

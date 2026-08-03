@@ -1,85 +1,91 @@
-# Cài iDevFlow theo từng project
+# Install iDevFlow in one project
 
-Playbook này cài iDevFlow vào đúng iOS app repository hiện tại. Nó không cài global cho các project khác.
+This playbook installs iDevFlow in the current Apple-platform project only. It does not install the package globally for other projects.
 
-## 1. Mở iOS app repository
+## 1. Open the app repository
 
 ```bash
-cd /path/to/your-ios-app
+cd /path/to/your-apple-app
 git status
 ```
 
-Project cần là Git repository. Đọc source package trước khi trust hoặc cài package có extension, vì extension có system access.
+The project must be a Git repository. Read the package source before trusting or installing an extension package because Pi extensions run with system access.
 
-## 2. Cài package local
+## 2. Install the project-local package
 
-Dùng branch `main` mới nhất:
+Install the latest `main` revision:
 
 ```bash
 pi install -l git:github.com/imbriandev/idevflow@main
 ```
 
-`-l` ghi package vào `.pi/settings.json` trong app repository. Mỗi lần cài hoặc update, Pi lấy revision hiện tại của `main`.
+The `-l` option writes the package entry to `.pi/settings.json` in the app repository. Repeat the command to update the project-local installation.
 
-## 3. Trust và nạp extension
+For reproducible work, pin a release tag instead:
 
-Khởi động Pi tại app repository:
+```bash
+pi install -l git:github.com/imbriandev/idevflow@v0.3.0-beta.2
+```
+
+## 3. Trust and load the extension
+
+Start Pi from the app repository:
 
 ```bash
 pi
 ```
 
-Chấp nhận project trust khi Pi hỏi. Nếu Pi đã mở trong folder này, chạy:
+Accept project trust when Pi asks. If Pi is already open in this folder, reload it:
 
 ```text
 /reload
 ```
 
-## 4. Khởi tạo runtime project
+## 4. Initialize project state
 
-Nói với Pi:
+Tell Pi:
 
 ```text
 Initialize iDevFlow for this trusted project, then help me define my app idea.
 ```
 
-Pi tạo runtime state tại `.idevflow/`. Đây là state riêng của app project, cần giữ Git-ignored; nó không phải source của package iDevFlow.
+iDevFlow creates local runtime state under `.idevflow/`. This state belongs to the app project, must remain Git-ignored, and is separate from the iDevFlow package source.
 
-## 5. Bắt đầu bằng hội thoại
+## 5. Start conversationally
 
-Ví dụ:
+For example:
 
 ```text
 I want to build an iPhone app for freelancers who forget invoice follow-ups.
 Help me validate the idea and define the smallest complete beta.
 ```
 
-Coordinator hướng dẫn safe route theo runtime state. Không cần nhớ commands; các `/idev:*` commands chỉ là manual escape hatches.
+The coordinator recommends the safe route from durable runtime state. The `/idev:*` commands remain optional manual entry points.
 
 ## Verify
 
-Trong app repository:
+From the app repository:
 
 ```bash
 pi list
 ```
 
-iDevFlow phải hiện là project-local package. Khi runtime đã khởi tạo, `/idev` hiển thị dashboard lifecycle.
+Confirm that iDevFlow appears as a project-local package. After runtime initialization, `/idev` displays the lifecycle dashboard.
 
 ## Update
 
-Sau khi một revision mới được push lên `main`, cập nhật project bằng:
+After a new revision is pushed to `main`, update the project-local package:
 
 ```bash
 pi install -l git:github.com/imbriandev/idevflow@main
 ```
 
-Sau đó chạy `/reload` hoặc khởi động lại Pi. Nếu cần reproducibility cho CI hoặc beta cụ thể, mới pin một tag/commit thay cho `main`.
+Then run `/reload` or restart Pi. Pin a tag or commit for CI, a beta release, or any reproducible environment.
 
-## Remove khỏi một project
+## Remove from one project
 
 ```bash
 pi remove -l git:github.com/imbriandev/idevflow
 ```
 
-Lệnh này chỉ bỏ package entry của project. Nó không xóa app source hoặc `.idevflow/` runtime history.
+This removes only the project-local package entry. It does not remove app source or `.idevflow/` runtime history.

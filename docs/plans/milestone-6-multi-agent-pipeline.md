@@ -60,7 +60,7 @@ If the integration branch later advances, status deterministically changes the p
 
 `reconcile` reloads journal state, detects expired workers whose PIDs are no longer alive, records them as lost, and preserves all source. Re-running finalization reuses an exact clean candidate session after interruption. Runtime advancement resumes safely from any already-written intermediate lifecycle transition.
 
-`/idevflow`, `idev_pipeline status`, and `idev_doctor` expose pipeline, slice, worker, batch, candidate, and expired-lease state. Complete worker output is redacted before persistence; capability and model credential values are explicit literal redactions and are not inherited by build subprocesses.
+`/idev`, `idev_pipeline status`, and `idev_doctor` expose pipeline, slice, worker, batch, candidate, and expired-lease state. Complete worker output is redacted before persistence; capability and model credential values are explicit literal redactions and are not inherited by build subprocesses.
 
 ## Configuration
 
