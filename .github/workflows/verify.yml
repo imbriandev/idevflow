@@ -11,7 +11,7 @@ permissions:
 jobs:
   unit-and-package:
     name: Typecheck, tests, extension, package
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
 
   xcode-e2e:
     name: Real iOS and macOS Xcode verification
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4

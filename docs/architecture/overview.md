@@ -2,7 +2,7 @@
 
 ## Mission
 
-Canopy turns a founder's product intent into a narrow Apple-platform product, an approved implementation graph, isolated code changes, and artifact-backed verification. iOS additionally supports a deliberate TestFlight handoff; macOS release support remains a later milestone.
+Canopy turns a founder's product intent into a narrow Apple-platform product, an approved implementation graph, isolated code changes, and artifact-backed verification. It supports separate deliberate TestFlight and macOS distribution-readiness handoffs; signing, upload, notarization, and distribution remain manual boundaries.
 
 It is not a prompt pack. It is a deterministic workflow kernel integrated with Pi's commands, skills, tools, events, sessions, and TUI.
 
@@ -39,7 +39,7 @@ Skills provide progressively disclosed expertise for seven stages:
 3. Build — one authorized implementation slice.
 4. Test — reproduce, repair, and prove behavior.
 5. Review — product and engineering quality verdict.
-6. Ship — release verification and TestFlight handoff decision.
+6. Ship — release verification and platform-specific handoff decision.
 7. Learn — feedback synthesis and next focus.
 
 Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools. For non-trivial Apple-platform work, `canopy_context` deterministically selects a bounded cold path from the package-owned specialist knowledge base; skills then read only selected references. This improves domain reasoning without loading all guidance or granting authority.
@@ -75,7 +75,7 @@ extensions/canopy/
   simulator/      device discovery, leases, boot, and cleanup
   verification/   profiles, fingerprints, receipts, evidence
   pipeline/       work graph, scheduler, repair, reconciliation
-  release/        candidate and TestFlight handoff
+  release/        verified iOS and macOS distribution handoffs
   workers/        isolated Pi worker processes and task packets
   ui/             status, dashboard, approvals, and renderers
 skills/           progressive iOS stage guidance
@@ -140,6 +140,6 @@ Pipeline state is hash-chained independently of lifecycle and writer session sta
 
 ## Release boundary
 
-The default result is a verified TestFlight handoff. Candidate creation requires fresh release verification, xcresult/test evidence, source-bound visual/accessibility/performance proof, privacy readiness, monetization reconciliation when detected, exact bundle/target metadata, and known issues.
+For iOS, the default result is a verified TestFlight handoff. Candidate creation requires fresh release verification, xcresult/test evidence, source-bound visual/accessibility/performance proof, privacy readiness, monetization reconciliation when detected, exact bundle/target metadata, and known issues. Interactive ship approval produces an expiring single-use capability bound to candidate commit, fingerprint, and target; promotion fast-forwards only the local base branch.
 
-Interactive ship approval produces an expiring single-use capability bound to candidate commit, fingerprint, and target. Promotion fast-forwards only the local base branch. The handoff package explicitly records that push, archive/upload, and distribution did not occur; each remains a separate future capability and approval boundary.
+For macOS, Canopy emits a source-bound Mac App Store or notarized-distribution readiness handoff after the corresponding security and release gates pass. Handoff packages explicitly record that push, signing, archive/upload, notarization, and distribution did not occur; each remains a manual boundary.
