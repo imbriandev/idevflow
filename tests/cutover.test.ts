@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 
 const RETIRED_IDENTIFIERS = [".app" + "forge", "App" + "Forge", "iosflow" + "_runtime"];
+const RETIRED_NAMESPACE = new RegExp(["pi" + "-ios", "pi" + "_ios", "Pi " + "iOS"].join("|"), "i");
 const RUNTIME_FORBIDDEN = new RegExp(["\\bpython(?:3)?\\b", "\\bpip(?:3)?\\b", "iosflow" + "_runtime", "\\.py(?:\\b|['\"`])"].join("|"), "i");
 
 async function files(root: string): Promise<string[]> {
@@ -13,7 +14,7 @@ async function files(root: string): Promise<string[]> {
 }
 
 describe("package identity gates", () => {
-  it("ships only the Pi iOS TypeScript runtime and current namespace", async () => {
+  it("ships only the Canopy TypeScript runtime and current namespace", async () => {
     const root = process.cwd();
     const publicFiles = [
       ...await files(join(root, "extensions")),
@@ -30,9 +31,10 @@ describe("package identity gates", () => {
       const content = await readFile(path, "utf8");
       assert.doesNotMatch(content, RUNTIME_FORBIDDEN, `forbidden non-TypeScript runtime reference in ${path}`);
       assert.doesNotMatch(content, retired, `retired identifier in ${path}`);
+      if (!path.endsWith(join("config", "config.ts")) && !path.endsWith(join("docs", "installation.md")) && !path.endsWith(".gitignore") && !path.endsWith(".npmignore")) assert.doesNotMatch(content, RETIRED_NAMESPACE, `retired namespace in ${path}`);
     }
     const extensionDirectories = await readdir(join(root, "extensions"));
-    assert.equal(extensionDirectories.includes("pi-ios"), true);
+    assert.equal(extensionDirectories.includes("canopy"), true);
     assert.equal(extensionDirectories.some((entry) => entry.toLowerCase() === "app" + "forge"), false);
   });
 });

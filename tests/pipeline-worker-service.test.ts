@@ -3,32 +3,32 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterEach, describe, it } from "node:test";
 import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { initializeConfig } from "../extensions/pi-ios/config/config.ts";
-import { PipelineService } from "../extensions/pi-ios/pipeline/service.ts";
-import { PipelineStore } from "../extensions/pi-ios/pipeline/store.ts";
-import { PIPELINE_SCHEMA_VERSION, type PipelineSliceState, type WorkerRunRecord } from "../extensions/pi-ios/pipeline/types.ts";
-import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
-import type { WriterSession } from "../extensions/pi-ios/sessions/types.ts";
-import { sourceFingerprint } from "../extensions/pi-ios/verification/fingerprint.ts";
-import { VerificationReceiptStore } from "../extensions/pi-ios/verification/receipts.ts";
-import type { VerificationReceipt } from "../extensions/pi-ios/verification/types.ts";
-import { buildWorkerPacket, writeWorkerPacket } from "../extensions/pi-ios/workers/packets.ts";
-import { reportWorkerRepair, submitPipelineWorker } from "../extensions/pi-ios/workers/service.ts";
+import { initializeConfig } from "../extensions/canopy/config/config.ts";
+import { PipelineService } from "../extensions/canopy/pipeline/service.ts";
+import { PipelineStore } from "../extensions/canopy/pipeline/store.ts";
+import { PIPELINE_SCHEMA_VERSION, type PipelineSliceState, type WorkerRunRecord } from "../extensions/canopy/pipeline/types.ts";
+import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/canopy/sessions/registry.ts";
+import type { WriterSession } from "../extensions/canopy/sessions/types.ts";
+import { sourceFingerprint } from "../extensions/canopy/verification/fingerprint.ts";
+import { VerificationReceiptStore } from "../extensions/canopy/verification/receipts.ts";
+import type { VerificationReceipt } from "../extensions/canopy/verification/types.ts";
+import { buildWorkerPacket, writeWorkerPacket } from "../extensions/canopy/workers/packets.ts";
+import { reportWorkerRepair, submitPipelineWorker } from "../extensions/canopy/workers/service.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
-afterEach(async () => { delete process.env.PI_IOS_WORKER_PACKET; delete process.env.PI_IOS_WORKER_PACKET_DIGEST; delete process.env.PI_IOS_WORKER_CAPABILITY; for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
+afterEach(async () => { delete process.env.CANOPY_WORKER_PACKET; delete process.env.CANOPY_WORKER_PACKET_DIGEST; delete process.env.CANOPY_WORKER_CAPABILITY; for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
 
 async function setup(id: string) {
   const fixture = await createGitFixture(); cleanups.push(fixture.cleanup); await initializeConfig(fixture.root);
   const repository = await discoverRepository(fixture.root); const capability = randomUUID(); const packetId = randomUUID();
   const packet = buildWorkerPacket({ packetId, pipelineId: id, repositoryFingerprint: repository.fingerprint, graphFingerprint: "graph", planCommit: repository.head!, integrationEpoch: repository.head!, maxRepairCycles: 2, slice: { id: "slice", title: "Slice", goal: "Implement slice", paths: ["README.md"], risk: "medium", dependsOn: [], acceptance: ["works"], verificationProfile: "integration" } });
-  const packetPath = join(fixture.root, ".pi-ios", "pipeline", "packets", `${packetId}.json`); await mkdir(join(fixture.root, ".pi-ios", "pipeline", "packets"), { recursive: true }); const digest = await writeWorkerPacket(packetPath, packet);
+  const packetPath = join(fixture.root, ".canopy", "pipeline", "packets", `${packetId}.json`); await mkdir(join(fixture.root, ".canopy", "pipeline", "packets"), { recursive: true }); const digest = await writeWorkerPacket(packetPath, packet);
   const run: WorkerRunRecord = { runId: randomUUID(), packetId, packetPath, packetDigest: digest, capabilityHash: createHash("sha256").update(capability).digest("hex"), state: "running", attempt: 1, pid: process.pid, startedAt: new Date().toISOString(), leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(), stdoutPath: "/tmp/out", stderrPath: "/tmp/err" };
   const slice: PipelineSliceState = { id: "slice", title: "Slice", goal: "Implement slice", claims: ["README.md"], risk: "medium", dependsOn: [], acceptance: ["works"], verificationProfile: "integration", status: "working", riskApproved: true, attempts: 1, repairCycles: 0, runs: [run] };
   const now = new Date().toISOString(); await new PipelineStore(repository).create({ schemaVersion: PIPELINE_SCHEMA_VERSION, id, repositoryFingerprint: repository.fingerprint, graphFingerprint: "graph", planCommit: repository.head!, integrationEpoch: repository.head!, status: "running", createdAt: now, coordinator: { ownerPiSessionId: "owner", acquiredAt: now, heartbeatAt: now, expiresAt: new Date(Date.now() + 60_000).toISOString() }, slices: { slice }, batches: [] }, "test");
-  process.env.PI_IOS_WORKER_PACKET = packetPath; process.env.PI_IOS_WORKER_PACKET_DIGEST = digest; process.env.PI_IOS_WORKER_CAPABILITY = capability;
+  process.env.CANOPY_WORKER_PACKET = packetPath; process.env.CANOPY_WORKER_PACKET_DIGEST = digest; process.env.CANOPY_WORKER_CAPABILITY = capability;
   return { fixture, repository, packet };
 }
 

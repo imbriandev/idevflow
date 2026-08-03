@@ -4,12 +4,12 @@ import { afterEach, describe, it } from "node:test";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { DEFAULT_CONFIG } from "../extensions/pi-ios/config/config.ts";
-import { diagnoseSessions, repairExpiredSessions } from "../extensions/pi-ios/recovery/doctor.ts";
-import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
-import { heartbeatSession } from "../extensions/pi-ios/sessions/service.ts";
-import type { WriterSession } from "../extensions/pi-ios/sessions/types.ts";
+import { DEFAULT_CONFIG } from "../extensions/canopy/config/config.ts";
+import { diagnoseSessions, repairExpiredSessions } from "../extensions/canopy/recovery/doctor.ts";
+import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/canopy/sessions/registry.ts";
+import { heartbeatSession } from "../extensions/canopy/sessions/service.ts";
+import type { WriterSession } from "../extensions/canopy/sessions/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -19,11 +19,11 @@ afterEach(async () => {
 });
 
 describe("doctor", () => {
-  it("reports unregistered Pi iOS worktrees without deleting them", async () => {
+  it("reports unregistered Canopy worktrees without deleting them", async () => {
     const fixture = await createGitFixture();
     cleanups.push(fixture.cleanup);
     const orphan = join(fixture.root, "..", `${fixture.root.split("/").pop()}-orphan`);
-    await execFileAsync("git", ["worktree", "add", "-b", "pi-ios/orphan", orphan], { cwd: fixture.root });
+    await execFileAsync("git", ["worktree", "add", "-b", "canopy/orphan", orphan], { cwd: fixture.root });
     cleanups.push(async () => {
       await execFileAsync("git", ["worktree", "remove", "--force", orphan], { cwd: fixture.root }).catch(() => undefined);
       await rm(orphan, { recursive: true, force: true });
@@ -44,7 +44,7 @@ describe("doctor", () => {
       task: "preserve me",
       risk: "medium",
       status: "active",
-      branch: "pi-ios/preserve",
+      branch: "canopy/preserve",
       worktreePath: fixture.root,
       baseCommit: "a".repeat(40),
       claims: ["README.md"],

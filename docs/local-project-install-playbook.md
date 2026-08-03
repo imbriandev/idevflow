@@ -1,6 +1,6 @@
-# Cài Pi iOS theo từng project
+# Cài Canopy theo từng project
 
-Playbook này cài Pi iOS vào đúng iOS app repository hiện tại. Nó không cài global cho các project khác.
+Playbook này cài Canopy vào đúng iOS app repository hiện tại. Nó không cài global cho các project khác.
 
 ## 1. Mở iOS app repository
 
@@ -16,7 +16,7 @@ Project cần là Git repository. Đọc source package trước khi trust hoặ
 Dùng branch `main` mới nhất:
 
 ```bash
-pi install -l git:github.com/imbriandev/pi-ios@main
+pi install -l git:github.com/imbriandev/canopy@main
 ```
 
 `-l` ghi package vào `.pi/settings.json` trong app repository. Mỗi lần cài hoặc update, Pi lấy revision hiện tại của `main`.
@@ -40,10 +40,10 @@ Chấp nhận project trust khi Pi hỏi. Nếu Pi đã mở trong folder này, 
 Nói với Pi:
 
 ```text
-Initialize Pi iOS for this trusted project, then help me define my app idea.
+Initialize Canopy for this trusted project, then help me define my app idea.
 ```
 
-Pi tạo runtime state tại `.pi-ios/`. Đây là state riêng của app project, cần giữ Git-ignored; nó không phải source của package Pi iOS.
+Pi tạo runtime state tại `.canopy/`. Đây là state riêng của app project, cần giữ Git-ignored; nó không phải source của package Canopy.
 
 ## 5. Bắt đầu bằng hội thoại
 
@@ -54,7 +54,7 @@ I want to build an iPhone app for freelancers who forget invoice follow-ups.
 Help me validate the idea and define the smallest complete beta.
 ```
 
-Coordinator hướng dẫn safe route theo runtime state. Không cần nhớ commands; các `/ios:*` commands chỉ là manual escape hatches.
+Coordinator hướng dẫn safe route theo runtime state. Không cần nhớ commands; các `/canopy:*` commands chỉ là manual escape hatches.
 
 ## Verify
 
@@ -64,14 +64,14 @@ Trong app repository:
 pi list
 ```
 
-Pi iOS phải hiện là project-local package. Khi runtime đã khởi tạo, `/ios` hiển thị dashboard lifecycle.
+Canopy phải hiện là project-local package. Khi runtime đã khởi tạo, `/canopy` hiển thị dashboard lifecycle.
 
 ## Update
 
 Sau khi một revision mới được push lên `main`, cập nhật project bằng:
 
 ```bash
-pi install -l git:github.com/imbriandev/pi-ios@main
+pi install -l git:github.com/imbriandev/canopy@main
 ```
 
 Sau đó chạy `/reload` hoặc khởi động lại Pi. Nếu cần reproducibility cho CI hoặc beta cụ thể, mới pin một tag/commit thay cho `main`.
@@ -79,7 +79,7 @@ Sau đó chạy `/reload` hoặc khởi động lại Pi. Nếu cần reproducib
 ## Remove khỏi một project
 
 ```bash
-pi remove -l git:github.com/imbriandev/pi-ios
+pi remove -l git:github.com/imbriandev/canopy
 ```
 
-Lệnh này chỉ bỏ package entry của project. Nó không xóa app source hoặc `.pi-ios/` runtime history.
+Lệnh này chỉ bỏ package entry của project. Nó không xóa app source hoặc `.canopy/` runtime history.

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isStage, STAGES, STAGE_CONTRACTS } from "../extensions/pi-ios/lifecycle/contracts.ts";
+import { isStage, STAGES, STAGE_CONTRACTS } from "../extensions/canopy/lifecycle/contracts.ts";
 
 describe("stage contracts", () => {
   it("defines exactly seven unique lifecycle stages", () => {
@@ -10,7 +10,7 @@ describe("stage contracts", () => {
 
   it("binds every stage to its namespaced command", () => {
     for (const stage of STAGES) {
-      assert.equal(STAGE_CONTRACTS[stage].command, `ios:${stage}`);
+      assert.equal(STAGE_CONTRACTS[stage].command, `canopy:${stage}`);
       assert.ok(STAGE_CONTRACTS[stage].requiredEvidence.length > 0);
       assert.ok(STAGE_CONTRACTS[stage].forbidden.length > 0);
     }

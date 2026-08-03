@@ -3,14 +3,14 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runSupervised } from "../extensions/pi-ios/process/supervisor.ts";
+import { runSupervised } from "../extensions/canopy/process/supervisor.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
 function fixture() {
   const create = async () => {
-    const root = await mkdtemp(join(tmpdir(), "pi-ios-process-"));
+    const root = await mkdtemp(join(tmpdir(), "canopy-process-"));
     roots.push(root);
     return root;
   };

@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Pi iOS has repeatable local and macOS CI gates, adversarial recovery coverage, mock-agent authority evaluations, confirmation-gate tests, metadata-only diagnostics, and installation/release operating documentation. The package remains a self-contained TypeScript Pi extension.
+Canopy has repeatable local and macOS CI gates, adversarial recovery coverage, mock-agent authority evaluations, confirmation-gate tests, metadata-only diagnostics, and installation/release operating documentation. The package remains a self-contained TypeScript Pi extension.
 
 ## Fault containment and recovery
 
@@ -16,9 +16,9 @@ Mock-agent evaluations call the registered typed tools rather than simulate pros
 
 ## Diagnostics
 
-`pi_ios_doctor report` creates a versioned structured support report with runtime revision, config migration state, aggregate writer/pipeline/candidate health, and sanitized diagnostic recommendations. It intentionally excludes source content, task text, packets, logs, approval tokens, verification receipts, and credentials. The report has a `ready` or `attention` health state and is returned as typed tool details rather than persisted by default.
+`canopy_doctor report` creates a versioned structured support report with runtime revision, config migration state, aggregate writer/pipeline/candidate health, and sanitized diagnostic recommendations. It intentionally excludes source content, task text, packets, logs, approval tokens, verification receipts, and credentials. The report has a `ready` or `attention` health state and is returned as typed tool details rather than persisted by default.
 
-`pi_ios_doctor status` remains human-readable. `repair` remains interactive and only marks expired active writer sessions stale. Pipeline loss remains reconciled through the coordinator; no diagnostic action deletes source.
+`canopy_doctor status` remains human-readable. `repair` remains interactive and only marks expired active writer sessions stale. Pipeline loss remains reconciled through the coordinator; no diagnostic action deletes source.
 
 ## CI and release readiness
 
@@ -27,7 +27,7 @@ Mock-agent evaluations call the registered typed tools rather than simulate pros
 - Node 22 installation and the full typecheck/unit suite
 - Pi extension loading and package dry-run
 - whitespace validation
-- real Xcode simulator verification and the full SampleApp manual-handoff E2E with `PI_IOS_XCODE_E2E=1`
+- real Xcode simulator verification and the full SampleApp manual-handoff E2E with `CANOPY_IOS_XCODE_E2E=1`
 
 `docs/installation.md` documents requirements, local loading, initialization, safe migration, diagnostics, and exact validation commands. `docs/release-process.md` separates package release from iOS app promotion and reiterates the manual TestFlight boundary.
 

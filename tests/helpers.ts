@@ -7,14 +7,14 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 export async function createGitFixture(): Promise<{ root: string; cleanup(): Promise<void> }> {
-  const root = await mkdtemp(join(tmpdir(), "pi-ios-test-"));
+  const root = await mkdtemp(join(tmpdir(), "canopy-test-"));
   await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
-  await writeFile(join(root, ".gitignore"), ".pi-ios/\n", "utf8");
+  await writeFile(join(root, ".gitignore"), ".canopy/\n", "utf8");
   await writeFile(join(root, "README.md"), "# Fixture\n", "utf8");
   await execFileAsync("git", ["add", "."], { cwd: root });
   await execFileAsync(
     "git",
-    ["-c", "user.name=Pi iOS Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "initial"],
+    ["-c", "user.name=Canopy Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "initial"],
     { cwd: root },
   );
   return {

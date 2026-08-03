@@ -37,4 +37,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: xcodebuild -version
-      - run: PI_IOS_XCODE_E2E=1 PI_MACOS_XCODE_E2E=1 PI_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+      - run: CANOPY_IOS_XCODE_E2E=1 CANOPY_MACOS_XCODE_E2E=1 CANOPY_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts

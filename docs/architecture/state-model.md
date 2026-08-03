@@ -5,7 +5,7 @@
 An installed project uses:
 
 ```text
-.pi-ios/
+.canopy/
   config.json
   state/events.jsonl
   state/snapshot.json

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { classifyReadOnlyShell, hardenManagedArgs, hardenReadOnlyShell, validateManagedCommand } from "../extensions/pi-ios/policy/shell-policy.ts";
+import { classifyReadOnlyShell, hardenManagedArgs, hardenReadOnlyShell, validateManagedCommand } from "../extensions/canopy/policy/shell-policy.ts";
 
 describe("shell policy", () => {
   it("allows bounded read-only inspection", () => {

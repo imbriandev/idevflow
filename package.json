@@ -1,12 +1,14 @@
 {
-  "name": "pi-ios",
-  "version": "0.2.0-beta.1",
-  "description": "A Pi-native workflow for taking an indie iOS app from idea to verified TestFlight handoff.",
+  "name": "canopy",
+  "version": "0.3.0-beta.1",
+  "description": "A Pi-native workflow for taking an indie Apple-platform app from idea to verified distribution handoff.",
   "type": "module",
   "private": true,
   "keywords": [
     "pi-package",
+    "apple-platforms",
     "ios",
+    "macos",
     "swift",
     "swiftui",
     "testflight"

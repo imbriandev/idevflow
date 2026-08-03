@@ -1,6 +1,6 @@
 # Evidence-Linked Review and Audit
 
-Load for `/ios:review`, high-risk implementation self-review, or an explicit deep audit. Ordinary review stays scoped to the requested diff, screen, flow, or acceptance criteria.
+Load for `/canopy:review`, high-risk implementation self-review, or an explicit deep audit. Ordinary review stays scoped to the requested diff, screen, flow, or acceptance criteria.
 
 ## Personas and severity
 

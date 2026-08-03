@@ -4,12 +4,12 @@ import { afterEach, describe, it } from "node:test";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
-import { initializeConfig, loadConfig } from "../extensions/pi-ios/config/config.ts";
-import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
-import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
-import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
-import { finishSession, runPostflight, writePreflight } from "../extensions/pi-ios/sessions/service.ts";
-import { verifySession } from "../extensions/pi-ios/verification/engine.ts";
+import { initializeConfig, loadConfig } from "../extensions/canopy/config/config.ts";
+import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
+import { RuntimeStore } from "../extensions/canopy/state/runtime-store.ts";
+import { SessionRegistry } from "../extensions/canopy/sessions/registry.ts";
+import { finishSession, runPostflight, writePreflight } from "../extensions/canopy/sessions/service.ts";
+import { verifySession } from "../extensions/canopy/verification/engine.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -21,12 +21,12 @@ afterEach(async () => {
 async function setup() {
   const fixture = await createGitFixture();
   cleanups.push(fixture.cleanup);
-  await execFileAsync("git", ["config", "user.name", "Pi iOS Tests"], { cwd: fixture.root });
+  await execFileAsync("git", ["config", "user.name", "Canopy Tests"], { cwd: fixture.root });
   await execFileAsync("git", ["config", "user.email", "tests@example.invalid"], { cwd: fixture.root });
   const repository = await discoverRepository(fixture.root);
   await new RuntimeStore(repository).initialize("test");
   await initializeConfig(repository.primaryRoot);
-  cleanups.push(async () => rm(`${fixture.root}.pi-ios-worktrees`, { recursive: true, force: true }));
+  cleanups.push(async () => rm(`${fixture.root}.canopy-worktrees`, { recursive: true, force: true }));
   return { fixture, repository };
 }
 

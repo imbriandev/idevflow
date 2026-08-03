@@ -3,15 +3,15 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { validateArtifact } from "../extensions/pi-ios/artifacts/manifest.ts";
-import { collectProof } from "../extensions/pi-ios/verification/proofs.ts";
+import { validateArtifact } from "../extensions/canopy/artifacts/manifest.ts";
+import { collectProof } from "../extensions/canopy/verification/proofs.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
 describe("quality proofs", () => {
   it("copies and hashes a screenshot proof with required metadata", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pi-ios-proof-"));
+    const root = await mkdtemp(join(tmpdir(), "canopy-proof-"));
     roots.push(root);
     const screenshot = join(root, "screen.png");
     const png = Buffer.alloc(24);
@@ -25,7 +25,7 @@ describe("quality proofs", () => {
   });
 
   it("rejects unsubstantiated accessibility and performance proof", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pi-ios-proof-"));
+    const root = await mkdtemp(join(tmpdir(), "canopy-proof-"));
     roots.push(root);
     const artifact = join(root, "proof.json");
     await writeFile(artifact, "{}\n");

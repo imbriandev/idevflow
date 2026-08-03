@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { validateIdeaQuality, validateLearningUpdate, validateProductMemory, validateSlcSpec } from "../extensions/pi-ios/documents/product.ts";
-import { validateWorkGraph } from "../extensions/pi-ios/planning/work-graph.ts";
+import { validateIdeaQuality, validateLearningUpdate, validateProductMemory, validateSlcSpec } from "../extensions/canopy/documents/product.ts";
+import { validateWorkGraph } from "../extensions/canopy/planning/work-graph.ts";
 
 const memory = {
   schemaVersion: 3,

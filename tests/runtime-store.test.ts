@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { appendFile, readFile } from "node:fs/promises";
-import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
-import { JournalCorruptionError, RevisionConflictError } from "../extensions/pi-ios/state/errors.ts";
-import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
+import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
+import { JournalCorruptionError, RevisionConflictError } from "../extensions/canopy/state/errors.ts";
+import { RuntimeStore } from "../extensions/canopy/state/runtime-store.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

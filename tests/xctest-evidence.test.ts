@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertPassedXCTest, assertPerformanceBudget, assertQualityTestSource, validateXCTestMetadata } from "../extensions/pi-ios/verification/xctest-evidence.ts";
+import { assertPassedXCTest, assertPerformanceBudget, assertQualityTestSource, validateXCTestMetadata } from "../extensions/canopy/verification/xctest-evidence.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
@@ -27,7 +27,7 @@ describe("XCTest-backed quality evidence", () => {
   });
 
   it("requires the named source test to contain the matching XCTest API", async () => {
-    const root = await mkdtemp(join(tmpdir(), "pi-ios-xctest-evidence-")); roots.push(root);
+    const root = await mkdtemp(join(tmpdir(), "canopy-xctest-evidence-")); roots.push(root);
     await writeFile(join(root, "QualityTests.swift"), "import XCTest\nfinal class QualityTests: XCTestCase { func testAccessibility() throws { try XCUIApplication().performAccessibilityAudit() }; func testLaunch() { measure(metrics: [XCTApplicationLaunchMetric()]) {} } }\n");
     await assertQualityTestSource(root, "accessibility", "QualityTests.testAccessibility");
     await assertQualityTestSource(root, "performance", "QualityTests.testLaunch");

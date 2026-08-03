@@ -2,7 +2,7 @@
 
 ## Mission
 
-Pi iOS turns a founder's product intent into a narrow Apple-platform product, an approved implementation graph, isolated code changes, and artifact-backed verification. iOS additionally supports a deliberate TestFlight handoff; macOS release support remains a later milestone.
+Canopy turns a founder's product intent into a narrow Apple-platform product, an approved implementation graph, isolated code changes, and artifact-backed verification. iOS additionally supports a deliberate TestFlight handoff; macOS release support remains a later milestone.
 
 It is not a prompt pack. It is a deterministic workflow kernel integrated with Pi's commands, skills, tools, events, sessions, and TUI.
 
@@ -28,7 +28,7 @@ These behaviors must not depend on an LLM correctly remembering prose.
 
 The coordinator is one founder-facing conversational layer, not a second workflow engine. At Pi interaction boundaries it projects sanitized durable runtime, baseline, writer-session, pipeline, and candidate state into a safe next-route brief. It prioritizes recovery of an owned writer or active pipeline over new work, and recommends worker delegation only for independent low/medium-risk slices of an exact approved graph.
 
-It cannot mutate lifecycle state or infer approval from prose. It creates no background daemon, retains no separate authoritative state, and does not expose task text, capabilities, credentials, or worktree paths in the founder dashboard. `/ios` renders the same safe projection; the seven stage commands remain manual escape hatches.
+It cannot mutate lifecycle state or infer approval from prose. It creates no background daemon, retains no separate authoritative state, and does not expose task text, capabilities, credentials, or worktree paths in the founder dashboard. `/canopy` renders the same safe projection; the seven stage commands remain manual escape hatches.
 
 ### Skills
 
@@ -42,7 +42,7 @@ Skills provide progressively disclosed expertise for seven stages:
 6. Ship — release verification and TestFlight handoff decision.
 7. Learn — feedback synthesis and next focus.
 
-Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools. For non-trivial Apple-platform work, `pi_ios_context` deterministically selects a bounded cold path from the package-owned specialist knowledge base; skills then read only selected references. This improves domain reasoning without loading all guidance or granting authority.
+Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools. For non-trivial Apple-platform work, `canopy_context` deterministically selects a bounded cold path from the package-owned specialist knowledge base; skills then read only selected references. This improves domain reasoning without loading all guidance or granting authority.
 
 ### Worker runtime
 
@@ -59,12 +59,12 @@ Workers can produce source commits and receipts. They cannot integrate, approve 
 
 ### Project state
 
-Durable state belongs to `.pi-ios/` in the iOS app repository, independently of Pi conversation sessions. Pi custom entries mirror session-local UI state but are not the source of truth.
+Durable state belongs to `.canopy/` in the iOS app repository, independently of Pi conversation sessions. Pi custom entries mirror session-local UI state but are not the source of truth.
 
 ## Package topology
 
 ```text
-extensions/pi-ios/
+extensions/canopy/
   commands/       command registration and argument handling
   coordinator/    state projection, conversational brief, delegation policy
   lifecycle/      contracts, transitions, risk, and policy
@@ -112,7 +112,7 @@ templates/        project memory and evidence templates
 
 Milestone 3 establishes two hash-chained project journals: lifecycle state and writer-session ownership. The kernel creates writer branches and sibling worktrees, serializes path claims under a cross-process lock, refreshes leases on active turns, and preserves parked, stale, conflicted, or orphaned source for diagnosis.
 
-When a Pi iOS stage is active, built-in `edit` and `write` calls are redirected to the authorized worktree only after symlink-safe containment and claim checks. Direct Bash is limited to a strict read-only subset. Build and test processes use a managed typed tool with fixed executable policy, worktree cwd, timeout, cancellation, and output truncation.
+When a Canopy stage is active, built-in `edit` and `write` calls are redirected to the authorized worktree only after symlink-safe containment and claim checks. Direct Bash is limited to a strict read-only subset. Build and test processes use a managed typed tool with fixed executable policy, worktree cwd, timeout, cancellation, and output truncation.
 
 Postflight records changed paths, evidence, and a content fingerprint. Finish rejects source drift, unexpected HEAD changes, out-of-claim commit paths, and changes left by commit hooks before marking a commit ready for later integration.
 

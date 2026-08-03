@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, it } from "node:test";
-import { KNOWLEDGE_REFERENCES, detectKnowledgeSurfaces, selectKnowledge } from "../extensions/pi-ios/context/knowledge.ts";
+import { KNOWLEDGE_REFERENCES, detectKnowledgeSurfaces, selectKnowledge } from "../extensions/canopy/context/knowledge.ts";
 
 const root = process.cwd();
 
@@ -28,8 +28,8 @@ describe("specialist knowledge routing", () => {
   it("keeps skills and the package-owned specialist knowledge base aligned", async () => {
     await Promise.all(KNOWLEDGE_REFERENCES.map((reference) => access(join(root, reference.path))));
     for (const stage of ["define", "plan", "build", "test", "review", "ship", "learn"]) {
-      const skill = await readFile(join(root, "skills", `ios-${stage}`, "SKILL.md"), "utf8");
-      assert.match(skill, /pi_ios_context/);
+      const skill = await readFile(join(root, "skills", `canopy-${stage}`, "SKILL.md"), "utf8");
+      assert.match(skill, /canopy_context/);
     }
   });
 });

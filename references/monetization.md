@@ -1,6 +1,6 @@
 # StoreKit and Monetization
 
-Load only for StoreKit, RevenueCat, purchases, subscriptions, paywalls, entitlements, restore, or pricing disclosure. Pi iOS never contacts App Store Connect or RevenueCat as part of this reference.
+Load only for StoreKit, RevenueCat, purchases, subscriptions, paywalls, entitlements, restore, or pricing disclosure. Canopy never contacts App Store Connect or RevenueCat as part of this reference.
 
 ## Product and architecture
 

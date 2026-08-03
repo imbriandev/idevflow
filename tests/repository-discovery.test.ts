@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
+import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);

@@ -3,17 +3,17 @@ import { afterEach, describe, it } from "node:test";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { initializeConfig } from "../extensions/pi-ios/config/config.ts";
-import { registerToolGate } from "../extensions/pi-ios/policy/tool-gate.ts";
-import { discoverRepository } from "../extensions/pi-ios/repository/discovery.ts";
-import { writePreflight } from "../extensions/pi-ios/sessions/service.ts";
-import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
+import { initializeConfig } from "../extensions/canopy/config/config.ts";
+import { registerToolGate } from "../extensions/canopy/policy/tool-gate.ts";
+import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
+import { writePreflight } from "../extensions/canopy/sessions/service.ts";
+import { RuntimeStore } from "../extensions/canopy/state/runtime-store.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
-  delete process.env.PI_IOS_WORKER_PACKET;
-  delete process.env.PI_IOS_WORKER_EXTENSION;
+  delete process.env.CANOPY_WORKER_PACKET;
+  delete process.env.CANOPY_WORKER_EXTENSION;
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
 });
 
@@ -45,7 +45,7 @@ describe("tool gate", () => {
     const repository = await discoverRepository(fixture.root);
     await new RuntimeStore(repository).initialize("test");
     await initializeConfig(repository.primaryRoot);
-    cleanups.push(async () => rm(`${fixture.root}.pi-ios-worktrees`, { recursive: true, force: true }));
+    cleanups.push(async () => rm(`${fixture.root}.canopy-worktrees`, { recursive: true, force: true }));
     const gate = captureGate();
     const ctx = context(fixture.root);
 
@@ -69,12 +69,12 @@ describe("tool gate", () => {
 
   it("allows a worker to read only package-owned Markdown specialist references before preflight", async () => {
     const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
-    process.env.PI_IOS_WORKER_PACKET = "/packet.json";
-    process.env.PI_IOS_WORKER_EXTENSION = join(process.cwd(), "extensions", "pi-ios", "index.ts");
+    process.env.CANOPY_WORKER_PACKET = "/packet.json";
+    process.env.CANOPY_WORKER_EXTENSION = join(process.cwd(), "extensions", "canopy", "index.ts");
     const gate = captureGate(); const ctx = context(fixture.root);
     const reference: Record<string, unknown> = { path: join(process.cwd(), "references", "swiftui-experience.md") };
     assert.equal(await gate({ toolName: "read", input: reference }, ctx), undefined);
-    const nonReference = await gate({ toolName: "read", input: { path: join(process.cwd(), "extensions", "pi-ios", "index.ts") } }, ctx);
+    const nonReference = await gate({ toolName: "read", input: { path: join(process.cwd(), "extensions", "canopy", "index.ts") } }, ctx);
     assert.equal(nonReference?.block, true);
   });
 
@@ -84,7 +84,7 @@ describe("tool gate", () => {
     const repository = await discoverRepository(fixture.root);
     await new RuntimeStore(repository).initialize("test");
     await initializeConfig(repository.primaryRoot);
-    cleanups.push(async () => rm(`${fixture.root}.pi-ios-worktrees`, { recursive: true, force: true }));
+    cleanups.push(async () => rm(`${fixture.root}.canopy-worktrees`, { recursive: true, force: true }));
     const session = await writePreflight(repository, {
       piSessionId: "pi-gate",
       stage: "build",

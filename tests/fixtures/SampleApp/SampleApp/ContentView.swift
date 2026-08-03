@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        Text("Pi iOS verification fixture")
+        Text("Canopy verification fixture")
             .padding()
     }
 }
