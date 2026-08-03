@@ -1,6 +1,6 @@
 # Rewrite Parity Matrix
 
-This is a living acceptance ledger. `Pending` means the behavior has not yet been implemented and proven in Canopy.
+This is a living acceptance ledger. `Pending` means the behavior has not yet been implemented and proven in iDevFlow.
 
 | Area | Required behavior | Target module | Status |
 | --- | --- | --- | --- |

@@ -1,6 +1,6 @@
 # Specialist Context Discipline
 
-Use `canopy_context` after selecting a lifecycle stage and before reading specialist material. The selector is deterministic: it maps stage, risk, task wording, and explicit surfaces to at most four references within a token budget.
+Use `idev_context` after selecting a lifecycle stage and before reading specialist material. The selector is deterministic: it maps stage, risk, task wording, and explicit surfaces to at most four references within a token budget.
 
 ## Rule
 
@@ -10,7 +10,7 @@ Expand context only for a concrete surface, a failed verification, a privacy/dat
 
 ## Evidence discipline
 
-Do not replace kernel evidence with a checklist claim. `canopy_verify`, proof artifacts, source fingerprints, review receipts, approvals, and integration state remain authoritative. Summarize logs by failing command, exit code, shortest useful diagnostic, and artifact path; never paste credentials or full build logs.
+Do not replace kernel evidence with a checklist claim. `idev_verify`, proof artifacts, source fingerprints, review receipts, approvals, and integration state remain authoritative. Summarize logs by failing command, exit code, shortest useful diagnostic, and artifact path; never paste credentials or full build logs.
 
 ## Boundaries
 

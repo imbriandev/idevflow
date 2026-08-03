@@ -1,6 +1,6 @@
 # Release and TestFlight Readiness
 
-Load for `/canopy:ship`, release metadata, TestFlight readiness, or a candidate Go/No-Go decision. TestFlight is the default target; App Store production is outside this extension’s automatic authority.
+Load for `/idev:ship`, release metadata, TestFlight readiness, or a candidate Go/No-Go decision. TestFlight is the default target; App Store production is outside this extension’s automatic authority.
 
 ## Go/No-Go
 

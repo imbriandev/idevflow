@@ -1,5 +1,5 @@
 {
-  "name": "canopy",
+  "name": "idevflow",
   "version": "0.3.0-beta.1",
   "description": "A Pi-native workflow for taking an indie Apple-platform app from idea to verified distribution handoff.",
   "type": "module",

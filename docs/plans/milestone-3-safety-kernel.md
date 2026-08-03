@@ -18,7 +18,7 @@ Status: Implemented
 - Incomplete final-record recovery under lock.
 - Fail-closed behavior for complete malformed or tampered records.
 - Typed lifecycle transition validation.
-- Trusted-project `canopy_runtime` status/initialize tool.
+- Trusted-project `idev_runtime` status/initialize tool.
 
 ## Slice 3.2 — Repository baseline and configuration
 
@@ -28,8 +28,8 @@ Status: Implemented
 - Shared Git-common-directory identity across worktrees.
 - Base/integration branch-name validation and base commit discovery.
 - Live clean, committed primary-baseline contract.
-- Local `.canopy/` exclusion through Git metadata without editing tracked ignore files.
-- Read-only runtime, baseline, and writer status through `/canopy` and `canopy_runtime`.
+- Local `.idevflow/` exclusion through Git metadata without editing tracked ignore files.
+- Read-only runtime, baseline, and writer status through `/idevflow` and `idev_runtime`.
 
 ## Slice 3.3 — Sessions, worktrees, claims, and leases
 

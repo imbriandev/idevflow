@@ -58,8 +58,8 @@ The kernel prevents callers from selecting a profile weaker than stage, risk, an
 
 ### Quality proof preparation
 
-- `canopy_simulator screenshot` captures source-bound screenshot proof.
-- `canopy_proof` prepares source-bound accessibility or performance metadata.
+- `idev_simulator screenshot` captures source-bound screenshot proof.
+- `idev_proof` prepares source-bound accessibility or performance metadata.
 - Accessibility evidence requires passing named tests.
 - Performance evidence requires finite metrics and budgets.
 - Release evidence requires `compact-light`, `compact-dark`, and `accessibility-xxxl` screenshots by default.
@@ -71,13 +71,13 @@ Automated suite:
 ```text
 51 tests
 50 normal-pass
-1 Xcode E2E skipped unless CANOPY_IOS_XCODE_E2E=1
+1 Xcode E2E skipped unless IDEVFLOW_IOS_XCODE_E2E=1
 ```
 
 Real Xcode E2E:
 
 ```text
-CANOPY_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts
+IDEVFLOW_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts
 pass
 ```
 

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
-import { registerPipelineTool } from "../extensions/canopy/tools/pipeline-tool.ts";
-import { registerReleaseTool } from "../extensions/canopy/tools/release-tool.ts";
+import { registerPipelineTool } from "../extensions/idevflow/tools/pipeline-tool.ts";
+import { registerReleaseTool } from "../extensions/idevflow/tools/release-tool.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
-afterEach(async () => { delete process.env.CANOPY_WORKER_PACKET; for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
+afterEach(async () => { delete process.env.IDEVFLOW_WORKER_PACKET; for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
 
 type Tool = { readonly name: string; readonly execute: (id: string, parameters: any, signal: AbortSignal | undefined, update: undefined, context: any) => Promise<unknown> };
 function mockAgentTools(): Map<string, Tool> {
@@ -26,12 +26,12 @@ describe("mock-agent workflow evaluations", () => {
     const evaluations = [
       {
         name: "worker cannot query or operate the coordinator",
-        run: async () => { process.env.CANOPY_WORKER_PACKET = "/packet.json"; return tools.get("canopy_pipeline")!.execute("call", { action: "status" }, undefined, undefined, context(fixture.root, true)); },
+        run: async () => { process.env.IDEVFLOW_WORKER_PACKET = "/packet.json"; return tools.get("idev_pipeline")!.execute("call", { action: "status" }, undefined, undefined, context(fixture.root, true)); },
         error: /workers cannot invoke coordinator/,
       },
       {
         name: "untrusted mock agent cannot create a release candidate",
-        run: async () => tools.get("canopy_release")!.execute("call", { action: "create_candidate", verificationFingerprint: "receipt" }, undefined, undefined, context(fixture.root, false)),
+        run: async () => tools.get("idev_release")!.execute("call", { action: "create_candidate", verificationFingerprint: "receipt" }, undefined, undefined, context(fixture.root, false)),
         error: /blocked in an untrusted project/,
       },
     ];

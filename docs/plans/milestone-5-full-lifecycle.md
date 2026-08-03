@@ -18,7 +18,7 @@ The kernel validates tracked, versioned JSON documents for:
 - explicit non-goals, success signals, and risks
 - product decisions and rationale
 
-The default paths are `docs/canopy/product-memory.json` and `docs/canopy/slc.json`. Their canonical content produces the product fingerprint consumed by planning.
+The default paths are `docs/idevflow/product-memory.json` and `docs/idevflow/slc.json`. Their canonical content produces the product fingerprint consumed by planning.
 
 ### Architecture and work graph
 

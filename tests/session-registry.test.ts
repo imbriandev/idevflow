@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { appendFile } from "node:fs/promises";
-import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/canopy/sessions/registry.ts";
-import type { WriterSession } from "../extensions/canopy/sessions/types.ts";
+import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
+import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -18,7 +18,7 @@ function session(id: string, claim: string): WriterSession {
     task: id,
     risk: "medium",
     status: "active",
-    branch: `canopy/${id}`,
+    branch: `idev/${id}`,
     worktreePath: `/tmp/${id}`,
     baseCommit: "a".repeat(40),
     claims: [claim],

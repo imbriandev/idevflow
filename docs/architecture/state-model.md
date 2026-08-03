@@ -5,7 +5,7 @@
 An installed project uses:
 
 ```text
-.canopy/
+.idevflow/
   config.json
   state/events.jsonl
   state/snapshot.json

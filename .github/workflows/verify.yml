@@ -42,6 +42,6 @@ jobs:
       - run: npm ci
       - run: xcodebuild -version
       - if: matrix.suite == 'platforms'
-        run: CANOPY_IOS_XCODE_E2E=1 CANOPY_MACOS_XCODE_E2E=1 CANOPY_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts
+        run: IDEVFLOW_IOS_XCODE_E2E=1 IDEVFLOW_MACOS_XCODE_E2E=1 IDEVFLOW_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts
       - if: matrix.suite == 'handoff'
-        run: CANOPY_IOS_XCODE_E2E=1 npx tsx --test tests/real-app-handoff-e2e.test.ts
+        run: IDEVFLOW_IOS_XCODE_E2E=1 npx tsx --test tests/real-app-handoff-e2e.test.ts

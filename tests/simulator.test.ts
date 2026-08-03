@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { writeFile } from "node:fs/promises";
-import { DEFAULT_CONFIG } from "../extensions/canopy/config/config.ts";
-import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
-import { discoverSimulatorDevices, selectSimulator } from "../extensions/canopy/simulator/devices.ts";
-import { SimulatorLeaseStore } from "../extensions/canopy/simulator/leases.ts";
-import { captureSimulatorScreenshot } from "../extensions/canopy/simulator/service.ts";
-import type { SimulatorDevice } from "../extensions/canopy/simulator/types.ts";
-import type { CommandProbe } from "../extensions/canopy/xcode/discovery.ts";
+import { DEFAULT_CONFIG } from "../extensions/idevflow/config/config.ts";
+import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
+import { discoverSimulatorDevices, selectSimulator } from "../extensions/idevflow/simulator/devices.ts";
+import { SimulatorLeaseStore } from "../extensions/idevflow/simulator/leases.ts";
+import { captureSimulatorScreenshot } from "../extensions/idevflow/simulator/service.ts";
+import type { SimulatorDevice } from "../extensions/idevflow/simulator/types.ts";
+import type { CommandProbe } from "../extensions/idevflow/xcode/discovery.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

@@ -1,8 +1,8 @@
-# Canopy Implementation Plan
+# iDevFlow Implementation Plan
 
 ## Completion standard
 
-Canopy is complete when it can take a trusted iOS repository through define, plan approval, isolated build, test, review, combined verification, ship approval, and a verified manual TestFlight handoff using its TypeScript safety kernel.
+iDevFlow is complete when it can take a trusted iOS repository through define, plan approval, isolated build, test, review, combined verification, ship approval, and a verified manual TestFlight handoff using its TypeScript safety kernel.
 
 ## Delivered capabilities
 
@@ -14,7 +14,7 @@ Canopy is complete when it can take a trusted iOS repository through define, pla
 | Multi-agent delivery | immutable packets, bounded workers/repair, integration epochs, and combined verification |
 | Specialist reasoning | bounded package-owned context selection and scenario evaluations |
 | XCTest quality enforcement | fresh accessibility-audit and performance-metric evidence against project-owned budgets |
-| Package identity | Pi-native TypeScript source under `extensions/canopy/` and local runtime under `.canopy/` |
+| Package identity | Pi-native TypeScript source under `extensions/idevflow/` and local runtime under `.idevflow/` |
 | Idea Quality Gate (M12) | evidence/assumption records, discovery research/prototype loop, critique acceptance, and evidence-bound learning |
 | Apple-platform verification and handoff (M13) | iOS/macOS matrix receipts, platform-bound slices/workers, native Xcode evidence, macOS security gate, independent handoffs, and real universal fixture E2E |
 
@@ -30,7 +30,7 @@ Canopy is complete when it can take a trusted iOS repository through define, pla
 
 ```bash
 npm run check
-CANOPY_IOS_XCODE_E2E=1 CANOPY_MACOS_XCODE_E2E=1 CANOPY_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+IDEVFLOW_IOS_XCODE_E2E=1 IDEVFLOW_MACOS_XCODE_E2E=1 IDEVFLOW_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
 pi -e . --list-models
 npm pack --dry-run --json
 git diff --check

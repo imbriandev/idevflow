@@ -3,6 +3,7 @@ coverage/
 dist/
 .DS_Store
 *.log
+.idevflow/
 .canopy/
 .pi-ios/
 .pi/npm/

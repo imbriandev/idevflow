@@ -14,7 +14,7 @@ async function files(root: string): Promise<string[]> {
 }
 
 describe("package identity gates", () => {
-  it("ships only the Canopy TypeScript runtime and current namespace", async () => {
+  it("ships only the iDevFlow TypeScript runtime and current namespace", async () => {
     const root = process.cwd();
     const publicFiles = [
       ...await files(join(root, "extensions")),
@@ -34,7 +34,7 @@ describe("package identity gates", () => {
       if (!path.endsWith(join("config", "config.ts")) && !path.endsWith(join("docs", "installation.md")) && !path.endsWith(".gitignore") && !path.endsWith(".npmignore")) assert.doesNotMatch(content, RETIRED_NAMESPACE, `retired namespace in ${path}`);
     }
     const extensionDirectories = await readdir(join(root, "extensions"));
-    assert.equal(extensionDirectories.includes("canopy"), true);
+    assert.equal(extensionDirectories.includes("idevflow"), true);
     assert.equal(extensionDirectories.some((entry) => entry.toLowerCase() === "app" + "forge"), false);
   });
 });

@@ -3,12 +3,12 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadMacDistributionManifest, loadReleaseManifest, validateMacSecurityGate, validateMonetizationGate, validatePrivacyGate } from "../extensions/canopy/release/gates.ts";
+import { loadMacDistributionManifest, loadReleaseManifest, validateMacSecurityGate, validateMonetizationGate, validatePrivacyGate } from "../extensions/idevflow/release/gates.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
-async function root(): Promise<string> { const value = await mkdtemp(join(tmpdir(), "canopy-gates-")); roots.push(value); return value; }
+async function root(): Promise<string> { const value = await mkdtemp(join(tmpdir(), "idev-gates-")); roots.push(value); return value; }
 
 describe("release gates", () => {
   it("blocks unresolved high privacy findings", async () => {

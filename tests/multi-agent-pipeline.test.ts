@@ -5,25 +5,25 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { initializeConfig } from "../extensions/canopy/config/config.ts";
-import { loadDefinedProduct } from "../extensions/canopy/documents/product.ts";
-import { integratePipelineBatch } from "../extensions/canopy/pipeline/integration.ts";
-import { PipelineService } from "../extensions/canopy/pipeline/service.ts";
-import { PipelineStore } from "../extensions/canopy/pipeline/store.ts";
-import type { PipelineStageReceipts } from "../extensions/canopy/pipeline/types.ts";
-import { loadWorkGraph } from "../extensions/canopy/planning/work-graph.ts";
-import type { SupervisedProcessResult } from "../extensions/canopy/process/supervisor.ts";
-import { discoverRepository, type RepositoryDescriptor } from "../extensions/canopy/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/canopy/sessions/registry.ts";
-import { finishSession, receiptFingerprint, runPostflight, writePreflight } from "../extensions/canopy/sessions/service.ts";
-import type { WriterSession } from "../extensions/canopy/sessions/types.ts";
-import { RuntimeStore } from "../extensions/canopy/state/runtime-store.ts";
-import type { VerificationInput } from "../extensions/canopy/verification/engine.ts";
-import { sourceFingerprint } from "../extensions/canopy/verification/fingerprint.ts";
-import { VerificationReceiptStore } from "../extensions/canopy/verification/receipts.ts";
-import type { VerificationReceipt } from "../extensions/canopy/verification/types.ts";
-import { readWorkerPacket } from "../extensions/canopy/workers/packets.ts";
-import type { WorkerLauncher, WorkerLaunchInput } from "../extensions/canopy/workers/runner.ts";
+import { initializeConfig } from "../extensions/idevflow/config/config.ts";
+import { loadDefinedProduct } from "../extensions/idevflow/documents/product.ts";
+import { integratePipelineBatch } from "../extensions/idevflow/pipeline/integration.ts";
+import { PipelineService } from "../extensions/idevflow/pipeline/service.ts";
+import { PipelineStore } from "../extensions/idevflow/pipeline/store.ts";
+import type { PipelineStageReceipts } from "../extensions/idevflow/pipeline/types.ts";
+import { loadWorkGraph } from "../extensions/idevflow/planning/work-graph.ts";
+import type { SupervisedProcessResult } from "../extensions/idevflow/process/supervisor.ts";
+import { discoverRepository, type RepositoryDescriptor } from "../extensions/idevflow/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
+import { finishSession, receiptFingerprint, runPostflight, writePreflight } from "../extensions/idevflow/sessions/service.ts";
+import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
+import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
+import type { VerificationInput } from "../extensions/idevflow/verification/engine.ts";
+import { sourceFingerprint } from "../extensions/idevflow/verification/fingerprint.ts";
+import { VerificationReceiptStore } from "../extensions/idevflow/verification/receipts.ts";
+import type { VerificationReceipt } from "../extensions/idevflow/verification/types.ts";
+import { readWorkerPacket } from "../extensions/idevflow/workers/packets.ts";
+import type { WorkerLauncher, WorkerLaunchInput } from "../extensions/idevflow/workers/runner.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -66,11 +66,11 @@ class FakeParallelLauncher implements WorkerLauncher {
 describe("multi-agent pipeline", () => {
   it("runs independent slices concurrently, integrates one epoch, and verifies a combined candidate", async () => {
     const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
-    for (const suffix of [".canopy-worktrees", ".canopy-integration", ".canopy-epochs", ".canopy-candidates"]) cleanups.push(async () => rm(`${fixture.root}${suffix}`, { recursive: true, force: true }));
-    await execFileAsync("git", ["config", "user.name", "Canopy Tests"], { cwd: fixture.root });
+    for (const suffix of [".idev-worktrees", ".idev-integration", ".idev-epochs", ".idev-candidates"]) cleanups.push(async () => rm(`${fixture.root}${suffix}`, { recursive: true, force: true }));
+    await execFileAsync("git", ["config", "user.name", "iDevFlow Tests"], { cwd: fixture.root });
     await execFileAsync("git", ["config", "user.email", "tests@example.invalid"], { cwd: fixture.root });
     const config = await initializeConfig(fixture.root);
-    await mkdir(join(fixture.root, "docs/canopy"), { recursive: true });
+    await mkdir(join(fixture.root, "docs/idevflow"), { recursive: true });
     await writeFile(join(fixture.root, config.documents.productMemory), JSON.stringify({ schemaVersion: 1, product: { name: "Pipeline", targetUser: "Founders", problem: "Serial work", promise: "Safe parallel work" }, principles: ["Isolation"], decisions: [] }));
     await writeFile(join(fixture.root, config.documents.slcSpec), JSON.stringify({ schemaVersion: 1, title: "Parallel SLC", simple: ["Two slices"], lovable: ["Fast"], complete: ["Combined"], nonGoals: ["Remote release"], successSignals: ["Both integrate"], risks: ["Conflicts"] }));
     const product = await loadDefinedProduct(fixture.root, config.documents);
@@ -82,11 +82,11 @@ describe("multi-agent pipeline", () => {
     const repository = await discoverRepository(fixture.root); const commit = (await execFileAsync("git", ["rev-parse", "HEAD"], { cwd: fixture.root, encoding: "utf8" })).stdout.trim();
     await execFileAsync("git", ["branch", config.integrationBranch, commit], { cwd: fixture.root });
     const now = new Date();
-    const planSession: WriterSession = { id: randomUUID(), piSessionId: "coordinator", stage: "plan", task: "parallel plan", risk: "medium", status: "integrated", branch: "main", worktreePath: fixture.root, baseCommit: commit, claims: ["docs/canopy"], createdAt: now.toISOString(), heartbeatAt: now.toISOString(), leaseExpiresAt: new Date(now.getTime() + 60_000).toISOString(), commit };
+    const planSession: WriterSession = { id: randomUUID(), piSessionId: "coordinator", stage: "plan", task: "parallel plan", risk: "medium", status: "integrated", branch: "main", worktreePath: fixture.root, baseCommit: commit, claims: ["docs/idevflow"], createdAt: now.toISOString(), heartbeatAt: now.toISOString(), leaseExpiresAt: new Date(now.getTime() + 60_000).toISOString(), commit };
     await new SessionRegistry(repository).start(planSession, "test");
     const runtime = new RuntimeStore(repository); let state = await runtime.initialize("test"); for (const next of ["defined", "planned", "plan_approved"] as const) state = await runtime.transition(next, "test setup", "test", state.revision);
     const graph = await loadWorkGraph(fixture.root, config.documents.workGraph, product.fingerprint);
-    await mkdir(join(fixture.root, ".canopy", "approvals"), { recursive: true }); await writeFile(join(fixture.root, ".canopy", "approvals", "plan.json"), JSON.stringify({ graphFingerprint: graph.fingerprint, planCommit: commit }));
+    await mkdir(join(fixture.root, ".idevflow", "approvals"), { recursive: true }); await writeFile(join(fixture.root, ".idevflow", "approvals", "plan.json"), JSON.stringify({ graphFingerprint: graph.fingerprint, planCommit: commit }));
 
     const launcher = new FakeParallelLauncher(repository);
     const combinedVerifier = async (input: VerificationInput): Promise<VerificationReceipt> => {

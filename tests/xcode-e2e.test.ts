@@ -5,35 +5,35 @@ import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { validateArtifact } from "../extensions/canopy/artifacts/manifest.ts";
-import { initializeConfig, loadConfig } from "../extensions/canopy/config/config.ts";
-import { selectKnowledge } from "../extensions/canopy/context/knowledge.ts";
-import { recordContextReceipt } from "../extensions/canopy/context/receipts.ts";
-import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
-import { finishSession, runPostflight, writePreflight } from "../extensions/canopy/sessions/service.ts";
-import { SessionRegistry } from "../extensions/canopy/sessions/registry.ts";
-import { RuntimeStore } from "../extensions/canopy/state/runtime-store.ts";
-import { verifySession } from "../extensions/canopy/verification/engine.ts";
-import { verifyPlatformMatrix } from "../extensions/canopy/verification/matrix.ts";
-import { VerificationReceiptStore } from "../extensions/canopy/verification/receipts.ts";
+import { validateArtifact } from "../extensions/idevflow/artifacts/manifest.ts";
+import { initializeConfig, loadConfig } from "../extensions/idevflow/config/config.ts";
+import { selectKnowledge } from "../extensions/idevflow/context/knowledge.ts";
+import { recordContextReceipt } from "../extensions/idevflow/context/receipts.ts";
+import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
+import { finishSession, runPostflight, writePreflight } from "../extensions/idevflow/sessions/service.ts";
+import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
+import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
+import { verifySession } from "../extensions/idevflow/verification/engine.ts";
+import { verifyPlatformMatrix } from "../extensions/idevflow/verification/matrix.ts";
+import { VerificationReceiptStore } from "../extensions/idevflow/verification/receipts.ts";
 
 const execFileAsync = promisify(execFile);
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
-const enabled = process.env.CANOPY_IOS_XCODE_E2E === "1";
-const macEnabled = process.env.CANOPY_MACOS_XCODE_E2E === "1";
-const universalEnabled = process.env.CANOPY_UNIVERSAL_XCODE_E2E === "1";
+const enabled = process.env.IDEVFLOW_IOS_XCODE_E2E === "1";
+const macEnabled = process.env.IDEVFLOW_MACOS_XCODE_E2E === "1";
+const universalEnabled = process.env.IDEVFLOW_UNIVERSAL_XCODE_E2E === "1";
 
 describe("real Xcode verification", () => {
   it("builds a real iOS app on an exclusive simulator and reuses exact proof", { skip: !enabled }, async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-xcode-e2e-"));
-    roots.push(root, `${root}.canopy-worktrees`);
+    const root = await mkdtemp(join(tmpdir(), "idev-xcode-e2e-"));
+    roots.push(root, `${root}.idev-worktrees`);
     await cp(join(import.meta.dirname, "fixtures", "SampleApp"), root, { recursive: true });
     await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
     await execFileAsync("git", ["add", "."], { cwd: root });
-    await execFileAsync("git", ["-c", "user.name=Canopy Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
-    await execFileAsync("git", ["config", "user.name", "Canopy Tests"], { cwd: root });
+    await execFileAsync("git", ["-c", "user.name=iDevFlow Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
+    await execFileAsync("git", ["config", "user.name", "iDevFlow Tests"], { cwd: root });
     await execFileAsync("git", ["config", "user.email", "tests@example.invalid"], { cwd: root });
 
     const repository = await discoverRepository(root);
@@ -73,11 +73,11 @@ describe("real Xcode verification", () => {
 
   it("verifies one exact universal commit on iOS and macOS", { skip: !universalEnabled }, async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-universal-xcode-e2e-"));
-    roots.push(root, `${root}.canopy-worktrees`);
+    roots.push(root, `${root}.idev-worktrees`);
     await cp(join(import.meta.dirname, "fixtures", "UniversalApp"), root, { recursive: true });
     await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
     await execFileAsync("git", ["add", "."], { cwd: root });
-    await execFileAsync("git", ["-c", "user.name=Canopy Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
+    await execFileAsync("git", ["-c", "user.name=iDevFlow Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
     const repository = await discoverRepository(root);
     await new RuntimeStore(repository).initialize("universal-e2e");
     await initializeConfig(repository.primaryRoot);
@@ -96,12 +96,12 @@ describe("real Xcode verification", () => {
 
   it("builds and tests a real macOS app without acquiring an iOS simulator", { skip: !macEnabled }, async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-macos-xcode-e2e-"));
-    roots.push(root, `${root}.canopy-worktrees`);
+    roots.push(root, `${root}.idev-worktrees`);
     await cp(join(import.meta.dirname, "fixtures", "MacApp"), root, { recursive: true });
     await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
     await execFileAsync("git", ["add", "."], { cwd: root });
-    await execFileAsync("git", ["-c", "user.name=Canopy Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
-    await execFileAsync("git", ["config", "user.name", "Canopy Tests"], { cwd: root });
+    await execFileAsync("git", ["-c", "user.name=iDevFlow Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
+    await execFileAsync("git", ["config", "user.name", "iDevFlow Tests"], { cwd: root });
     await execFileAsync("git", ["config", "user.email", "tests@example.invalid"], { cwd: root });
 
     const repository = await discoverRepository(root);

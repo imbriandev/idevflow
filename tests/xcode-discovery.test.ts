@@ -3,8 +3,8 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_CONFIG } from "../extensions/canopy/config/config.ts";
-import { discoverXcodeProject, type CommandProbe } from "../extensions/canopy/xcode/discovery.ts";
+import { DEFAULT_CONFIG } from "../extensions/idevflow/config/config.ts";
+import { discoverXcodeProject, type CommandProbe } from "../extensions/idevflow/xcode/discovery.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
@@ -24,7 +24,7 @@ const probe: CommandProbe = {
 
 describe("Xcode project discovery", () => {
   it("discovers a unique project and shared scheme", async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-xcode-"));
+    const root = await mkdtemp(join(tmpdir(), "idev-xcode-"));
     roots.push(root);
     await mkdir(join(root, "SampleApp.xcodeproj"));
     const descriptor = await discoverXcodeProject(root, DEFAULT_CONFIG, probe);
@@ -34,7 +34,7 @@ describe("Xcode project discovery", () => {
   });
 
   it("prefers a workspace and ignores an internal project workspace", async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-xcode-"));
+    const root = await mkdtemp(join(tmpdir(), "idev-xcode-"));
     roots.push(root);
     await mkdir(join(root, "SampleApp.xcodeproj", "project.xcworkspace"), { recursive: true });
     await mkdir(join(root, "SampleApp.xcworkspace"));
@@ -49,7 +49,7 @@ describe("Xcode project discovery", () => {
   });
 
   it("reads the macOS deployment target for a macOS project", async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-xcode-"));
+    const root = await mkdtemp(join(tmpdir(), "idev-xcode-"));
     roots.push(root);
     await mkdir(join(root, "MacApp.xcodeproj"));
     const macProbe: CommandProbe = {
@@ -65,7 +65,7 @@ describe("Xcode project discovery", () => {
   });
 
   it("discovers a Swift package fallback", async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-xcode-"));
+    const root = await mkdtemp(join(tmpdir(), "idev-xcode-"));
     roots.push(root);
     await writeFile(join(root, "Package.swift"), "// swift-tools-version: 6.0\n");
     const descriptor = await discoverXcodeProject(root, DEFAULT_CONFIG, probe);
@@ -74,7 +74,7 @@ describe("Xcode project discovery", () => {
   });
 
   it("fails closed on ambiguous containers", async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-xcode-"));
+    const root = await mkdtemp(join(tmpdir(), "idev-xcode-"));
     roots.push(root);
     await mkdir(join(root, "One.xcodeproj"));
     await mkdir(join(root, "Two.xcodeproj"));

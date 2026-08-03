@@ -1,8 +1,8 @@
-# Canopy Operations Playbook
+# iDevFlow Operations Playbook
 
-This guide explains how to operate Canopy from an idea through a verified TestFlight handoff. Canopy is in beta. Git push, App Store Connect upload, and tester distribution remain explicit founder decisions.
+This guide explains how to operate iDevFlow from an idea through a verified TestFlight handoff. iDevFlow is in beta. Git push, App Store Connect upload, and tester distribution remain explicit founder decisions.
 
-Use one conversational coordinator agent for everyday work. It reads durable project state, recommends the next safe route, and can supervise the existing worker pipeline only after an approved plan. The seven `/canopy:*` stage commands remain optional manual escape hatches; founders do not need to memorize them.
+Use one conversational coordinator agent for everyday work. It reads durable project state, recommends the next safe route, and can supervise the existing worker pipeline only after an approved plan. The seven `/idev:*` stage commands remain optional manual escape hatches; founders do not need to memorize them.
 
 ## 1. Prepare a project
 
@@ -19,13 +19,13 @@ cd /path/to/MyApp
 pi
 ```
 
-Canopy loads globally when installed. If the current Pi session was opened before an extension update, run `/reload`.
+iDevFlow loads globally when installed. If the current Pi session was opened before an extension update, run `/reload`.
 
 Ask the agent to initialize the runtime:
 
-> Initialize Canopy runtime for this project.
+> Initialize iDevFlow runtime for this project.
 
-The agent calls `canopy_runtime initialize`. Local state is stored under `.canopy/` and ignored by Git. Do not edit this directory directly.
+The agent calls `idev_runtime initialize`. Local state is stored under `.idevflow/` and ignored by Git. Do not edit this directory directly.
 
 ## 2. Define — commit to the smallest product
 
@@ -35,7 +35,7 @@ Example:
 
 > I want an app that helps freelance designers capture work time faster. Define the Simple Lovable Complete scope for the first beta.
 
-The output includes the target user, problem, promise, primary flow, empty/loading/failure/accessibility/privacy/trust expectations, non-goals, and a TestFlight learning question. Material claims are explicitly labeled as founder evidence, observed feedback, assumptions, or unknowns; evidence/feedback must retain a founder-provided source. Unresolved high-impact assumptions require an interactive founder acceptance before definition integration. Canopy writes schema-version-2 product documents at `docs/canopy/product-memory.json` and `docs/canopy/slc.json`.
+The output includes the target user, problem, promise, primary flow, empty/loading/failure/accessibility/privacy/trust expectations, non-goals, and a TestFlight learning question. Material claims are explicitly labeled as founder evidence, observed feedback, assumptions, or unknowns; evidence/feedback must retain a founder-provided source. Unresolved high-impact assumptions require an interactive founder acceptance before definition integration. iDevFlow writes schema-version-2 product documents at `docs/idevflow/product-memory.json` and `docs/idevflow/slc.json`.
 
 The founder must make an explicit decision before changing the target user, monetization, or product promise.
 
@@ -59,7 +59,7 @@ Example:
 
 > Implement the approved “Create and start a time entry” slice.
 
-Canopy performs preflight, creates an isolated worktree, claims paths, selects specialist context, runs verification, records postflight evidence, and controls integration. Do not create worktrees or receipts manually, and do not modify paths outside the approved claim.
+iDevFlow performs preflight, creates an isolated worktree, claims paths, selects specialist context, runs verification, records postflight evidence, and controls integration. Do not create worktrees or receipts manually, and do not modify paths outside the approved claim.
 
 Each slice should deliver one complete vertical behavior with focused tests where there is a stable behavioral seam. Architecture, payment, privacy, signing, or destructive-behavior changes require a founder decision.
 
@@ -83,19 +83,19 @@ Example:
 
 > Review the time-entry flow with focus on SwiftUI state, accessibility, SwiftData persistence, and privacy.
 
-Review does not edit source. It produces an evidence-linked verdict with blockers, important findings, polish, residual risk, and a repair route. Return to `/canopy:build` or `/canopy:test` for required repairs.
+Review does not edit source. It produces an evidence-linked verdict with blockers, important findings, polish, residual risk, and a repair route. Return to `/idev:build` or `/idev:test` for required repairs.
 
 ## 7. Ship — create a verified handoff, not an external release
 
 Ask the coordinator to prepare the beta when the exact candidate has passed review.
 
-Canopy requires fresh release verification, critical ship context, privacy/release metadata, screenshot variants, and XCTest quality evidence. Accessibility proof must use `XCUIApplication.performAccessibilityAudit`; performance proof must use a named XCTest metric and a project-owned budget.
+iDevFlow requires fresh release verification, critical ship context, privacy/release metadata, screenshot variants, and XCTest quality evidence. Accessibility proof must use `XCUIApplication.performAccessibilityAudit`; performance proof must use a named XCTest metric and a project-owned budget.
 
 When StoreKit or RevenueCat is present, the monetization manifest and restore/entitlement evidence must be complete.
 
-After all gates pass, Canopy creates a candidate. The founder approves an exact candidate using an expiring token; `promote` changes only the local base branch. `handoff` creates a package containing evidence, known issues, and the remaining external steps.
+After all gates pass, iDevFlow creates a candidate. The founder approves an exact candidate using an expiring token; `promote` changes only the local base branch. `handoff` creates a package containing evidence, known issues, and the remaining external steps.
 
-Canopy does not push Git, archive or export an IPA, sign in to App Store Connect, upload builds, or distribute to testers.
+iDevFlow does not push Git, archive or export an IPA, sign in to App Store Connect, upload builds, or distribute to testers.
 
 ## 8. Learn — decide the next iteration from feedback
 
@@ -105,19 +105,19 @@ Example:
 
 > Here is the first week of TestFlight feedback: [paste feedback]. Classify it as now/later/not-do and propose the next bet.
 
-Canopy preserves valuable user language, separates evidence from hypotheses, and routes the next focus to define, plan, build, or test.
+iDevFlow preserves valuable user language, separates evidence from hypotheses, and routes the next focus to define, plan, build, or test.
 
 ## Status and recovery
 
 Ask the agent for the current status, or use these tools:
 
-- `canopy_runtime status` — runtime and lifecycle state;
-- `canopy_doctor status` — human-readable diagnostics;
-- `canopy_doctor report` — metadata-only support report;
-- `canopy_pipeline status` — multi-agent pipeline state;
-- `canopy_pipeline reconcile` — detects and reconciles lost worker leases according to policy.
+- `idev_runtime status` — runtime and lifecycle state;
+- `idev_doctor status` — human-readable diagnostics;
+- `idev_doctor report` — metadata-only support report;
+- `idev_pipeline status` — multi-agent pipeline state;
+- `idev_pipeline reconcile` — detects and reconciles lost worker leases according to policy.
 
-Recovery never deletes unintegrated source, branches, worktrees, packets, or logs. Do not delete `.canopy/` while work is active.
+Recovery never deletes unintegrated source, branches, worktrees, packets, or logs. Do not delete `.idevflow/` while work is active.
 
 ## Founder checklist
 
@@ -131,7 +131,7 @@ Recovery never deletes unintegrated source, branches, worktrees, packets, or log
 ## Short rules
 
 - Do not code before the plan is approved.
-- Do not claim a gate passed without a Canopy receipt.
+- Do not claim a gate passed without a iDevFlow receipt.
 - Do not bypass worktrees, path claims, verification, or approval gates.
 - Do not treat a green build as sufficient accessibility, performance, or release-quality evidence.
 - Do not let an agent push or distribute externally without an explicit founder decision.

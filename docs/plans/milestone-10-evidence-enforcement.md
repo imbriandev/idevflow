@@ -2,11 +2,11 @@
 
 ## Outcome
 
-High-risk specialist reasoning and release-quality claims are no longer accepted as unbound model prose or self-attested metadata. Canopy records the selected cold path as a session-bound receipt and validates release accessibility/performance evidence from fresh XCTest xcresult output.
+High-risk specialist reasoning and release-quality claims are no longer accepted as unbound model prose or self-attested metadata. iDevFlow records the selected cold path as a session-bound receipt and validates release accessibility/performance evidence from fresh XCTest xcresult output.
 
 ## Context receipt gate
 
-`canopy_context` still selects a bounded package-owned cold path, but when invoked against an active, ready, or integrated writer session it atomically records:
+`idev_context` still selects a bounded package-owned cold path, but when invoked against an active, ready, or integrated writer session it atomically records:
 
 - session id, requested lifecycle stage, risk, and task;
 - selected reference ids and relative package paths;
@@ -32,7 +32,7 @@ Schema v5 adds project-owned quality policy:
 }
 ```
 
-For a release profile with this policy enabled, Canopy requires:
+For a release profile with this policy enabled, iDevFlow requires:
 
 1. source-bound screenshots and simulator provenance;
 2. accessibility proof metadata naming a passing XCTest test whose source contains `XCUIApplication.performAccessibilityAudit()` and reports zero audit issues;

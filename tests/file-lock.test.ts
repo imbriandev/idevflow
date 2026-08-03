@@ -4,8 +4,8 @@ import { mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { acquireFileLock } from "../extensions/canopy/state/file-lock.ts";
-import { LockTimeoutError } from "../extensions/canopy/state/errors.ts";
+import { acquireFileLock } from "../extensions/idevflow/state/file-lock.ts";
+import { LockTimeoutError } from "../extensions/idevflow/state/errors.ts";
 
 const roots: string[] = [];
 
@@ -14,7 +14,7 @@ afterEach(async () => {
 });
 
 function lockFixture(): { root: string; lockPath: string } {
-  const root = join(tmpdir(), `canopy-lock-${randomUUID()}`);
+  const root = join(tmpdir(), `idev-lock-${randomUUID()}`);
   roots.push(root);
   return { root, lockPath: join(root, "locks", "runtime.lock") };
 }

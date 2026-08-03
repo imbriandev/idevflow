@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, it } from "node:test";
-import { coordinatorBrief } from "../extensions/canopy/coordinator/prompt.ts";
-import { inspectCoordinator, isLikelyCanopyIntent, recommendWorkerDelegation } from "../extensions/canopy/coordinator/service.ts";
-import type { WorkSlice } from "../extensions/canopy/planning/work-graph.ts";
-import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
-import { SessionRegistry } from "../extensions/canopy/sessions/registry.ts";
-import type { WriterSession } from "../extensions/canopy/sessions/types.ts";
-import { RuntimeStore } from "../extensions/canopy/state/runtime-store.ts";
+import { coordinatorBrief } from "../extensions/idevflow/coordinator/prompt.ts";
+import { inspectCoordinator, isLikelyiDevFlowIntent, recommendWorkerDelegation } from "../extensions/idevflow/coordinator/service.ts";
+import type { WorkSlice } from "../extensions/idevflow/planning/work-graph.ts";
+import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
+import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
+import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
+import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -42,7 +42,7 @@ describe("conversational coordinator", () => {
     const state = await new RuntimeStore(repository).initialize("test");
     const now = new Date().toISOString();
     const secret = "build token=super-secret-never-display";
-    const session: WriterSession = { id: randomUUID(), piSessionId: "other-agent", stage: "build", task: secret, risk: "medium", status: "active", branch: "canopy/coordinator-test", worktreePath: fixture.root, baseCommit: repository.head!, claims: ["README.md"], createdAt: now, heartbeatAt: now, leaseExpiresAt: new Date(Date.now() + 60_000).toISOString() };
+    const session: WriterSession = { id: randomUUID(), piSessionId: "other-agent", stage: "build", task: secret, risk: "medium", status: "active", branch: "idev/coordinator-test", worktreePath: fixture.root, baseCommit: repository.head!, claims: ["README.md"], createdAt: now, heartbeatAt: now, leaseExpiresAt: new Date(Date.now() + 60_000).toISOString() };
     await new SessionRegistry(repository).start(session, "test");
     const snapshot = await inspectCoordinator(repository, "coordinator");
     assert.equal(snapshot.route, "resume_writer");
@@ -59,7 +59,7 @@ describe("conversational coordinator", () => {
   it("adds a conversational brief without treating prose as authority", () => {
     const brief = coordinatorBrief({ initialized: true, lifecycle: "planned", revision: 3, route: "founder_plan_approval", reason: "approval required", baselineReady: true, activeWriter: false, activePipeline: false, workerRecommendation: { mode: "pipeline_unavailable", reason: "approval required", eligibleSliceIds: [] } });
     assert.match(brief, /Never advance a lifecycle gate/);
-    assert.equal(isLikelyCanopyIntent("I want to build an iOS app"), true);
-    assert.equal(isLikelyCanopyIntent("Explain this generic TypeScript function"), false);
+    assert.equal(isLikelyiDevFlowIntent("I want to build an iOS app"), true);
+    assert.equal(isLikelyiDevFlowIntent("Explain this generic TypeScript function"), false);
   });
 });

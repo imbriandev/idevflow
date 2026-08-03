@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { appendFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
-import { PipelineStore } from "../extensions/canopy/pipeline/store.ts";
-import { PIPELINE_SCHEMA_VERSION } from "../extensions/canopy/pipeline/types.ts";
+import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
+import { PipelineStore } from "../extensions/idevflow/pipeline/store.ts";
+import { PIPELINE_SCHEMA_VERSION } from "../extensions/idevflow/pipeline/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -24,7 +24,7 @@ describe("pipeline journal", () => {
     await assert.rejects(store.load("golden-pipeline"), /incomplete/);
     const repaired = await store.mutate("golden-pipeline", "paused", "test", (state) => ({ ...state, status: "paused" }));
     assert.equal(repaired.revision, 3);
-    cleanups.push(async () => rm(`${fixture.root}.canopy-worktrees`, { recursive: true, force: true }));
+    cleanups.push(async () => rm(`${fixture.root}.idev-worktrees`, { recursive: true, force: true }));
   });
 
   it("fails closed on a complete corrupted pipeline journal record", async () => {

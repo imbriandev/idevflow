@@ -3,19 +3,19 @@ import { describe, it } from "node:test";
 import { mkdtemp, mkdir, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertNoClaimConflicts, claimsOverlap, normalizeClaim, pathIsClaimed, resolveSafeWritePath } from "../extensions/canopy/git/claims.ts";
+import { assertNoClaimConflicts, claimsOverlap, normalizeClaim, pathIsClaimed, resolveSafeWritePath } from "../extensions/idevflow/git/claims.ts";
 
 describe("path claims", () => {
   it("normalizes repository-relative claims and rejects escapes", () => {
     assert.equal(normalizeClaim("Sources/Feature", "/repo/worktree"), "Sources/Feature");
     assert.throws(() => normalizeClaim("../secret", "/repo/worktree"));
     assert.throws(() => normalizeClaim(".", "/repo/worktree"));
-    assert.throws(() => normalizeClaim(".canopy/state", "/repo/worktree"), /protected control state/);
+    assert.throws(() => normalizeClaim(".idevflow/state", "/repo/worktree"), /protected control state/);
   });
 
   it("blocks write paths that cross symbolic links", async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-claims-"));
-    const outside = await mkdtemp(join(tmpdir(), "canopy-outside-"));
+    const root = await mkdtemp(join(tmpdir(), "idev-claims-"));
+    const outside = await mkdtemp(join(tmpdir(), "idev-outside-"));
     try {
       await mkdir(join(root, "Sources"));
       await symlink(outside, join(root, "Sources", "Linked"));

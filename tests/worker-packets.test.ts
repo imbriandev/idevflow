@@ -3,14 +3,14 @@ import { afterEach, describe, it } from "node:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildWorkerPacket, packetDigest, readWorkerPacket, writeWorkerPacket } from "../extensions/canopy/workers/packets.ts";
+import { buildWorkerPacket, packetDigest, readWorkerPacket, writeWorkerPacket } from "../extensions/idevflow/workers/packets.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
 describe("worker task packets", () => {
   it("writes immutable secret-free packets and detects tampering", async () => {
-    const root = await mkdtemp(join(tmpdir(), "canopy-packet-")); roots.push(root);
+    const root = await mkdtemp(join(tmpdir(), "idev-packet-")); roots.push(root);
     const packet = buildWorkerPacket({ packetId: "packet", pipelineId: "pipeline", repositoryFingerprint: "repo", graphFingerprint: "graph", planCommit: "commit", integrationEpoch: "epoch", maxRepairCycles: 2, slice: { id: "slice", title: "Slice", goal: "Implement slice", paths: ["Sources/Slice.swift"], risk: "medium", dependsOn: [], acceptance: ["works"], verificationProfile: "integration", platforms: ["ios", "macos"] } });
     const path = join(root, "packet.json");
     const digest = await writeWorkerPacket(path, packet);

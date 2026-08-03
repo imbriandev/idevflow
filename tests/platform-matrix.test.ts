@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
-import { DEFAULT_CONFIG } from "../extensions/canopy/config/config.ts";
-import { discoverRepository } from "../extensions/canopy/repository/discovery.ts";
-import { validatedPlatformReceipt } from "../extensions/canopy/verification/matrix.ts";
-import { VerificationReceiptStore } from "../extensions/canopy/verification/receipts.ts";
-import type { VerificationReceipt } from "../extensions/canopy/verification/types.ts";
+import { DEFAULT_CONFIG } from "../extensions/idevflow/config/config.ts";
+import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
+import { validatedPlatformReceipt } from "../extensions/idevflow/verification/matrix.ts";
+import { VerificationReceiptStore } from "../extensions/idevflow/verification/receipts.ts";
+import type { VerificationReceipt } from "../extensions/idevflow/verification/types.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];

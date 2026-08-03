@@ -1,5 +1,6 @@
 node_modules/
 coverage/
+.idevflow/
 .canopy/
 .pi-ios/
 .pi/

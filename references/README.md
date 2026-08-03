@@ -1,6 +1,6 @@
-# Canopy Specialist References
+# iDevFlow Specialist References
 
-These are cold-path reasoning references for the seven Pi skills. They are deliberately separate from the deterministic kernel: read them only after `canopy_context` selects them for the current stage, risk, and surface.
+These are cold-path reasoning references for the seven Pi skills. They are deliberately separate from the deterministic kernel: read them only after `idev_context` selects them for the current stage, risk, and surface.
 
 | Reference | Covers |
 | --- | --- |
@@ -15,4 +15,4 @@ These are cold-path reasoning references for the seven Pi skills. They are delib
 | `release-testflight.md` | candidate Go/No-Go and explicit manual TestFlight boundary |
 | `native-integrations.md` | App Intents, WidgetKit, interactive editors, legacy platform code |
 
-References improve expert reasoning but do not grant authority. Source ownership, verification, approvals, integration, and release remain enforced by typed Canopy tools.
+References improve expert reasoning but do not grant authority. Source ownership, verification, approvals, integration, and release remain enforced by typed iDevFlow tools.

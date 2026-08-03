@@ -2,11 +2,11 @@
 
 ## Outcome
 
-Canopy can execute an approved frozen work graph with isolated Pi subprocess workers, bounded parallelism, coordinator-only integration, combined verification, and conservative recovery. The deterministic kernel—not worker prose—owns task authority, retry budgets, receipts, integration order, and candidate state.
+iDevFlow can execute an approved frozen work graph with isolated Pi subprocess workers, bounded parallelism, coordinator-only integration, combined verification, and conservative recovery. The deterministic kernel—not worker prose—owns task authority, retry budgets, receipts, integration order, and candidate state.
 
 ## Coordinator authority
 
-`canopy_pipeline` supports status, create, run, reconcile, high-risk approval, explicit lost-worker retry, pause, resume, takeover, and cancel. A hash-chained pipeline journal and atomic snapshot live under `.canopy/pipeline/`. The coordinator lease is bound to one Pi session and is extended for the bounded run window. Takeover requires an expired lease, an interactive confirmation, and a reason.
+`idev_pipeline` supports status, create, run, reconcile, high-risk approval, explicit lost-worker retry, pause, resume, takeover, and cancel. A hash-chained pipeline journal and atomic snapshot live under `.idevflow/pipeline/`. The coordinator lease is bound to one Pi session and is extended for the bounded run window. Takeover requires an expired lease, an interactive confirmation, and a reason.
 
 Creation freezes:
 
@@ -46,7 +46,7 @@ If a multi-slice batch conflicts, the coordinator records the failure and recurs
 
 ## Combined candidate
 
-After all slices integrate, Canopy creates or recovers a clean synthetic candidate worktree at the exact integration commit and runs combined integration verification. It records source-bound build, test, and review stage receipts, advances the lifecycle through `review_passed`, and stores a candidate snapshot binding:
+After all slices integrate, iDevFlow creates or recovers a clean synthetic candidate worktree at the exact integration commit and runs combined integration verification. It records source-bound build, test, and review stage receipts, advances the lifecycle through `review_passed`, and stores a candidate snapshot binding:
 
 - graph and plan
 - original and final integration epochs
@@ -60,7 +60,7 @@ If the integration branch later advances, status deterministically changes the p
 
 `reconcile` reloads journal state, detects expired workers whose PIDs are no longer alive, records them as lost, and preserves all source. Re-running finalization reuses an exact clean candidate session after interruption. Runtime advancement resumes safely from any already-written intermediate lifecycle transition.
 
-`/canopy`, `canopy_pipeline status`, and `canopy_doctor` expose pipeline, slice, worker, batch, candidate, and expired-lease state. Complete worker output is redacted before persistence; capability and model credential values are explicit literal redactions and are not inherited by build subprocesses.
+`/idevflow`, `idev_pipeline status`, and `idev_doctor` expose pipeline, slice, worker, batch, candidate, and expired-lease state. Complete worker output is redacted before persistence; capability and model credential values are explicit literal redactions and are not inherited by build subprocesses.
 
 ## Configuration
 
