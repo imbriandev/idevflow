@@ -26,9 +26,13 @@ jobs:
       - run: git diff --check
 
   xcode-e2e:
-    name: Real iOS and macOS Xcode verification
+    name: Real Xcode ${{ matrix.suite }} E2E
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [platforms, handoff]
     runs-on: macos-26
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,4 +41,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: xcodebuild -version
-      - run: CANOPY_IOS_XCODE_E2E=1 CANOPY_MACOS_XCODE_E2E=1 CANOPY_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+      - if: matrix.suite == 'platforms'
+        run: CANOPY_IOS_XCODE_E2E=1 CANOPY_MACOS_XCODE_E2E=1 CANOPY_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts
+      - if: matrix.suite == 'handoff'
+        run: CANOPY_IOS_XCODE_E2E=1 npx tsx --test tests/real-app-handoff-e2e.test.ts

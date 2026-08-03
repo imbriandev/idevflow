@@ -168,7 +168,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
       } else {
         if (project.platform === "ios" && !simulator) throw new SafetyKernelError("iOS Xcode verification is missing a simulator lease");
         executable = "xcodebuild";
-        args = [...xcodeBaseArgs(project, input.config, simulator, derivedData, profile === "release" ? "Release" : input.config.xcode.configuration), "-resultBundlePath", resultBundle, action];
+        args = [...xcodeBaseArgs(project, input.config, simulator, derivedData, profile === "release" ? "Release" : input.config.xcode.configuration), ...(action === "test" ? ["-parallel-testing-enabled", "NO"] : []), "-resultBundlePath", resultBundle, action];
       }
       const result = await runCommand({
         executable,
