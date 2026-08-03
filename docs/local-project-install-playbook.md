@@ -64,7 +64,7 @@ Trong app repository:
 pi list
 ```
 
-iDevFlow phải hiện là project-local package. Khi runtime đã khởi tạo, `/idevflow` hiển thị dashboard lifecycle.
+iDevFlow phải hiện là project-local package. Khi runtime đã khởi tạo, `/idev` hiển thị dashboard lifecycle.
 
 ## Update
 

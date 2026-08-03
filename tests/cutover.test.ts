@@ -31,7 +31,7 @@ describe("package identity gates", () => {
       const content = await readFile(path, "utf8");
       assert.doesNotMatch(content, RUNTIME_FORBIDDEN, `forbidden non-TypeScript runtime reference in ${path}`);
       assert.doesNotMatch(content, retired, `retired identifier in ${path}`);
-      if (!path.endsWith(join("config", "config.ts")) && !path.endsWith(join("docs", "installation.md")) && !path.endsWith(".gitignore") && !path.endsWith(".npmignore")) assert.doesNotMatch(content, RETIRED_NAMESPACE, `retired namespace in ${path}`);
+      if (!path.endsWith(join("config", "config.ts")) && !path.endsWith(join("docs", "installation.md")) && !path.endsWith(join("docs", "migration.md")) && !path.endsWith(".gitignore") && !path.endsWith(".npmignore")) assert.doesNotMatch(content, RETIRED_NAMESPACE, `retired namespace in ${path}`);
     }
     const extensionDirectories = await readdir(join(root, "extensions"));
     assert.equal(extensionDirectories.includes("idevflow"), true);

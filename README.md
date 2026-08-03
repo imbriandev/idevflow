@@ -53,7 +53,7 @@ Push, App Store Connect upload, and tester distribution remain explicit manual b
 pi install npm:idevflow@beta
 ```
 
-Then open a trusted Apple-platform Git project and run `/idev` or describe the product/change conversationally. See [Installation and upgrade](docs/installation.md) for requirements and migration behavior.
+Then open a trusted Apple-platform Git project and run `/idev` or describe the product/change conversationally. Start with [Getting started](docs/getting-started.md).
 
 ## Development
 
@@ -65,17 +65,24 @@ pi -e .
 
 ## Documentation
 
+### Use iDevFlow
+
+- [Getting started](docs/getting-started.md)
+- [Core concepts](docs/concepts.md)
+- [Workflow](docs/workflow.md)
+- [Commands and tools](docs/commands.md)
+- [Configuration](docs/configuration.md)
+- [Migration](docs/migration.md)
+- [Verification](docs/verification.md)
+- [Troubleshooting](docs/troubleshooting.md)
+
+### Maintainers and internals
+
 - [Architecture](docs/architecture/overview.md)
 - [Runtime state model](docs/architecture/state-model.md)
-- [Current capability matrix](docs/plans/parity-matrix.md)
-- [Implementation plan](docs/plans/implementation-plan.md)
-- [Clean-break namespace migration](docs/plans/milestone-11-clean-break.md)
 - [Security notes](docs/security.md)
-- [Installation and upgrade](docs/installation.md)
-- [Cài iDevFlow theo từng project](docs/local-project-install-playbook.md)
-- [Coordinator-first operations playbook](docs/operations-playbook.md)
 - [Release process](docs/release-process.md)
-- [Context and XCTest evidence enforcement](docs/plans/milestone-10-evidence-enforcement.md)
-- [Idea Quality Gate](docs/plans/milestone-12-idea-quality.md)
-- [macOS support](docs/plans/milestone-13-macos-support.md)
+- [Local-project install playbook](docs/local-project-install-playbook.md)
+- [Operations playbook](docs/operations-playbook.md)
+- [Capability matrix](docs/plans/parity-matrix.md)
 - [macOS release template](templates/macos-release.json)

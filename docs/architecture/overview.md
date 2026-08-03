@@ -28,7 +28,7 @@ These behaviors must not depend on an LLM correctly remembering prose.
 
 The coordinator is one founder-facing conversational layer, not a second workflow engine. At Pi interaction boundaries it projects sanitized durable runtime, baseline, writer-session, pipeline, and candidate state into a safe next-route brief. It prioritizes recovery of an owned writer or active pipeline over new work, and recommends worker delegation only for independent low/medium-risk slices of an exact approved graph.
 
-It cannot mutate lifecycle state or infer approval from prose. It creates no background daemon, retains no separate authoritative state, and does not expose task text, capabilities, credentials, or worktree paths in the founder dashboard. `/idevflow` renders the same safe projection; the seven stage commands remain manual escape hatches.
+It cannot mutate lifecycle state or infer approval from prose. It creates no background daemon, retains no separate authoritative state, and does not expose task text, capabilities, credentials, or worktree paths in the founder dashboard. `/idev` renders the same safe projection; the seven stage commands remain manual escape hatches.
 
 ### Skills
 
