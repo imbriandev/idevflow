@@ -21,7 +21,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: pi -e . --list-models
+      - run: npx pi -e . --list-models
       - run: npm pack --dry-run --json
       - run: git diff --check
 

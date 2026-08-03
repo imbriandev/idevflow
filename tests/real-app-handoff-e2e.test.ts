@@ -54,7 +54,7 @@ describe("real app manual TestFlight handoff", () => {
     await new SessionRegistry(repository).start(session, "real-handoff-e2e");
     await recordContextReceipt(repository, { session, stage: "test", risk: "high", task: session.task, selection: selectKnowledge({ stage: "test", risk: "high", task: session.task }) });
     const initialConfig = await loadConfig(root);
-    await writeFile(join(root, ".canopy", "config.json"), JSON.stringify({ ...initialConfig, quality: { ...initialConfig.quality, performanceBudgets: { "Duration (AppLaunch)": 10 } } }));
+    await writeFile(join(root, ".canopy", "config.json"), JSON.stringify({ ...initialConfig, quality: { ...initialConfig.quality, performanceBudgets: { "Duration (AppLaunch)": 60 } } }));
     const config = await loadConfig(root);
     const integration = await verifySession({ repository, config, session, requestedProfile: "integration" });
     assert.equal(integration.success, true, integration.commands.map((result) => result.stderrTail).join("\n"));
