@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { chmod, readFile, realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
+import type { ApplePlatform } from "../config/config.ts";
 import type { Risk } from "../lifecycle/contracts.ts";
 import type { WorkSlice } from "../planning/work-graph.ts";
 import { containsSensitiveText } from "../process/redaction.ts";
@@ -27,6 +28,7 @@ export interface WorkerTaskPacket {
   readonly dependencies: readonly string[];
   readonly acceptance: readonly string[];
   readonly verificationProfile: VerificationProfile;
+  readonly platforms: readonly ApplePlatform[];
   readonly maxRepairCycles: number;
   readonly stopConditions: readonly string[];
   readonly createdAt: string;
@@ -81,6 +83,7 @@ export function buildWorkerPacket(input: {
     dependencies: input.slice.dependsOn,
     acceptance: input.slice.acceptance,
     verificationProfile: input.slice.verificationProfile,
+    platforms: input.slice.platforms ?? ["ios"],
     maxRepairCycles: input.maxRepairCycles,
     stopConditions: ["scope_or_architecture_change", "privacy_or_payment_finding", "write_outside_claims", "missing_evidence", "repair_budget_exhausted"],
     createdAt: new Date().toISOString(),

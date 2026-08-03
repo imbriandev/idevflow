@@ -26,7 +26,7 @@ describe("configuration", () => {
     assert.equal((await discoverConfigMigration(root)).needed, true);
     const migrated = await applyConfigMigration(root);
     assert.equal(migrated.baseBranch, "trunk");
-    assert.equal(migrated.schemaVersion, 6);
+    assert.equal(migrated.schemaVersion, 7);
     assert.equal(JSON.parse(await readFile(`${path}.v0.backup`, "utf8")).schemaVersion, 0);
   });
 
@@ -44,7 +44,7 @@ describe("configuration", () => {
       verificationTimeoutSeconds: 1_800,
     }), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 6);
+    assert.equal(migrated.schemaVersion, 7);
     assert.deepEqual(migrated.verification.requiredScreenshotVariants, ["compact-light", "compact-dark", "accessibility-xxxl"]);
   });
 
@@ -58,7 +58,7 @@ describe("configuration", () => {
     delete legacy.release;
     await writeFile(path, JSON.stringify(legacy), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 6);
+    assert.equal(migrated.schemaVersion, 7);
     assert.equal(migrated.documents.workGraph, "docs/pi-ios/work-graph.json");
     assert.equal(migrated.release.defaultTarget, "testflight-internal");
   });
@@ -72,7 +72,7 @@ describe("configuration", () => {
     delete legacy.pipeline;
     await writeFile(path, JSON.stringify(legacy), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 6);
+    assert.equal(migrated.schemaVersion, 7);
     assert.equal(migrated.pipeline.maxConcurrency, 2);
     assert.equal(migrated.pipeline.maxRepairCycles, 2);
   });
@@ -86,22 +86,32 @@ describe("configuration", () => {
     delete legacy.quality;
     await writeFile(path, JSON.stringify(legacy), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 6);
+    assert.equal(migrated.schemaVersion, 7);
     assert.equal(migrated.quality.requireXCTestEvidence, true);
   });
 
-  it("migrates schema 5 with an iOS platform default", async () => {
+  it("migrates schema 5 with iOS platform defaults", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
     roots.push(root);
     const path = join(root, ".pi-ios", "config.json");
     await initializeConfig(root);
     await writeFile(path, JSON.stringify({ ...DEFAULT_CONFIG, schemaVersion: 5, xcode: { configuration: "Debug" } }), "utf8");
-    assert.equal((await applyConfigMigration(root)).xcode.platform, "ios");
+    assert.deepEqual((await applyConfigMigration(root)).xcode, { platform: "ios", requiredPlatforms: ["ios"], configuration: "Debug" });
+  });
+
+  it("migrates schema 6 with a single required platform", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-ios-config-"));
+    roots.push(root);
+    const path = join(root, ".pi-ios", "config.json");
+    await initializeConfig(root);
+    await writeFile(path, JSON.stringify({ ...DEFAULT_CONFIG, schemaVersion: 6, xcode: { platform: "macos", configuration: "Debug" } }), "utf8");
+    assert.deepEqual((await applyConfigMigration(root)).xcode.requiredPlatforms, ["macos"]);
   });
 
   it("rejects unknown schemas, platforms, and unsafe lease values", () => {
     assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, schemaVersion: 99 }));
     assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, xcode: { ...DEFAULT_CONFIG.xcode, platform: "watchos" } }));
+    assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, xcode: { ...DEFAULT_CONFIG.xcode, requiredPlatforms: ["macos"] } }));
     assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, leaseSeconds: 1 }));
   });
 });

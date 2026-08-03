@@ -16,7 +16,7 @@ Pi iOS is complete when it can take a trusted iOS repository through define, pla
 | XCTest quality enforcement | fresh accessibility-audit and performance-metric evidence against project-owned budgets |
 | Package identity | Pi-native TypeScript source under `extensions/pi-ios/` and local runtime under `.pi-ios/` |
 | Idea Quality Gate (M12) | evidence/assumption records, discovery research/prototype loop, critique acceptance, and evidence-bound learning |
-| Native macOS verification and handoff (M13a/b) | platform-aware config/discovery, native build/test xcresults, Sandbox/Hardened Runtime gate, target-specific manual handoff, and real macOS fixture E2E |
+| Apple-platform verification and handoff (M13) | iOS/macOS matrix receipts, platform-bound slices/workers, native Xcode evidence, macOS security gate, independent handoffs, and real universal fixture E2E |
 
 ## Ongoing standards
 
@@ -30,7 +30,7 @@ Pi iOS is complete when it can take a trusted iOS repository through define, pla
 
 ```bash
 npm run check
-PI_IOS_XCODE_E2E=1 PI_MACOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+PI_IOS_XCODE_E2E=1 PI_MACOS_XCODE_E2E=1 PI_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
 pi -e . --list-models
 npm pack --dry-run --json
 git diff --check

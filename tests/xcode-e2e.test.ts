@@ -14,6 +14,7 @@ import { finishSession, runPostflight, writePreflight } from "../extensions/pi-i
 import { SessionRegistry } from "../extensions/pi-ios/sessions/registry.ts";
 import { RuntimeStore } from "../extensions/pi-ios/state/runtime-store.ts";
 import { verifySession } from "../extensions/pi-ios/verification/engine.ts";
+import { verifyPlatformMatrix } from "../extensions/pi-ios/verification/matrix.ts";
 import { VerificationReceiptStore } from "../extensions/pi-ios/verification/receipts.ts";
 
 const execFileAsync = promisify(execFile);
@@ -22,6 +23,7 @@ afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recur
 
 const enabled = process.env.PI_IOS_XCODE_E2E === "1";
 const macEnabled = process.env.PI_MACOS_XCODE_E2E === "1";
+const universalEnabled = process.env.PI_UNIVERSAL_XCODE_E2E === "1";
 
 describe("real Xcode verification", () => {
   it("builds a real iOS app on an exclusive simulator and reuses exact proof", { skip: !enabled }, async () => {
@@ -69,6 +71,29 @@ describe("real Xcode verification", () => {
     assert.match(await finishSession(repository, session, "test: verify sample app"), /^[a-f0-9]{40}$/);
   });
 
+  it("verifies one exact universal commit on iOS and macOS", { skip: !universalEnabled }, async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-universal-xcode-e2e-"));
+    roots.push(root, `${root}.pi-ios-worktrees`);
+    await cp(join(import.meta.dirname, "fixtures", "UniversalApp"), root, { recursive: true });
+    await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
+    await execFileAsync("git", ["add", "."], { cwd: root });
+    await execFileAsync("git", ["-c", "user.name=Pi iOS Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
+    const repository = await discoverRepository(root);
+    await new RuntimeStore(repository).initialize("universal-e2e");
+    await initializeConfig(repository.primaryRoot);
+    const session = await writePreflight(repository, { piSessionId: "universal-e2e", stage: "build", task: "verify universal app", risk: "high", paths: ["SampleApp/ContentView.swift"] });
+    const source = join(session.worktreePath, "SampleApp", "ContentView.swift");
+    await writeFile(source, (await readFile(source, "utf8")).replace("verification fixture", "universal verified fixture"));
+    const config = await loadConfig(repository.primaryRoot);
+    const universalConfig = { ...config, xcode: { ...config.xcode, requiredPlatforms: ["ios", "macos"] as const } };
+    await recordContextReceipt(repository, { session, stage: "build", risk: "high", task: session.task, selection: selectKnowledge({ stage: "build", risk: "high", task: session.task }) });
+    const receipt = await verifyPlatformMatrix({ repository, config: universalConfig, session });
+    assert.equal(receipt.success, true, JSON.stringify(receipt.commands.map((command) => ({ code: command.code, stderr: command.stderrTail.slice(-2000) })), null, 2));
+    assert.deepEqual(receipt.platformMatrix?.requiredPlatforms, ["ios", "macos"]);
+    assert.ok(receipt.platformMatrix?.receiptFingerprints.ios);
+    assert.ok(receipt.platformMatrix?.receiptFingerprints.macos);
+  });
+
   it("builds and tests a real macOS app without acquiring an iOS simulator", { skip: !macEnabled }, async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-macos-xcode-e2e-"));
     roots.push(root, `${root}.pi-ios-worktrees`);
@@ -86,7 +111,7 @@ describe("real Xcode verification", () => {
     const source = join(session.worktreePath, "SampleApp", "ContentView.swift");
     await writeFile(source, (await readFile(source, "utf8")).replace("verification fixture", "verified fixture"));
     const config = await loadConfig(repository.primaryRoot);
-    const macConfig = { ...config, xcode: { ...config.xcode, platform: "macos" as const } };
+    const macConfig = { ...config, xcode: { ...config.xcode, platform: "macos" as const, requiredPlatforms: ["macos"] as const } };
     await recordContextReceipt(repository, { session, stage: "build", risk: "high", task: session.task, selection: selectKnowledge({ stage: "build", risk: "high", task: session.task }) });
     const receipt = await verifySession({ repository, config: macConfig, session });
     assert.equal(receipt.success, true, JSON.stringify(receipt.commands.map((command) => ({ code: command.code, stderr: command.stderrTail.slice(-2000) })), null, 2));

@@ -1,13 +1,15 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import type { ApplePlatform } from "../config/config.ts";
 import type { Risk } from "../lifecycle/contracts.ts";
 import { RISKS } from "../lifecycle/contracts.ts";
 import { claimsOverlap, normalizeClaim } from "../git/claims.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import { VERIFICATION_PROFILES, type VerificationProfile } from "../verification/profiles.ts";
 
-export const WORK_GRAPH_SCHEMA_VERSION = 1 as const;
+export const LEGACY_WORK_GRAPH_SCHEMA_VERSION = 1 as const;
+export const WORK_GRAPH_SCHEMA_VERSION = 2 as const;
 
 export interface ArchitectureDecision {
   readonly id: string;
@@ -26,10 +28,11 @@ export interface WorkSlice {
   readonly dependsOn: readonly string[];
   readonly acceptance: readonly string[];
   readonly verificationProfile: VerificationProfile;
+  readonly platforms?: readonly ApplePlatform[];
 }
 
 export interface WorkGraph {
-  readonly schemaVersion: typeof WORK_GRAPH_SCHEMA_VERSION;
+  readonly schemaVersion: typeof LEGACY_WORK_GRAPH_SCHEMA_VERSION | typeof WORK_GRAPH_SCHEMA_VERSION;
   readonly title: string;
   readonly sourceSpecFingerprint: string;
   readonly architecture: readonly ArchitectureDecision[];
@@ -71,7 +74,7 @@ function transitiveDependencies(id: string, slices: ReadonlyMap<string, WorkSlic
 
 export function validateWorkGraph(value: unknown, root: string, expectedSpecFingerprint: string): WorkGraph {
   const raw = object(value, "work graph");
-  if (raw.schemaVersion !== WORK_GRAPH_SCHEMA_VERSION) throw new SafetyKernelError("Unsupported work graph schema");
+  if (raw.schemaVersion !== LEGACY_WORK_GRAPH_SCHEMA_VERSION && raw.schemaVersion !== WORK_GRAPH_SCHEMA_VERSION) throw new SafetyKernelError("Unsupported work graph schema");
   const sourceSpecFingerprint = text(raw.sourceSpecFingerprint, "sourceSpecFingerprint");
   if (sourceSpecFingerprint !== expectedSpecFingerprint) throw new SafetyKernelError("Work graph is stale relative to the current product/SLC specification");
   if (!Array.isArray(raw.architecture) || raw.architecture.length === 0) throw new SafetyKernelError("Work graph requires architecture decisions");
@@ -91,7 +94,9 @@ export function validateWorkGraph(value: unknown, root: string, expectedSpecFing
     if (!(RISKS as readonly string[]).includes(risk)) throw new SafetyKernelError(`Slice ${index} has invalid risk ${risk}`);
     if (!(VERIFICATION_PROFILES as readonly string[]).includes(verificationProfile)) throw new SafetyKernelError(`Slice ${index} has invalid verification profile ${verificationProfile}`);
     const paths = texts(slice.paths, `slices[${index}].paths`, 1).map((path) => normalizeClaim(path, root));
-    return { id: text(slice.id, `slices[${index}].id`), title: text(slice.title, `slices[${index}].title`), goal: text(slice.goal, `slices[${index}].goal`), paths, risk, dependsOn: texts(slice.dependsOn, `slices[${index}].dependsOn`), acceptance: texts(slice.acceptance, `slices[${index}].acceptance`, 1), verificationProfile };
+    const platforms = raw.schemaVersion === WORK_GRAPH_SCHEMA_VERSION ? texts(slice.platforms, `slices[${index}].platforms`, 1) : ["ios"];
+    if (platforms.some((platform) => platform !== "ios" && platform !== "macos")) throw new SafetyKernelError(`Slice ${index} has an invalid platform`);
+    return { id: text(slice.id, `slices[${index}].id`), title: text(slice.title, `slices[${index}].title`), goal: text(slice.goal, `slices[${index}].goal`), paths, risk, dependsOn: texts(slice.dependsOn, `slices[${index}].dependsOn`), acceptance: texts(slice.acceptance, `slices[${index}].acceptance`, 1), verificationProfile, platforms: platforms as ApplePlatform[] };
   });
   const byId = new Map(slices.map((slice) => [slice.id, slice]));
   if (byId.size !== slices.length) throw new SafetyKernelError("Work slice ids must be unique");
@@ -106,7 +111,7 @@ export function validateWorkGraph(value: unknown, root: string, expectedSpecFing
       }
     }
   }
-  return { schemaVersion: WORK_GRAPH_SCHEMA_VERSION, title: text(raw.title, "work graph title"), sourceSpecFingerprint, architecture, slices };
+  return { schemaVersion: raw.schemaVersion, title: text(raw.title, "work graph title"), sourceSpecFingerprint, architecture, slices };
 }
 
 export async function loadWorkGraph(root: string, configuredPath: string, expectedSpecFingerprint: string): Promise<ValidatedWorkGraph> {

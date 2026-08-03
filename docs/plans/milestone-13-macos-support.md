@@ -13,9 +13,10 @@ Configure a macOS project in `.pi-ios/config.json`:
 
 ```json
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "xcode": {
     "platform": "macos",
+    "requiredPlatforms": ["macos"],
     "configuration": "Debug"
   }
 }
@@ -32,6 +33,14 @@ The remaining config fields are initialized and migrated by `pi_ios_runtime`; do
 - The generated handoff is local and source-bound. It records that signing, archive, upload, notarization, and distribution did not happen, with target-specific manual next steps.
 - iOS TestFlight candidate creation rejects macOS explicitly; macOS distribution uses the separate handoff path.
 
+## M13c delivered
+
+- Config schema 7 adds `xcode.requiredPlatforms`; universal apps set `["ios", "macos"]` while `xcode.platform` remains the active single-platform default.
+- Work graph schema 2 binds every slice to `ios`, `macos`, or both. Pipeline state and immutable worker packets preserve that platform scope.
+- `pi_ios_verify` accepts `matrix=true` and runs every required platform against one exact source fingerprint. It persists one combined receipt referencing each platform child receipt.
+- Postflight/review can consume the combined fingerprint. Release services resolve the target child receipt and reject a single-platform receipt whenever multiple platforms are required.
+- Coordinator prompts/dashboard expose required platforms. A real universal SwiftUI fixture proves one commit builds/tests on iOS and native macOS.
+
 ## Boundaries
 
-M13a/M13b support macOS discovery, build/test, security readiness, and a manual distribution handoff. They do not invoke `codesign`, `notarytool`, App Store Connect, upload, or distribution. M13c remains the universal iOS+macOS verification matrix and all-platform promotion gate.
+M13a–c do not invoke `codesign`, `notarytool`, App Store Connect, upload, or distribution. iOS and macOS handoffs remain independent manual decisions even when their evidence shares one universal matrix.

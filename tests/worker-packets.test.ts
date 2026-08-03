@@ -11,10 +11,11 @@ afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recur
 describe("worker task packets", () => {
   it("writes immutable secret-free packets and detects tampering", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-ios-packet-")); roots.push(root);
-    const packet = buildWorkerPacket({ packetId: "packet", pipelineId: "pipeline", repositoryFingerprint: "repo", graphFingerprint: "graph", planCommit: "commit", integrationEpoch: "epoch", maxRepairCycles: 2, slice: { id: "slice", title: "Slice", goal: "Implement slice", paths: ["Sources/Slice.swift"], risk: "medium", dependsOn: [], acceptance: ["works"], verificationProfile: "integration" } });
+    const packet = buildWorkerPacket({ packetId: "packet", pipelineId: "pipeline", repositoryFingerprint: "repo", graphFingerprint: "graph", planCommit: "commit", integrationEpoch: "epoch", maxRepairCycles: 2, slice: { id: "slice", title: "Slice", goal: "Implement slice", paths: ["Sources/Slice.swift"], risk: "medium", dependsOn: [], acceptance: ["works"], verificationProfile: "integration", platforms: ["ios", "macos"] } });
     const path = join(root, "packet.json");
     const digest = await writeWorkerPacket(path, packet);
     assert.equal(packetDigest(await readWorkerPacket(path, digest)), digest);
+    assert.deepEqual(packet.platforms, ["ios", "macos"]);
     await writeFile(path, JSON.stringify({ ...packet, goal: "tampered" }));
     await assert.rejects(readWorkerPacket(path, digest), /digest mismatch/);
   });

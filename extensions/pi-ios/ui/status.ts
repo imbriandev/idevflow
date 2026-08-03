@@ -27,6 +27,7 @@ export function formatCoordinatorDashboard(snapshot: CoordinatorSnapshot): strin
     `Baseline: ${snapshot.baselineReady ? "ready" : "blocked"}`,
     `Writer: ${snapshot.activeWriter ? "active" : "none"}`,
     `Pipeline: ${snapshot.activePipeline ? "active" : "none"}`,
+    `Platforms: ${snapshot.requiredPlatforms?.map((platform) => `${platform}=${snapshot.platformStatus?.[platform] ?? "missing"}`).join(", ") ?? "not configured"}`,
     `Worker policy: ${snapshot.workerRecommendation.mode}`,
     ...(snapshot.candidateStatus ? [`Candidate: ${snapshot.candidateStatus}`] : []),
   ].join("\n");

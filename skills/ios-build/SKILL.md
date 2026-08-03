@@ -1,7 +1,7 @@
 ---
 name: ios-build
 description: Implement one approved indie iOS vertical slice with Swift 6.2, SwiftUI, SwiftData, Swift Concurrency, and focused tests inside an authorized Pi iOS worktree.
-compatibility: Pi iOS; iOS 26+, Swift 6.2+
+compatibility: Pi iOS; iOS/macOS 26+, Swift 6.2+
 ---
 
 # iOS Build
@@ -15,7 +15,7 @@ Implement one approved slice and produce commit-bound evidence.
 3. Read the narrow source and test neighborhood.
 4. Implement the smallest complete vertical behavior; preserve Swift concurrency isolation and explicit state ownership.
 5. Add focused tests when they provide a stable behavioral seam.
-6. Call `pi_ios_verify`; accept the adaptive minimum profile and preserve its verification fingerprint.
+6. Call `pi_ios_verify`; use `matrix=true` when the approved slice names both platforms, accept the adaptive minimum profile, and preserve its verification fingerprint.
 7. Call `pi_ios_session postflight` with evidence and that exact fingerprint. Finish only if source and artifacts remain unchanged, then call `pi_ios_lifecycle integrate` with the approved `sliceId`; the kernel must map claims to exactly one approved slice and emit the build-stage receipt.
 
 ## Specialist context

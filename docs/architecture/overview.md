@@ -120,7 +120,7 @@ Postflight records changed paths, evidence, and a content fingerprint. Finish re
 
 The verification kernel discovers the project container, scheme, platform-specific deployment target, build settings, and Apple toolchain. iOS acquires an exclusive simulator destination; macOS runs against the native Mac destination without a simulator lease. It runs shell-free supervised commands with isolated DerivedData, cancellation, timeout, bounded diagnostics, redacted complete logs, xcresult output, and post-run artifact secret scanning.
 
-Adaptive profiles select the minimum allowed strength from stage, risk, and changed files. Receipts bind source and dirty content to configuration, project, toolchain, simulator destination, profile, proof files, and artifact hashes. Exact non-release receipts may be reused only while every artifact remains intact; release proof is always fresh.
+Adaptive profiles select the minimum allowed strength from stage, risk, and changed files. Receipts bind source and dirty content to configuration, platform, project, toolchain, destination, profile, proof files, and artifact hashes. Universal projects produce one matrix receipt whose iOS and macOS child receipts share the exact source fingerprint; a missing or stale required platform invalidates the matrix. Exact non-release receipts may be reused only while every artifact remains intact; release proof is always fresh.
 
 Postflight accepts a verification fingerprint rather than prose. It validates receipt ownership, source identity, minimum profile, and artifact integrity before recording its own commit-bound attestation.
 

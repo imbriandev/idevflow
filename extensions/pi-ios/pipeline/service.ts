@@ -176,7 +176,7 @@ export class PipelineService {
 
   private initialSlice(slice: WorkSlice): PipelineSliceState {
     const riskApproved = !["high", "critical"].includes(slice.risk);
-    return { id: slice.id, title: slice.title, goal: slice.goal, claims: slice.paths, risk: slice.risk, dependsOn: slice.dependsOn, acceptance: slice.acceptance, verificationProfile: slice.verificationProfile, status: riskApproved ? "pending" : "awaiting_risk_approval", riskApproved, attempts: 0, repairCycles: 0, runs: [] };
+    return { id: slice.id, title: slice.title, goal: slice.goal, claims: slice.paths, risk: slice.risk, dependsOn: slice.dependsOn, acceptance: slice.acceptance, verificationProfile: slice.verificationProfile, platforms: slice.platforms ?? ["ios"], status: riskApproved ? "pending" : "awaiting_risk_approval", riskApproved, attempts: 0, repairCycles: 0, runs: [] };
   }
 
   private readySlices(pipeline: PipelineState): string[] {

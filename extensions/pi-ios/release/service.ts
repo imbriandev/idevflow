@@ -13,9 +13,9 @@ import { SafetyKernelError } from "../state/errors.ts";
 import { withFileLock } from "../state/file-lock.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { sourceFingerprint } from "../verification/fingerprint.ts";
+import { validatedPlatformReceipt } from "../verification/matrix.ts";
 import { assertVerificationProfileSupported, missingRequiredProofs } from "../verification/profiles.ts";
 import { validateXCTestMetadata } from "../verification/xctest-evidence.ts";
-import { VerificationReceiptStore } from "../verification/receipts.ts";
 import type { ArtifactRecord } from "../verification/types.ts";
 import { loadMacDistributionManifest, loadReleaseManifest, validateMacSecurityGate, validateMonetizationGate, validatePrivacyGate, type MacDistributionManifest, type MacSecurityGate, type MonetizationGate, type PrivacyGate, type ReleaseManifest } from "./gates.ts";
 
@@ -96,7 +96,7 @@ async function createCandidateLocked(
   if (session.status !== "integrated" && session.status !== "ready_for_integration") throw new SafetyKernelError("Candidate creation requires a finished source-bound writer session");
   const config = await loadConfig(repository.primaryRoot);
   assertVerificationProfileSupported("release", config.xcode.platform);
-  if (config.xcode.platform === "macos") throw new SafetyKernelError("macOS uses a distribution handoff, not an iOS TestFlight candidate");
+  if (!config.xcode.requiredPlatforms.includes("ios")) throw new SafetyKernelError("TestFlight candidate requires iOS in xcode.requiredPlatforms");
   const commit = await integrationHead(repository, config);
   if (session.commit !== commit || await git(session.worktreePath, ["rev-parse", "HEAD"]) !== commit) throw new SafetyKernelError("Candidate session does not match the current integration commit");
   if (await git(session.worktreePath, ["status", "--porcelain=v1"])) throw new SafetyKernelError("Candidate source worktree is dirty");
@@ -107,7 +107,7 @@ async function createCandidateLocked(
     throw new SafetyKernelError("Candidate review receipt is invalid or stale");
   }
   const reviewReceiptFingerprint = digest(reviewReceipt);
-  const verification = await new VerificationReceiptStore(repository).validated(verificationFingerprint);
+  const verification = await validatedPlatformReceipt(repository, config, verificationFingerprint, "ios");
   const currentSource = await sourceFingerprint(session);
   if (!verification || !verification.success || verification.reused || verification.profile !== "release" || verification.sessionId !== session.id || verification.sourceCommit !== commit || verification.sourceFingerprint !== currentSource.fingerprint) {
     throw new SafetyKernelError("Candidate requires fresh, non-reused release verification for the exact integrated commit and session");
@@ -180,7 +180,7 @@ export async function createMacDistributionHandoff(
   acknowledgedBy: string,
 ): Promise<{ handoff: MacDistributionHandoff; handoffPath: string }> {
   const config = await loadConfig(repository.primaryRoot);
-  if (config.xcode.platform !== "macos") throw new SafetyKernelError("macOS distribution handoff requires xcode.platform=macos");
+  if (!config.xcode.requiredPlatforms.includes("macos")) throw new SafetyKernelError("macOS distribution handoff requires macOS in xcode.requiredPlatforms");
   const state = await new RuntimeStore(repository).status();
   if (state?.lifecycle !== "review_passed") throw new SafetyKernelError(`macOS handoff requires review_passed lifecycle, found ${state?.lifecycle ?? "uninitialized"}`);
   if (session.status !== "integrated" && session.status !== "ready_for_integration") throw new SafetyKernelError("macOS handoff requires a finished source-bound writer session");
@@ -189,7 +189,7 @@ export async function createMacDistributionHandoff(
   let review: { id?: string; sourceCommit?: string; outcome?: string; verdict?: { verdict?: string } };
   try { review = JSON.parse(await readFile(join(repository.primaryRoot, ".pi-ios", "receipts", "stages", `review-${commit}.json`), "utf8")) as typeof review; } catch (error) { throw new SafetyKernelError("macOS handoff requires the exact review receipt", { cause: error }); }
   if (!review.id || review.sourceCommit !== commit || review.outcome !== "pass" || review.verdict?.verdict !== "pass") throw new SafetyKernelError("macOS handoff review receipt is invalid or stale");
-  const verification = await new VerificationReceiptStore(repository).validated(verificationFingerprint);
+  const verification = await validatedPlatformReceipt(repository, config, verificationFingerprint, "macos");
   const source = await sourceFingerprint(session);
   if (!verification || !verification.success || verification.reused || verification.profile !== "release" || verification.sessionId !== session.id || verification.sourceCommit !== commit || verification.sourceFingerprint !== source.fingerprint) throw new SafetyKernelError("macOS handoff requires fresh release verification for the exact integrated commit");
   if (!verification.project || verification.project.kind === "swift-package" || verification.project.platform !== "macos") throw new SafetyKernelError("macOS handoff requires a verified macOS Xcode app project");

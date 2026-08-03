@@ -1,3 +1,4 @@
+import type { ApplePlatform } from "../config/config.ts";
 import type { SimulatorLease } from "../simulator/types.ts";
 import type { SupervisedProcessResult } from "../process/supervisor.ts";
 import type { XcodeProjectDescriptor } from "../xcode/discovery.ts";
@@ -30,6 +31,7 @@ export interface VerificationReceipt {
   readonly project?: XcodeProjectDescriptor;
   readonly toolchain: ToolchainDescriptor;
   readonly simulator?: SimulatorLease;
+  readonly platformMatrix?: { readonly requiredPlatforms: readonly ApplePlatform[]; readonly receiptFingerprints: Readonly<Partial<Record<ApplePlatform, string>>> };
   readonly startedAt: string;
   readonly finishedAt: string;
   readonly success: boolean;

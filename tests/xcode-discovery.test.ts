@@ -59,7 +59,7 @@ describe("Xcode project discovery", () => {
           : { code: 0, stdout: JSON.stringify([{ buildSettings: { PRODUCT_TYPE: "com.apple.product-type.application", MACOSX_DEPLOYMENT_TARGET: "26.0" } }]), stderr: "" };
       },
     };
-    const descriptor = await discoverXcodeProject(root, { ...DEFAULT_CONFIG, xcode: { ...DEFAULT_CONFIG.xcode, platform: "macos" } }, macProbe);
+    const descriptor = await discoverXcodeProject(root, { ...DEFAULT_CONFIG, xcode: { ...DEFAULT_CONFIG.xcode, platform: "macos", requiredPlatforms: ["macos"] } }, macProbe);
     assert.equal(descriptor.platform, "macos");
     assert.equal(descriptor.deploymentTarget, "26.0");
   });

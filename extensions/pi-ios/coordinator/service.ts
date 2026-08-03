@@ -9,6 +9,7 @@ import { loadCandidate } from "../release/service.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
+import { loadLatestPlatformMatrix } from "../verification/matrix.ts";
 
 export type CoordinatorRoute =
   | "initialize"
@@ -42,6 +43,8 @@ export interface CoordinatorSnapshot {
   readonly activeWriter: boolean;
   readonly activePipeline: boolean;
   readonly candidateStatus?: string | undefined;
+  readonly requiredPlatforms?: readonly string[];
+  readonly platformStatus?: Readonly<Record<string, string>>;
   readonly workerRecommendation: WorkerRecommendation;
 }
 
@@ -100,15 +103,17 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
   const pipelines = await new PipelineStore(repository).list();
   const activePipeline = pipelines.some((pipeline) => ACTIVE_PIPELINE_STATUSES.has(pipeline.status));
   const candidate = await loadCandidate(repository);
+  const matrix = await loadLatestPlatformMatrix(repository);
+  const platformStatus = Object.fromEntries(config.xcode.requiredPlatforms.map((platform) => [platform, matrix?.platforms[platform]?.success ? "passed" : matrix?.platforms[platform] ? "failed" : "missing"]));
 
   if (!baseline.ready) {
-    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "baseline_blocked", reason: baseline.problems.join("; "), baselineReady: false, activeWriter, activePipeline, candidateStatus: candidate?.status, workerRecommendation: unavailableRecommendation("Restore a clean, valid Git baseline before coordinator work.") };
+    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "baseline_blocked", reason: baseline.problems.join("; "), baselineReady: false, activeWriter, activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Restore a clean, valid Git baseline before coordinator work.") };
   }
   if (activeWriter) {
-    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "resume_writer", reason: "An authorized writer session already owns active work.", baselineReady: true, activeWriter: true, activePipeline, candidateStatus: candidate?.status, workerRecommendation: unavailableRecommendation("Do not start overlapping work while a writer session is active or awaiting integration.") };
+    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "resume_writer", reason: "An authorized writer session already owns active work.", baselineReady: true, activeWriter: true, activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Do not start overlapping work while a writer session is active or awaiting integration.") };
   }
   if (activePipeline) {
-    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "observe_pipeline", reason: "A pipeline already owns the approved graph; inspect, reconcile, resume, or pause it instead of creating another.", baselineReady: true, activeWriter: false, activePipeline: true, candidateStatus: candidate?.status, workerRecommendation: unavailableRecommendation("Existing pipeline ownership prevents duplicate dispatch.") };
+    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "observe_pipeline", reason: "A pipeline already owns the approved graph; inspect, reconcile, resume, or pause it instead of creating another.", baselineReady: true, activeWriter: false, activePipeline: true, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Existing pipeline ownership prevents duplicate dispatch.") };
   }
 
   const route = lifecycleRoute(runtime.lifecycle);
@@ -123,5 +128,5 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
     }
   }
 
-  return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: route.route, reason: route.reason, baselineReady: true, activeWriter: false, activePipeline: false, candidateStatus: candidate?.status, workerRecommendation };
+  return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: route.route, reason: route.reason, baselineReady: true, activeWriter: false, activePipeline: false, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation };
 }

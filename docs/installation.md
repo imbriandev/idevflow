@@ -33,7 +33,7 @@ Before a writer stage, the project must have a clean baseline and valid Git iden
 
 ## Platform selection
 
-Config schema 6 defaults to iOS. For a macOS app, initialize/migrate the runtime, then set `xcode.platform` to `macos` in `.pi-ios/config.json`. macOS runs native `platform=macOS` build/test verification and does not acquire an iOS simulator. For M13b distribution readiness, use the macOS release manifest template and the `mac_handoff` release tool action; all signing, archive, notarization, upload, and distribution steps remain manual.
+Config schema 7 defaults to iOS with `xcode.requiredPlatforms=["ios"]`. For a macOS app, set `xcode.platform` to `macos` and `requiredPlatforms` to `["macos"]`. For a universal app, set `requiredPlatforms` to `["ios", "macos"]` and run `pi_ios_verify` with `matrix=true`. macOS runs native `platform=macOS` build/test verification and does not acquire an iOS simulator. For M13b distribution readiness, use the macOS release manifest template and the `mac_handoff` release tool action; all signing, archive, notarization, upload, and distribution steps remain manual.
 
 ## Config migration
 
@@ -63,7 +63,7 @@ npm run check
 git diff --check
 pi -e . --list-models
 npm pack --dry-run --json
-PI_IOS_XCODE_E2E=1 PI_MACOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+PI_IOS_XCODE_E2E=1 PI_MACOS_XCODE_E2E=1 PI_UNIVERSAL_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
 ```
 
 The real Xcode E2E test is opt-in locally and required in the macOS CI workflow.

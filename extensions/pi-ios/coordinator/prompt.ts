@@ -24,6 +24,8 @@ export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
 Lifecycle: ${snapshot.lifecycle ?? "uninitialized"}${snapshot.revision ? ` (runtime r${snapshot.revision})` : ""}
 Next safe route: ${snapshot.route}
 Reason: ${snapshot.reason}
+Required platforms: ${snapshot.requiredPlatforms?.join(", ") ?? "not configured"}
+Platform evidence: ${snapshot.platformStatus ? Object.entries(snapshot.platformStatus).map(([platform, status]) => `${platform}=${status}`).join(", ") : "none"}
 Worker policy: ${worker.mode}; ${worker.reason}
 ${action}
 ${dispatch}

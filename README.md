@@ -1,6 +1,6 @@
 # Pi iOS
 
-Pi iOS is a TypeScript Pi package for taking an indie Apple-platform app from idea through authorized implementation and commit-bound verification. iOS includes a verified TestFlight handoff; macOS currently includes native build/test verification, with release support still in beta development.
+Pi iOS is a TypeScript Pi package for taking an indie Apple-platform app from idea through authorized implementation and commit-bound verification. It supports iOS, macOS, and exact-commit universal verification matrices, with separate manual TestFlight and macOS distribution handoffs.
 
 ## Product principles
 

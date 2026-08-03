@@ -86,6 +86,12 @@ describe("product memory and work graph", () => {
     assert.throws(() => validateIdeaQuality(validateProductMemory(legacyMemory), validateSlcSpec(legacySlc)), /schema version 3/);
   });
 
+  it("binds schema-2 work slices to Apple platforms", () => {
+    const graph = validateWorkGraph({ schemaVersion: 2, title: "Universal", sourceSpecFingerprint: "spec", architecture: [{ id: "ADR-1", title: "Shared", decision: "Use one SwiftUI target", rationale: "Shared source", status: "accepted" }], slices: [{ id: "shared", title: "Shared", goal: "Build both", paths: ["Sources"], risk: "medium", dependsOn: [], acceptance: ["Works"], verificationProfile: "integration", platforms: ["ios", "macos"] }] }, "/tmp/project", "spec");
+    assert.deepEqual(graph.slices[0]!.platforms, ["ios", "macos"]);
+    assert.throws(() => validateWorkGraph({ ...graph, slices: [{ ...graph.slices[0], platforms: ["watchos"] }] }, "/tmp/project", "spec"), /invalid platform/);
+  });
+
   it("rejects stale, cyclic, and independently overlapping work graphs", () => {
     const base = { schemaVersion: 1, title: "Plan", sourceSpecFingerprint: "spec", architecture: [{ id: "ADR-1", title: "A", decision: "D", rationale: "R", status: "accepted" }] };
     assert.throws(() => validateWorkGraph({ ...base, sourceSpecFingerprint: "old", slices: [] }, "/tmp/project", "spec"), /stale/);

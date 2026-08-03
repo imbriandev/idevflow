@@ -3,12 +3,13 @@ import { join } from "node:path";
 import { writeFileAtomically } from "../state/atomic-file.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
-export const CONFIG_SCHEMA_VERSION = 6 as const;
+export const CONFIG_SCHEMA_VERSION = 7 as const;
 
 export type ApplePlatform = "ios" | "macos";
 
 export interface XcodeConfig {
   readonly platform: ApplePlatform;
+  readonly requiredPlatforms: readonly ApplePlatform[];
   readonly container?: string;
   readonly scheme?: string;
   readonly destination?: string;
@@ -84,7 +85,7 @@ export const DEFAULT_CONFIG: PiIosConfig = {
   remote: "origin",
   leaseSeconds: 14_400,
   verificationTimeoutSeconds: 1_800,
-  xcode: { platform: "ios", configuration: "Debug" },
+  xcode: { platform: "ios", requiredPlatforms: ["ios"], configuration: "Debug" },
   simulator: { leaseSeconds: 7_200, keepBooted: true },
   verification: {
     receiptMaxAgeHours: 24,
@@ -147,6 +148,7 @@ export function validateConfig(value: unknown): PiIosConfig {
 
   if (!config.xcode || typeof config.xcode !== "object") throw new SafetyKernelError("Pi iOS config xcode must be an object");
   if (config.xcode.platform !== "ios" && config.xcode.platform !== "macos") throw new SafetyKernelError("Pi iOS config xcode.platform must be ios or macos");
+  if (!Array.isArray(config.xcode.requiredPlatforms) || config.xcode.requiredPlatforms.length === 0 || config.xcode.requiredPlatforms.some((platform) => platform !== "ios" && platform !== "macos") || new Set(config.xcode.requiredPlatforms).size !== config.xcode.requiredPlatforms.length || !config.xcode.requiredPlatforms.includes(config.xcode.platform)) throw new SafetyKernelError("Pi iOS config xcode.requiredPlatforms must contain unique ios/macos values including xcode.platform");
   optionalString(config.xcode.container, "xcode.container");
   optionalString(config.xcode.scheme, "xcode.scheme");
   optionalString(config.xcode.destination, "xcode.destination");
@@ -219,6 +221,8 @@ export interface ConfigMigrationPlan {
 }
 
 function migrateLegacy(raw: Record<string, unknown>): PiIosConfig {
+  const legacyXcode = typeof raw.xcode === "object" && raw.xcode ? raw.xcode as Record<string, unknown> : {};
+  const platform = legacyXcode.platform === "macos" ? "macos" : "ios";
   return validateConfig({
     schemaVersion: CONFIG_SCHEMA_VERSION,
     baseBranch: raw.baseBranch ?? DEFAULT_CONFIG.baseBranch,
@@ -227,7 +231,7 @@ function migrateLegacy(raw: Record<string, unknown>): PiIosConfig {
     leaseSeconds: raw.leaseSeconds ?? DEFAULT_CONFIG.leaseSeconds,
     verificationTimeoutSeconds: raw.verificationTimeoutSeconds ?? DEFAULT_CONFIG.verificationTimeoutSeconds,
     ...(raw.worktreeDirectory ? { worktreeDirectory: raw.worktreeDirectory } : {}),
-    xcode: { ...DEFAULT_CONFIG.xcode, ...(typeof raw.xcode === "object" ? raw.xcode : {}) },
+    xcode: { ...DEFAULT_CONFIG.xcode, ...legacyXcode, requiredPlatforms: legacyXcode.requiredPlatforms ?? [platform] },
     simulator: { ...DEFAULT_CONFIG.simulator, ...(typeof raw.simulator === "object" ? raw.simulator : {}) },
     verification: { ...DEFAULT_CONFIG.verification, ...(typeof raw.verification === "object" ? raw.verification : {}) },
     quality: { ...DEFAULT_CONFIG.quality, ...(typeof raw.quality === "object" ? raw.quality : {}) },
@@ -250,7 +254,7 @@ export async function discoverConfigMigration(primaryRoot: string): Promise<Conf
     validateConfig(raw);
     return { needed: false, fromVersion: CONFIG_SCHEMA_VERSION, toVersion: CONFIG_SCHEMA_VERSION };
   }
-  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3 && raw.schemaVersion !== 4 && raw.schemaVersion !== 5) {
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3 && raw.schemaVersion !== 4 && raw.schemaVersion !== 5 && raw.schemaVersion !== 6) {
     throw new SafetyKernelError(`No migration path from config schema ${String(raw.schemaVersion)}`);
   }
   return {

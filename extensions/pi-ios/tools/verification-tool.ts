@@ -9,6 +9,7 @@ import { SessionRegistry } from "../sessions/registry.ts";
 import { leaseIsValid } from "../sessions/types.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import { verifySession } from "../verification/engine.ts";
+import { verifyPlatformMatrix } from "../verification/matrix.ts";
 import { readProofMetadata, type ProofInput } from "../verification/proofs.ts";
 import { VERIFICATION_PROFILES } from "../verification/profiles.ts";
 
@@ -16,6 +17,7 @@ const ProofSchema = Type.Object({
   kind: StringEnum(["screenshot", "accessibility", "performance"] as const),
   path: Type.String(),
   metadataPath: Type.String(),
+  platform: Type.Optional(StringEnum(["ios", "macos"] as const)),
 });
 
 function isWithin(root: string, path: string): boolean {
@@ -32,16 +34,18 @@ export function registerVerificationTool(pi: ExtensionAPI): void {
     promptGuidelines: [
       "Use pi_ios_verify before pi_ios_session postflight for every write-capable Pi iOS session.",
       "Do not request a profile weaker than the stage, risk, and changed surface require.",
+      "Use matrix=true when xcode.requiredPlatforms contains both iOS and macOS; tag platform-specific proofs with platform.",
     ],
     parameters: Type.Object({
       profile: Type.Optional(StringEnum(VERIFICATION_PROFILES)),
       proofs: Type.Optional(Type.Array(ProofSchema)),
+      matrix: Type.Optional(Type.Boolean()),
     }),
     async execute(_id, params, signal, onUpdate, ctx) {
       const repository = await discoverRepository(ctx.cwd);
       const session = await new SessionRegistry(repository).findLatestByPiSession(ctx.sessionManager.getSessionId());
       if (!session || session.status !== "active" || !leaseIsValid(session)) throw new SafetyKernelError("Verification requires an active, unexpired writer session");
-      const proofInputs: ProofInput[] = [];
+      const proofInputs: Array<{ input: ProofInput; platform?: "ios" | "macos" }> = [];
       for (const proof of params.proofs ?? []) {
         const path = isAbsolute(proof.path) ? proof.path : resolve(session.worktreePath, proof.path);
         const metadataPath = isAbsolute(proof.metadataPath) ? proof.metadataPath : resolve(session.worktreePath, proof.metadataPath);
@@ -52,19 +56,18 @@ export function registerVerificationTool(pi: ExtensionAPI): void {
         if ((!isWithin(worktreeRoot, canonicalPath) && !isWithin(runtimeRoot, canonicalPath)) || (!isWithin(worktreeRoot, canonicalMetadataPath) && !isWithin(runtimeRoot, canonicalMetadataPath))) {
           throw new SafetyKernelError("Proof and metadata paths must stay inside the writer worktree or local .pi-ios runtime");
         }
-        proofInputs.push({ kind: proof.kind, path, metadata: await readProofMetadata(metadataPath) });
+        proofInputs.push({ input: { kind: proof.kind, path, metadata: await readProofMetadata(metadataPath) }, ...(proof.platform ? { platform: proof.platform } : {}) });
       }
-      const receipt = await verifySession({
-        repository,
-        config: await loadConfig(repository.primaryRoot),
-        session,
+      const config = await loadConfig(repository.primaryRoot);
+      const common = {
+        repository, config, session,
         ...(params.profile ? { requestedProfile: params.profile } : {}),
-        proofs: proofInputs,
         ...(signal ? { signal } : {}),
-        onProgress(message) {
-          onUpdate?.({ content: [{ type: "text", text: message }], details: { sessionId: session.id, progress: message } });
-        },
-      });
+        onProgress(message: string) { onUpdate?.({ content: [{ type: "text", text: message }], details: { sessionId: session.id, progress: message } }); },
+      };
+      const receipt = params.matrix
+        ? await verifyPlatformMatrix({ ...common, proofs: Object.fromEntries(config.xcode.requiredPlatforms.map((platform) => [platform, proofInputs.filter((proof) => !proof.platform || proof.platform === platform).map((proof) => proof.input)])) })
+        : await verifySession({ ...common, proofs: proofInputs.map((proof) => proof.input) });
       const summary = receipt.success
         ? `${receipt.reused ? "Reused" : "Passed"} ${receipt.profile} verification. Fingerprint ${receipt.verificationFingerprint}.`
         : `Failed ${receipt.profile} verification. Inspect ${receipt.artifacts[0]?.path ?? "receipt artifacts"}.`;

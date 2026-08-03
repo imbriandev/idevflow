@@ -1,3 +1,4 @@
+import type { ApplePlatform } from "../config/config.ts";
 import type { Risk } from "../lifecycle/contracts.ts";
 import type { VerificationProfile } from "../verification/profiles.ts";
 
@@ -45,6 +46,7 @@ export interface PipelineSliceState {
   readonly dependsOn: readonly string[];
   readonly acceptance: readonly string[];
   readonly verificationProfile: VerificationProfile;
+  readonly platforms?: readonly ApplePlatform[];
   readonly status: SliceStatus;
   readonly riskApproved: boolean;
   readonly attempts: number;
