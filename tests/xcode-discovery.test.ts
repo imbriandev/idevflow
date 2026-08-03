@@ -28,6 +28,7 @@ describe("Xcode project discovery", () => {
     roots.push(root);
     await mkdir(join(root, "SampleApp.xcodeproj"));
     const descriptor = await discoverXcodeProject(root, DEFAULT_CONFIG, probe);
+    assert.equal(descriptor.platform, "ios");
     assert.equal(descriptor.kind, "project");
     assert.equal(descriptor.scheme, "SampleApp");
   });
@@ -45,6 +46,22 @@ describe("Xcode project discovery", () => {
       },
     };
     assert.equal((await discoverXcodeProject(root, DEFAULT_CONFIG, workspaceProbe)).kind, "workspace");
+  });
+
+  it("reads the macOS deployment target for a macOS project", async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-ios-xcode-"));
+    roots.push(root);
+    await mkdir(join(root, "MacApp.xcodeproj"));
+    const macProbe: CommandProbe = {
+      async run(_executable, args) {
+        return args.includes("-list")
+          ? { code: 0, stdout: JSON.stringify({ project: { schemes: ["MacApp"] } }), stderr: "" }
+          : { code: 0, stdout: JSON.stringify([{ buildSettings: { PRODUCT_TYPE: "com.apple.product-type.application", MACOSX_DEPLOYMENT_TARGET: "26.0" } }]), stderr: "" };
+      },
+    };
+    const descriptor = await discoverXcodeProject(root, { ...DEFAULT_CONFIG, xcode: { ...DEFAULT_CONFIG.xcode, platform: "macos" } }, macProbe);
+    assert.equal(descriptor.platform, "macos");
+    assert.equal(descriptor.deploymentTarget, "26.0");
   });
 
   it("discovers a Swift package fallback", async () => {

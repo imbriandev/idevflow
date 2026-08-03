@@ -2,7 +2,7 @@
 
 ## Mission
 
-Pi iOS turns a founder's product intent into a narrow iOS product, an approved implementation graph, isolated code changes, artifact-backed verification, and a deliberate TestFlight handoff.
+Pi iOS turns a founder's product intent into a narrow Apple-platform product, an approved implementation graph, isolated code changes, and artifact-backed verification. iOS additionally supports a deliberate TestFlight handoff; macOS release support remains a later milestone.
 
 It is not a prompt pack. It is a deterministic workflow kernel integrated with Pi's commands, skills, tools, events, sessions, and TUI.
 
@@ -118,7 +118,7 @@ Postflight records changed paths, evidence, and a content fingerprint. Finish re
 
 ## Xcode verification harness
 
-The verification kernel discovers the project container, scheme, build settings, Apple toolchain, and an exclusive simulator destination. It runs shell-free supervised commands with isolated DerivedData, cancellation, timeout, bounded diagnostics, redacted complete logs, xcresult output, and post-run artifact secret scanning.
+The verification kernel discovers the project container, scheme, platform-specific deployment target, build settings, and Apple toolchain. iOS acquires an exclusive simulator destination; macOS runs against the native Mac destination without a simulator lease. It runs shell-free supervised commands with isolated DerivedData, cancellation, timeout, bounded diagnostics, redacted complete logs, xcresult output, and post-run artifact secret scanning.
 
 Adaptive profiles select the minimum allowed strength from stage, risk, and changed files. Receipts bind source and dirty content to configuration, project, toolchain, simulator destination, profile, proof files, and artifact hashes. Exact non-release receipts may be reused only while every artifact remains intact; release proof is always fresh.
 

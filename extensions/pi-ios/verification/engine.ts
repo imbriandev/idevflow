@@ -18,7 +18,7 @@ import { discoverXcodeProject, systemProbe, type XcodeProjectDescriptor } from "
 import { discoverToolchain } from "../xcode/toolchain.ts";
 import { sourceFingerprint, verificationFingerprint } from "./fingerprint.ts";
 import { collectProof, simulatorProof, type ProofInput } from "./proofs.ts";
-import { PROFILE_CONTRACTS, VERIFICATION_PROFILES, missingRequiredProofs, selectVerificationProfile, type VerificationProfile } from "./profiles.ts";
+import { PROFILE_CONTRACTS, VERIFICATION_PROFILES, assertVerificationProfileSupported, missingRequiredProofs, selectVerificationProfile, type VerificationProfile } from "./profiles.ts";
 import { VerificationReceiptStore } from "./receipts.ts";
 import type { ArtifactRecord, QualityProof, VerificationReceipt } from "./types.ts";
 import { assertPassedXCTest, assertPerformanceBudget, assertQualityTestSource } from "./xctest-evidence.ts";
@@ -56,7 +56,7 @@ function chooseProfile(session: WriterSession, files: readonly string[], request
 function xcodeBaseArgs(
   project: XcodeProjectDescriptor,
   config: PiIosConfig,
-  simulator: SimulatorLease,
+  simulator: SimulatorLease | undefined,
   derivedData: string,
   configuration: string,
 ): string[] {
@@ -65,7 +65,7 @@ function xcodeBaseArgs(
     project.container,
     "-scheme", project.scheme,
     "-configuration", configuration,
-    "-destination", config.xcode.destination ?? `platform=iOS Simulator,id=${simulator.udid}`,
+    "-destination", config.xcode.destination ?? (config.xcode.platform === "macos" ? "platform=macOS" : `platform=iOS Simulator,id=${simulator!.udid}`),
     "-derivedDataPath", derivedData,
     "COMPILER_INDEX_STORE_ENABLE=NO",
   ];
@@ -81,6 +81,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
   }
   const files = await changedFiles(input.session.worktreePath);
   const profile = chooseProfile(input.session, files, input.requestedProfile);
+  assertVerificationProfileSupported(profile, input.config.xcode.platform);
   const contract = PROFILE_CONTRACTS[profile];
   input.onProgress?.(`Selected ${profile} verification for ${files.length} changed file(s)`);
   const source = await sourceFingerprint(input.session);
@@ -90,11 +91,11 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
   const project = profile === "docs" ? undefined : await discoverXcodeProject(input.session.worktreePath, input.config, systemProbe, profile === "release" ? "Release" : input.config.xcode.configuration);
   if (project && project.kind !== "swift-package") {
     const deployment = Number.parseFloat(project.deploymentTarget ?? "0");
-    if (deployment < 26) throw new SafetyKernelError(`Pi iOS requires iOS deployment target 26 or newer, found ${project.deploymentTarget ?? "unknown"}`);
+    if (deployment < 26) throw new SafetyKernelError(`Pi iOS requires ${project.platform === "macos" ? "macOS" : "iOS"} deployment target 26 or newer, found ${project.deploymentTarget ?? "unknown"}`);
   }
   let simulator: SimulatorLease | undefined;
   let releaseSimulatorAfterVerification = false;
-  if (project && project.kind !== "swift-package") {
+  if (project && project.kind !== "swift-package" && project.platform === "ios") {
     input.onProgress?.("Acquiring an exclusive iOS simulator lease");
     const currentLeases = await new SimulatorLeaseStore(input.repository).load();
     const preexisting = Object.values(currentLeases.leases).find((lease) => lease.sessionId === input.session.id && Date.parse(lease.expiresAt) >= Date.now());
@@ -165,7 +166,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
         executable = "swift";
         args = [action, "--scratch-path", scratch];
       } else {
-        if (!simulator) throw new SafetyKernelError("Xcode verification is missing a simulator lease");
+        if (project.platform === "ios" && !simulator) throw new SafetyKernelError("iOS Xcode verification is missing a simulator lease");
         executable = "xcodebuild";
         args = [...xcodeBaseArgs(project, input.config, simulator, derivedData, profile === "release" ? "Release" : input.config.xcode.configuration), "-resultBundlePath", resultBundle, action];
       }
@@ -273,7 +274,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
         commandsPassed: commands.length,
       }, artifactDirectory));
     }
-    const missingProofs = missingRequiredProofs(profile, proofs, input.config.verification.requiredScreenshotVariants);
+    const missingProofs = missingRequiredProofs(profile, proofs, input.config.verification.requiredScreenshotVariants, project?.platform ?? "ios");
     const finalSuccess = success && missingProofs.length === 0;
     artifacts.push(...proofs.map((proof) => proof.artifact));
 

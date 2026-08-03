@@ -3,9 +3,12 @@ import { join } from "node:path";
 import { writeFileAtomically } from "../state/atomic-file.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
-export const CONFIG_SCHEMA_VERSION = 5 as const;
+export const CONFIG_SCHEMA_VERSION = 6 as const;
+
+export type ApplePlatform = "ios" | "macos";
 
 export interface XcodeConfig {
+  readonly platform: ApplePlatform;
   readonly container?: string;
   readonly scheme?: string;
   readonly destination?: string;
@@ -81,7 +84,7 @@ export const DEFAULT_CONFIG: PiIosConfig = {
   remote: "origin",
   leaseSeconds: 14_400,
   verificationTimeoutSeconds: 1_800,
-  xcode: { configuration: "Debug" },
+  xcode: { platform: "ios", configuration: "Debug" },
   simulator: { leaseSeconds: 7_200, keepBooted: true },
   verification: {
     receiptMaxAgeHours: 24,
@@ -143,6 +146,7 @@ export function validateConfig(value: unknown): PiIosConfig {
   optionalString(config.worktreeDirectory, "worktreeDirectory");
 
   if (!config.xcode || typeof config.xcode !== "object") throw new SafetyKernelError("Pi iOS config xcode must be an object");
+  if (config.xcode.platform !== "ios" && config.xcode.platform !== "macos") throw new SafetyKernelError("Pi iOS config xcode.platform must be ios or macos");
   optionalString(config.xcode.container, "xcode.container");
   optionalString(config.xcode.scheme, "xcode.scheme");
   optionalString(config.xcode.destination, "xcode.destination");
@@ -246,7 +250,7 @@ export async function discoverConfigMigration(primaryRoot: string): Promise<Conf
     validateConfig(raw);
     return { needed: false, fromVersion: CONFIG_SCHEMA_VERSION, toVersion: CONFIG_SCHEMA_VERSION };
   }
-  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3 && raw.schemaVersion !== 4) {
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3 && raw.schemaVersion !== 4 && raw.schemaVersion !== 5) {
     throw new SafetyKernelError(`No migration path from config schema ${String(raw.schemaVersion)}`);
   }
   return {

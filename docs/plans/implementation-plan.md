@@ -15,7 +15,8 @@ Pi iOS is complete when it can take a trusted iOS repository through define, pla
 | Specialist reasoning | bounded package-owned context selection and scenario evaluations |
 | XCTest quality enforcement | fresh accessibility-audit and performance-metric evidence against project-owned budgets |
 | Package identity | Pi-native TypeScript source under `extensions/pi-ios/` and local runtime under `.pi-ios/` |
-| Idea Quality Gate (M12a) | evidence/assumption product records, required experience expectations, interactive acceptance of unresolved high-impact assumptions, and lifecycle tests |
+| Idea Quality Gate (M12) | evidence/assumption records, discovery research/prototype loop, critique acceptance, and evidence-bound learning |
+| Native macOS verification (M13a) | platform-aware config/discovery, native build/test xcresults without simulator ownership, and real macOS fixture E2E |
 
 ## Ongoing standards
 
@@ -29,7 +30,7 @@ Pi iOS is complete when it can take a trusted iOS repository through define, pla
 
 ```bash
 npm run check
-PI_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+PI_IOS_XCODE_E2E=1 PI_MACOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
 pi -e . --list-models
 npm pack --dry-run --json
 git diff --check

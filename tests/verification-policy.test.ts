@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { missingRequiredProofs, PROFILE_CONTRACTS, selectVerificationProfile } from "../extensions/pi-ios/verification/profiles.ts";
+import { assertVerificationProfileSupported, missingRequiredProofs, PROFILE_CONTRACTS, selectVerificationProfile } from "../extensions/pi-ios/verification/profiles.ts";
 
 describe("verification policy", () => {
   it("selects adaptive profiles from stage, risk, and changed surface", () => {
@@ -21,5 +21,8 @@ describe("verification policy", () => {
       { kind: "performance" as const, metadata: {} },
     ];
     assert.deepEqual(missingRequiredProofs("release", proofs, ["compact-light", "compact-dark"]), ["screenshot"]);
+    assert.deepEqual(missingRequiredProofs("integration", [], [], "macos"), []);
+    assert.doesNotThrow(() => assertVerificationProfileSupported("integration", "macos"));
+    assert.throws(() => assertVerificationProfileSupported("release", "macos"), /M13b/);
   });
 });

@@ -4,7 +4,7 @@
 
 - Node.js 22 or newer
 - Pi 0.82.1 or newer
-- macOS with Xcode 26+, Swift 6.2+, and iOS 26+ simulator runtime for app verification
+- macOS with Xcode 26+ and Swift 6.2+; iOS verification additionally requires an iOS 26+ simulator runtime
 - a Git repository with an explicit author identity for writer commits
 
 ## Local installation
@@ -30,6 +30,10 @@ Pi discovers the extension and seven `ios-*` skills from `package.json`. The pac
 In a trusted Git project, use `pi_ios_runtime` to initialize state. Pi iOS creates ignored local state under `.pi-ios/`; tracked product and plan documents are created only through the lifecycle tools.
 
 Before a writer stage, the project must have a clean baseline and valid Git identity. Preflight creates a sibling isolated worktree, so the original checkout is not the writer's mutable directory.
+
+## Platform selection
+
+Config schema 6 defaults to iOS. For a macOS app, initialize/migrate the runtime, then set `xcode.platform` to `macos` in `.pi-ios/config.json`. macOS runs native `platform=macOS` build/test verification and does not acquire an iOS simulator. macOS release/notarization support is not part of M13a.
 
 ## Config migration
 
@@ -59,7 +63,7 @@ npm run check
 git diff --check
 pi -e . --list-models
 npm pack --dry-run --json
-PI_IOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
+PI_IOS_XCODE_E2E=1 PI_MACOS_XCODE_E2E=1 npx tsx --test tests/xcode-e2e.test.ts tests/real-app-handoff-e2e.test.ts
 ```
 
 The real Xcode E2E test is opt-in locally and required in the macOS CI workflow.

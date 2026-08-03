@@ -1,6 +1,6 @@
 # Pi iOS
 
-Pi iOS is a TypeScript Pi package for taking an indie iOS app from idea to a commit-bound, verified TestFlight handoff. Its deterministic kernel owns lifecycle state, source authorization, verification, approvals, integration, and release boundaries.
+Pi iOS is a TypeScript Pi package for taking an indie Apple-platform app from idea through authorized implementation and commit-bound verification. iOS includes a verified TestFlight handoff; macOS currently includes native build/test verification, with release support still in beta development.
 
 ## Product principles
 
@@ -15,7 +15,7 @@ Pi iOS is a TypeScript Pi package for taking an indie iOS app from idea to a com
 
 - Pi `0.82.1` or newer
 - macOS with Xcode
-- iOS 26 or newer
+- iOS 26 or macOS 26 or newer
 - Swift 6.2 or newer
 - SwiftUI, SwiftData, Swift Concurrency, and Swift Testing
 
@@ -69,3 +69,4 @@ pi -e .
 - [Release process](docs/release-process.md)
 - [Context and XCTest evidence enforcement](docs/plans/milestone-10-evidence-enforcement.md)
 - [Idea Quality Gate](docs/plans/milestone-12-idea-quality.md)
+- [macOS support](docs/plans/milestone-13-macos-support.md)

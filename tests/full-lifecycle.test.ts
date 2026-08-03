@@ -50,7 +50,7 @@ async function fakeVerification(repository: Awaited<ReturnType<typeof discoverRe
   const receipt: VerificationReceipt = {
     schemaVersion: 1, id: randomUUID(), sessionId: session.id, profile, verificationFingerprint: fingerprint,
     sourceFingerprint: source.fingerprint, sourceCommit: source.commit, configurationFingerprint: "config",
-    ...(project ? { project: { kind: "project" as const, root: session.worktreePath, container: "App.xcodeproj", containerName: "App.xcodeproj", scheme: "App", schemes: ["App"], deploymentTarget: "26.0", bundleIdentifier: "com.example.golden", marketingVersion: "1.0", buildNumber: "1" } } : {}),
+    ...(project ? { project: { platform: "ios" as const, kind: "project" as const, root: session.worktreePath, container: "App.xcodeproj", containerName: "App.xcodeproj", scheme: "App", schemes: ["App"], deploymentTarget: "26.0", bundleIdentifier: "com.example.golden", marketingVersion: "1.0", buildNumber: "1" } } : {}),
     toolchain: { xcode: "Xcode 26", swift: "Apple Swift version 6.2", developerDirectory: "/Applications/Xcode.app", fingerprint: "toolchain" },
     startedAt: now, finishedAt: now, success: true, reused: false, commands: [], artifacts, proofs,
   };

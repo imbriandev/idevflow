@@ -21,6 +21,7 @@ const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
 
 const enabled = process.env.PI_IOS_XCODE_E2E === "1";
+const macEnabled = process.env.PI_MACOS_XCODE_E2E === "1";
 
 describe("real Xcode verification", () => {
   it("builds a real iOS app on an exclusive simulator and reuses exact proof", { skip: !enabled }, async () => {
@@ -66,5 +67,35 @@ describe("real Xcode verification", () => {
     await runPostflight(repository, session, "real Xcode simulator build", first.verificationFingerprint);
     session = (await new SessionRegistry(repository).findLatestByPiSession("xcode-e2e"))!;
     assert.match(await finishSession(repository, session, "test: verify sample app"), /^[a-f0-9]{40}$/);
+  });
+
+  it("builds and tests a real macOS app without acquiring an iOS simulator", { skip: !macEnabled }, async () => {
+    const root = await mkdtemp(join(tmpdir(), "pi-macos-xcode-e2e-"));
+    roots.push(root, `${root}.pi-ios-worktrees`);
+    await cp(join(import.meta.dirname, "fixtures", "MacApp"), root, { recursive: true });
+    await execFileAsync("git", ["init", "-b", "main"], { cwd: root });
+    await execFileAsync("git", ["add", "."], { cwd: root });
+    await execFileAsync("git", ["-c", "user.name=Pi iOS Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "fixture"], { cwd: root });
+    await execFileAsync("git", ["config", "user.name", "Pi iOS Tests"], { cwd: root });
+    await execFileAsync("git", ["config", "user.email", "tests@example.invalid"], { cwd: root });
+
+    const repository = await discoverRepository(root);
+    await new RuntimeStore(repository).initialize("macos-e2e");
+    await initializeConfig(repository.primaryRoot);
+    let session = await writePreflight(repository, { piSessionId: "macos-e2e", stage: "build", task: "verify macOS sample app", risk: "high", paths: ["SampleApp/ContentView.swift"] });
+    const source = join(session.worktreePath, "SampleApp", "ContentView.swift");
+    await writeFile(source, (await readFile(source, "utf8")).replace("verification fixture", "verified fixture"));
+    const config = await loadConfig(repository.primaryRoot);
+    const macConfig = { ...config, xcode: { ...config.xcode, platform: "macos" as const } };
+    await recordContextReceipt(repository, { session, stage: "build", risk: "high", task: session.task, selection: selectKnowledge({ stage: "build", risk: "high", task: session.task }) });
+    const receipt = await verifySession({ repository, config: macConfig, session });
+    assert.equal(receipt.success, true, JSON.stringify(receipt.commands.map((command) => ({ code: command.code, stderr: command.stderrTail.slice(-2000) })), null, 2));
+    assert.equal(receipt.project?.platform, "macos");
+    assert.equal(receipt.simulator, undefined);
+    assert.equal(receipt.proofs.some((proof) => proof.kind === "simulator"), false);
+    assert.equal(receipt.artifacts.some((artifact) => artifact.kind === "xcresult"), true);
+    await runPostflight(repository, session, "real macOS build and test", receipt.verificationFingerprint);
+    session = (await new SessionRegistry(repository).findLatestByPiSession("macos-e2e"))!;
+    assert.match(await finishSession(repository, session, "test: verify macOS sample app"), /^[a-f0-9]{40}$/);
   });
 });

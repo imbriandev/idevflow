@@ -13,7 +13,7 @@ import { SafetyKernelError } from "../state/errors.ts";
 import { withFileLock } from "../state/file-lock.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { sourceFingerprint } from "../verification/fingerprint.ts";
-import { missingRequiredProofs } from "../verification/profiles.ts";
+import { assertVerificationProfileSupported, missingRequiredProofs } from "../verification/profiles.ts";
 import { validateXCTestMetadata } from "../verification/xctest-evidence.ts";
 import { VerificationReceiptStore } from "../verification/receipts.ts";
 import type { ArtifactRecord } from "../verification/types.ts";
@@ -95,6 +95,7 @@ async function createCandidateLocked(
   if (state?.lifecycle !== "review_passed" && state?.lifecycle !== "stale_candidate") throw new SafetyKernelError(`Candidate creation requires review_passed or stale_candidate lifecycle, found ${state?.lifecycle ?? "uninitialized"}`);
   if (session.status !== "integrated" && session.status !== "ready_for_integration") throw new SafetyKernelError("Candidate creation requires a finished source-bound writer session");
   const config = await loadConfig(repository.primaryRoot);
+  assertVerificationProfileSupported("release", config.xcode.platform);
   const commit = await integrationHead(repository, config);
   if (session.commit !== commit || await git(session.worktreePath, ["rev-parse", "HEAD"]) !== commit) throw new SafetyKernelError("Candidate session does not match the current integration commit");
   if (await git(session.worktreePath, ["status", "--porcelain=v1"])) throw new SafetyKernelError("Candidate source worktree is dirty");

@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { readdir, stat } from "node:fs/promises";
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
-import type { PiIosConfig } from "../config/config.ts";
+import type { ApplePlatform, PiIosConfig } from "../config/config.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
 const execFileAsync = promisify(execFile);
@@ -33,6 +33,7 @@ export const systemProbe: CommandProbe = {
 export type ProjectKind = "workspace" | "project" | "swift-package";
 
 export interface XcodeProjectDescriptor {
+  readonly platform: ApplePlatform;
   readonly kind: ProjectKind;
   readonly root: string;
   readonly container: string;
@@ -163,20 +164,21 @@ export async function discoverXcodeProject(
     } catch {
       throw new SafetyKernelError("swift package describe returned invalid JSON");
     }
-    return { kind, root, container, containerName: basename(container), scheme: config.xcode.scheme ?? name, schemes: [name] };
+    return { platform: config.xcode.platform, kind, root, container, containerName: basename(container), scheme: config.xcode.scheme ?? name, schemes: [name] };
   }
 
   const schemes = await xcodeSchemes(container, kind, root, probe);
   const scheme = selectScheme(schemes, config.xcode.scheme);
   const settings = await buildSettings(container, kind, scheme, configuration, root, probe);
   return {
+    platform: config.xcode.platform,
     kind,
     root,
     container,
     containerName: basename(container),
     scheme,
     schemes,
-    ...(settings.IPHONEOS_DEPLOYMENT_TARGET ? { deploymentTarget: settings.IPHONEOS_DEPLOYMENT_TARGET } : {}),
+    ...((config.xcode.platform === "macos" ? settings.MACOSX_DEPLOYMENT_TARGET : settings.IPHONEOS_DEPLOYMENT_TARGET) ? { deploymentTarget: config.xcode.platform === "macos" ? settings.MACOSX_DEPLOYMENT_TARGET : settings.IPHONEOS_DEPLOYMENT_TARGET } : {}),
     ...(settings.SWIFT_VERSION ? { swiftLanguageVersion: settings.SWIFT_VERSION } : {}),
     ...(settings.PRODUCT_BUNDLE_IDENTIFIER ? { bundleIdentifier: settings.PRODUCT_BUNDLE_IDENTIFIER } : {}),
     ...(settings.MARKETING_VERSION ? { marketingVersion: settings.MARKETING_VERSION } : {}),

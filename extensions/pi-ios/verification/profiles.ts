@@ -1,4 +1,5 @@
 import type { Risk, Stage } from "../lifecycle/contracts.ts";
+import { SafetyKernelError } from "../state/errors.ts";
 
 export const VERIFICATION_PROFILES = ["docs", "quick", "slice", "integration", "release"] as const;
 export type VerificationProfile = (typeof VERIFICATION_PROFILES)[number];
@@ -24,13 +25,19 @@ export function missingRequiredProofs(
   profile: VerificationProfile,
   proofs: readonly { readonly kind: ProofKind; readonly metadata: Readonly<Record<string, unknown>> }[],
   requiredScreenshotVariants: readonly string[],
+  platform: "ios" | "macos" = "ios",
 ): ProofKind[] {
-  const missing = new Set(PROFILE_CONTRACTS[profile].requiredProofs.filter((kind) => !proofs.some((proof) => proof.kind === kind)));
+  const required = PROFILE_CONTRACTS[profile].requiredProofs.filter((kind) => platform === "ios" || kind !== "simulator");
+  const missing = new Set(required.filter((kind) => !proofs.some((proof) => proof.kind === kind)));
   if (profile === "release") {
     const variants = new Set(proofs.filter((proof) => proof.kind === "screenshot").map((proof) => proof.metadata.variant));
     if (requiredScreenshotVariants.some((variant) => !variants.has(variant))) missing.add("screenshot");
   }
   return [...missing];
+}
+
+export function assertVerificationProfileSupported(profile: VerificationProfile, platform: "ios" | "macos"): void {
+  if (platform === "macos" && profile === "release") throw new SafetyKernelError("macOS release verification is unavailable until M13b; use integration verification for native build/test evidence");
 }
 
 export function selectVerificationProfile(input: {
