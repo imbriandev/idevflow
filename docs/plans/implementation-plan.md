@@ -16,7 +16,7 @@ Pi iOS is complete when it can take a trusted iOS repository through define, pla
 | XCTest quality enforcement | fresh accessibility-audit and performance-metric evidence against project-owned budgets |
 | Package identity | Pi-native TypeScript source under `extensions/pi-ios/` and local runtime under `.pi-ios/` |
 | Idea Quality Gate (M12) | evidence/assumption records, discovery research/prototype loop, critique acceptance, and evidence-bound learning |
-| Native macOS verification (M13a) | platform-aware config/discovery, native build/test xcresults without simulator ownership, and real macOS fixture E2E |
+| Native macOS verification and handoff (M13a/b) | platform-aware config/discovery, native build/test xcresults, Sandbox/Hardened Runtime gate, target-specific manual handoff, and real macOS fixture E2E |
 
 ## Ongoing standards
 

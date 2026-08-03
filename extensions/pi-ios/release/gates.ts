@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { SafetyKernelError } from "../state/errors.ts";
+import type { XcodeProjectDescriptor } from "../xcode/discovery.ts";
 
 export interface PrivacyGate {
   readonly status: "ready";
@@ -16,6 +17,37 @@ export interface MonetizationGate {
   readonly reasons: readonly string[];
   readonly fingerprint: string;
   readonly path?: string;
+}
+
+export type MacDistributionTarget = "mac-app-store" | "notarized";
+
+export interface MacDistributionManifest {
+  readonly schemaVersion: 1;
+  readonly platform: "macos";
+  readonly version: string;
+  readonly build: string;
+  readonly bundleId: string;
+  readonly target: MacDistributionTarget;
+  readonly releaseNotes: string;
+  readonly knownIssues: readonly string[];
+  readonly supportUrl: string;
+  readonly privacyUrl: string;
+  readonly security: {
+    readonly entitlementsPath: string;
+    readonly sandbox: true;
+    readonly hardenedRuntime: true;
+    readonly signingIdentity: string;
+    readonly teamId: string;
+    readonly notarizationProfile?: string;
+  };
+}
+
+export interface MacSecurityGate {
+  readonly status: "ready";
+  readonly fingerprint: string;
+  readonly entitlementsPath: string;
+  readonly sandbox: true;
+  readonly hardenedRuntime: true;
 }
 
 export interface ReleaseManifest {
@@ -112,6 +144,51 @@ export async function validateMonetizationGate(root: string, configuredPath: str
   if (missing.length) throw new SafetyKernelError(`Monetization gate is missing proof: ${missing.join(", ")}`);
   const normalized = { schemaVersion: 1, entitlement, products: productIds, paywallRevision, appStoreSnapshot, providerSnapshot, requiredProofs: required, providedProofs: [...provided] };
   return { status: "ready", required: true, reasons: [...reasons].sort(), fingerprint: fingerprint(normalized), path: configuredPath };
+}
+
+function https(value: unknown, label: string): string {
+  const url = text(value, label);
+  try { if (new URL(url).protocol !== "https:") throw new Error(); } catch { throw new SafetyKernelError(`${label} must be an HTTPS URL`); }
+  return url;
+}
+
+function projectRelative(root: string, path: string, label: string): string {
+  const absolute = resolve(root, path);
+  const relativePath = resolve(root, absolute).slice(resolve(root).length + 1);
+  if (!path || path.startsWith("/") || path.split(/[\\/]/).includes("..") || !relativePath) throw new SafetyKernelError(`${label} must be project-relative`);
+  return path;
+}
+
+export async function loadMacDistributionManifest(root: string, configuredPath: string, expectedTarget: MacDistributionTarget): Promise<{ manifest: MacDistributionManifest; fingerprint: string; path: string }> {
+  const raw = object(await json(resolve(root, configuredPath), "macOS release manifest"), "macOS release manifest");
+  if (raw.schemaVersion !== 1 || raw.platform !== "macos") throw new SafetyKernelError("macOS release manifest must use schema 1 and platform macos");
+  if (raw.target !== expectedTarget) throw new SafetyKernelError(`macOS release target ${String(raw.target)} does not match requested target ${expectedTarget}`);
+  if (raw.target !== "mac-app-store" && raw.target !== "notarized") throw new SafetyKernelError("macOS release target is invalid");
+  if (!Array.isArray(raw.knownIssues) || raw.knownIssues.some((item) => typeof item !== "string" || !item.trim())) throw new SafetyKernelError("knownIssues must be a string array");
+  const security = object(raw.security, "macOS security manifest");
+  const manifest: MacDistributionManifest = {
+    schemaVersion: 1, platform: "macos", version: text(raw.version, "version"), build: text(raw.build, "build"), bundleId: text(raw.bundleId, "bundleId"), target: raw.target,
+    releaseNotes: text(raw.releaseNotes, "releaseNotes"), knownIssues: raw.knownIssues.map((item) => String(item).trim()), supportUrl: https(raw.supportUrl, "supportUrl"), privacyUrl: https(raw.privacyUrl, "privacyUrl"),
+    security: {
+      entitlementsPath: projectRelative(root, text(security.entitlementsPath, "security.entitlementsPath"), "security.entitlementsPath"),
+      sandbox: security.sandbox === true ? true : (() => { throw new SafetyKernelError("macOS security.sandbox must be true"); })(),
+      hardenedRuntime: security.hardenedRuntime === true ? true : (() => { throw new SafetyKernelError("macOS security.hardenedRuntime must be true"); })(),
+      signingIdentity: text(security.signingIdentity, "security.signingIdentity"), teamId: text(security.teamId, "security.teamId"),
+      ...(security.notarizationProfile !== undefined ? { notarizationProfile: text(security.notarizationProfile, "security.notarizationProfile") } : {}),
+    },
+  };
+  if (manifest.target === "notarized" && !manifest.security.notarizationProfile) throw new SafetyKernelError("Notarized macOS handoff requires a notarization profile name");
+  return { manifest, fingerprint: fingerprint(manifest), path: configuredPath };
+}
+
+export async function validateMacSecurityGate(root: string, manifest: MacDistributionManifest, project: XcodeProjectDescriptor): Promise<MacSecurityGate> {
+  if (project.platform !== "macos") throw new SafetyKernelError("macOS security gate requires a macOS Xcode project");
+  if (project.entitlementsPath !== manifest.security.entitlementsPath) throw new SafetyKernelError("Mac entitlements path does not match the release manifest");
+  if (project.hardenedRuntime !== true) throw new SafetyKernelError("macOS project must enable Hardened Runtime");
+  const path = resolve(root, manifest.security.entitlementsPath);
+  const source = await readFile(path, "utf8").catch((error) => { throw new SafetyKernelError(`Cannot read macOS entitlements at ${manifest.security.entitlementsPath}`, { cause: error }); });
+  if (!/<key>com\.apple\.security\.app-sandbox<\/key>\s*<true\s*\/>/s.test(source)) throw new SafetyKernelError("macOS entitlements must enable App Sandbox");
+  return { status: "ready", fingerprint: fingerprint({ manifest: manifest.security, project: { container: project.container, scheme: project.scheme, hardenedRuntime: project.hardenedRuntime }, entitlements: source }), entitlementsPath: manifest.security.entitlementsPath, sandbox: true, hardenedRuntime: true };
 }
 
 export async function loadReleaseManifest(root: string, configuredPath: string, expectedTarget: string): Promise<{ manifest: ReleaseManifest; fingerprint: string; path: string }> {

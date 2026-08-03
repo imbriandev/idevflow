@@ -70,3 +70,4 @@ pi -e .
 - [Context and XCTest evidence enforcement](docs/plans/milestone-10-evidence-enforcement.md)
 - [Idea Quality Gate](docs/plans/milestone-12-idea-quality.md)
 - [macOS support](docs/plans/milestone-13-macos-support.md)
+- [macOS release template](templates/macos-release.json)

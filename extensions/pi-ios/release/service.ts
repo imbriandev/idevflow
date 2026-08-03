@@ -17,7 +17,7 @@ import { assertVerificationProfileSupported, missingRequiredProofs } from "../ve
 import { validateXCTestMetadata } from "../verification/xctest-evidence.ts";
 import { VerificationReceiptStore } from "../verification/receipts.ts";
 import type { ArtifactRecord } from "../verification/types.ts";
-import { loadReleaseManifest, validateMonetizationGate, validatePrivacyGate, type MonetizationGate, type PrivacyGate, type ReleaseManifest } from "./gates.ts";
+import { loadMacDistributionManifest, loadReleaseManifest, validateMacSecurityGate, validateMonetizationGate, validatePrivacyGate, type MacDistributionManifest, type MacSecurityGate, type MonetizationGate, type PrivacyGate, type ReleaseManifest } from "./gates.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -96,6 +96,7 @@ async function createCandidateLocked(
   if (session.status !== "integrated" && session.status !== "ready_for_integration") throw new SafetyKernelError("Candidate creation requires a finished source-bound writer session");
   const config = await loadConfig(repository.primaryRoot);
   assertVerificationProfileSupported("release", config.xcode.platform);
+  if (config.xcode.platform === "macos") throw new SafetyKernelError("macOS uses a distribution handoff, not an iOS TestFlight candidate");
   const commit = await integrationHead(repository, config);
   if (session.commit !== commit || await git(session.worktreePath, ["rev-parse", "HEAD"]) !== commit) throw new SafetyKernelError("Candidate session does not match the current integration commit");
   if (await git(session.worktreePath, ["status", "--porcelain=v1"])) throw new SafetyKernelError("Candidate source worktree is dirty");
@@ -151,6 +152,59 @@ async function createCandidateLocked(
   await transition(repository, "candidate_verified", `fresh release verification ${verificationFingerprint}`, actor);
   await transition(repository, "ready_for_ship_approval", `candidate ${candidate.fingerprint} ready for ${target}`, actor);
   return candidate;
+}
+
+export interface MacDistributionHandoff {
+  readonly schemaVersion: 1;
+  readonly status: "ready_for_manual_distribution";
+  readonly id: string;
+  readonly commit: string;
+  readonly target: "mac-app-store" | "notarized";
+  readonly fingerprint: string;
+  readonly verificationFingerprint: string;
+  readonly releaseManifest: MacDistributionManifest;
+  readonly releaseManifestFingerprint: string;
+  readonly security: MacSecurityGate;
+  readonly privacy: PrivacyGate;
+  readonly monetization: MonetizationGate;
+  readonly acknowledgedBy: string;
+  readonly createdAt: string;
+  readonly boundary: { readonly pushed: false; readonly archived: false; readonly signed: false; readonly uploaded: false; readonly notarized: false; readonly distributed: false; readonly nextManualSteps: readonly string[] };
+}
+
+export async function createMacDistributionHandoff(
+  repository: RepositoryDescriptor,
+  session: WriterSession,
+  verificationFingerprint: string,
+  target: "mac-app-store" | "notarized",
+  acknowledgedBy: string,
+): Promise<{ handoff: MacDistributionHandoff; handoffPath: string }> {
+  const config = await loadConfig(repository.primaryRoot);
+  if (config.xcode.platform !== "macos") throw new SafetyKernelError("macOS distribution handoff requires xcode.platform=macos");
+  const state = await new RuntimeStore(repository).status();
+  if (state?.lifecycle !== "review_passed") throw new SafetyKernelError(`macOS handoff requires review_passed lifecycle, found ${state?.lifecycle ?? "uninitialized"}`);
+  if (session.status !== "integrated" && session.status !== "ready_for_integration") throw new SafetyKernelError("macOS handoff requires a finished source-bound writer session");
+  const commit = await integrationHead(repository, config);
+  if (session.commit !== commit || await git(session.worktreePath, ["rev-parse", "HEAD"]) !== commit || await git(session.worktreePath, ["status", "--porcelain=v1"])) throw new SafetyKernelError("macOS handoff source is not the clean current integration commit");
+  let review: { id?: string; sourceCommit?: string; outcome?: string; verdict?: { verdict?: string } };
+  try { review = JSON.parse(await readFile(join(repository.primaryRoot, ".pi-ios", "receipts", "stages", `review-${commit}.json`), "utf8")) as typeof review; } catch (error) { throw new SafetyKernelError("macOS handoff requires the exact review receipt", { cause: error }); }
+  if (!review.id || review.sourceCommit !== commit || review.outcome !== "pass" || review.verdict?.verdict !== "pass") throw new SafetyKernelError("macOS handoff review receipt is invalid or stale");
+  const verification = await new VerificationReceiptStore(repository).validated(verificationFingerprint);
+  const source = await sourceFingerprint(session);
+  if (!verification || !verification.success || verification.reused || verification.profile !== "release" || verification.sessionId !== session.id || verification.sourceCommit !== commit || verification.sourceFingerprint !== source.fingerprint) throw new SafetyKernelError("macOS handoff requires fresh release verification for the exact integrated commit");
+  if (!verification.project || verification.project.kind === "swift-package" || verification.project.platform !== "macos") throw new SafetyKernelError("macOS handoff requires a verified macOS Xcode app project");
+  if (verification.artifacts.filter((artifact) => artifact.kind === "xcresult").length < 2 || !verification.artifacts.some((artifact) => artifact.kind === "summary")) throw new SafetyKernelError("macOS handoff requires build/test xcresults and a parsed test summary");
+  const release = await loadMacDistributionManifest(session.worktreePath, config.documents.releaseManifest, target);
+  const security = await validateMacSecurityGate(session.worktreePath, release.manifest, verification.project);
+  const [privacy, monetization] = await Promise.all([validatePrivacyGate(session.worktreePath, config.documents.privacyReview), validateMonetizationGate(session.worktreePath, config.documents.monetization)]);
+  if (verification.project.bundleIdentifier !== release.manifest.bundleId || verification.project.marketingVersion !== release.manifest.version || verification.project.buildNumber !== release.manifest.build) throw new SafetyKernelError("macOS release manifest does not match verified Xcode settings");
+  const createdAt = new Date().toISOString();
+  const core = { commit, target, verificationFingerprint, release: release.fingerprint, security: security.fingerprint, privacy: privacy.fingerprint, monetization: monetization.fingerprint };
+  const handoff: MacDistributionHandoff = { schemaVersion: 1, status: "ready_for_manual_distribution", id: randomUUID(), commit, target, fingerprint: digest(core), verificationFingerprint, releaseManifest: release.manifest, releaseManifestFingerprint: release.fingerprint, security, privacy, monetization, acknowledgedBy, createdAt, boundary: { pushed: false, archived: false, signed: false, uploaded: false, notarized: false, distributed: false, nextManualSteps: target === "notarized" ? ["Sign the exact commit with the reviewed Developer ID identity", "Archive/export the signed app", "Submit the archive to notarization using the named profile", "Staple and verify the notarization ticket", "Distribute the notarized artifact manually"] : ["Archive the exact commit with the reviewed signing team", "Validate App Sandbox and entitlements in the archive", "Upload manually to App Store Connect", "Complete Mac App Store review and distribution manually"] } };
+  const handoffPath = join(repository.primaryRoot, ".pi-ios", "release", `macos-handoff-${handoff.id}.json`);
+  await ensureReleaseDirectories(repository);
+  await writeFileAtomically(handoffPath, `${JSON.stringify(handoff, null, 2)}\n`);
+  return { handoff, handoffPath };
 }
 
 export async function createCandidate(

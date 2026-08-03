@@ -26,6 +26,7 @@ export const KNOWLEDGE_REFERENCES: readonly KnowledgeReference[] = [
   { id: "monetization", path: "references/monetization.md", title: "StoreKit and Monetization", stages: ["define", "plan", "build", "test", "review", "ship", "learn"], surfaces: ["monetization", "privacy", "release"], estimatedTokens: 700 },
   { id: "review-audit", path: "references/review-audit.md", title: "Review and Audit", stages: ["review", "ship", "build"], surfaces: ["audit", "swiftui", "swiftdata", "concurrency", "privacy", "accessibility", "performance"], estimatedTokens: 800 },
   { id: "release-testflight", path: "references/release-testflight.md", title: "Release and TestFlight", stages: ["ship", "learn"], surfaces: ["release", "privacy", "monetization", "accessibility", "performance"], estimatedTokens: 750 },
+  { id: "macos-release", path: "references/macos-release.md", title: "macOS Release and Distribution", stages: ["ship", "review", "build", "test"], surfaces: ["release", "privacy"], estimatedTokens: 500 },
   { id: "native-integrations", path: "references/native-integrations.md", title: "App Intents, WidgetKit, and Existing Platforms", stages: ["plan", "build", "test", "review"], surfaces: ["app-intents", "widgetkit", "swiftui"], estimatedTokens: 550 },
 ];
 
@@ -40,7 +41,7 @@ const TERMS: Readonly<Record<KnowledgeSurface, readonly RegExp[]>> = {
   performance: [/performance|slow|hitch|launch time|profil/i],
   privacy: [/privacy|permission|sensitive|secret|keychain|entitlement|delete data/i],
   monetization: [/storekit|revenuecat|purchase|subscription|paywall|restore purchase|entitlement/i],
-  release: [/testflight|release|ship|app store|signing|build number/i],
+  release: [/testflight|release|ship|app store|signing|build number|notari[sz]|hardened runtime|sandbox|entitlement/i],
   widgetkit: [/widgetkit|widget/i],
   "app-intents": [/app intent|appintents|shortcut|spotlight/i],
   audit: [/\baudit\b|deep review|codebase review/i],

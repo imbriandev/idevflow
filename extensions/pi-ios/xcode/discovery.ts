@@ -41,6 +41,8 @@ export interface XcodeProjectDescriptor {
   readonly scheme: string;
   readonly schemes: readonly string[];
   readonly deploymentTarget?: string;
+  readonly entitlementsPath?: string;
+  readonly hardenedRuntime?: boolean;
   readonly swiftLanguageVersion?: string;
   readonly bundleIdentifier?: string;
   readonly marketingVersion?: string;
@@ -179,6 +181,8 @@ export async function discoverXcodeProject(
     scheme,
     schemes,
     ...((config.xcode.platform === "macos" ? settings.MACOSX_DEPLOYMENT_TARGET : settings.IPHONEOS_DEPLOYMENT_TARGET) ? { deploymentTarget: config.xcode.platform === "macos" ? settings.MACOSX_DEPLOYMENT_TARGET : settings.IPHONEOS_DEPLOYMENT_TARGET } : {}),
+    ...(settings.CODE_SIGN_ENTITLEMENTS ? { entitlementsPath: settings.CODE_SIGN_ENTITLEMENTS } : {}),
+    ...(config.xcode.platform === "macos" ? { hardenedRuntime: settings.ENABLE_HARDENED_RUNTIME === "YES" } : {}),
     ...(settings.SWIFT_VERSION ? { swiftLanguageVersion: settings.SWIFT_VERSION } : {}),
     ...(settings.PRODUCT_BUNDLE_IDENTIFIER ? { bundleIdentifier: settings.PRODUCT_BUNDLE_IDENTIFIER } : {}),
     ...(settings.MARKETING_VERSION ? { marketingVersion: settings.MARKETING_VERSION } : {}),

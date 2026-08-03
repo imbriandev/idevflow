@@ -2,7 +2,7 @@ import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { discoverRepository } from "../repository/discovery.ts";
-import { createCandidate, createTestFlightHandoff, issuePromotionApproval, loadCandidate, promoteCandidate } from "../release/service.ts";
+import { createCandidate, createMacDistributionHandoff, createTestFlightHandoff, issuePromotionApproval, loadCandidate, promoteCandidate } from "../release/service.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
@@ -10,17 +10,18 @@ export function registerReleaseTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "pi_ios_release",
     label: "Pi iOS Release",
-    description: "Create an exact verified candidate, obtain candidate-bound ship approval, promote locally, and prepare a manual TestFlight handoff.",
+    description: "Create an exact iOS candidate or macOS distribution handoff; approvals, signing, upload, notarization, and distribution remain explicit boundaries.",
     promptSnippet: "Operate candidate, approval, promotion, and TestFlight handoff gates",
     promptGuidelines: [
       "Candidate creation requires fresh release verification plus privacy, monetization, and release manifest gates.",
+      "mac_handoff requires a macOS security manifest, fresh release verification, and interactive founder acknowledgement.",
       "Approval is interactive, expiring, single-use, and bound to candidate commit, fingerprint, and target.",
       "Promotion changes only the local base branch. It never pushes, uploads, or distributes.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["status", "create_candidate", "approve", "promote", "handoff"] as const),
+      action: StringEnum(["status", "create_candidate", "approve", "promote", "handoff", "mac_handoff"] as const),
       verificationFingerprint: Type.Optional(Type.String()),
-      target: Type.Optional(StringEnum(["testflight-internal", "testflight-external"] as const)),
+      target: Type.Optional(StringEnum(["testflight-internal", "testflight-external", "mac-app-store", "notarized"] as const)),
       approvalToken: Type.Optional(Type.String()),
       actor: Type.Optional(Type.String()),
     }),
@@ -32,10 +33,21 @@ export function registerReleaseTool(pi: ExtensionAPI): void {
       }
       if (!ctx.isProjectTrusted()) throw new SafetyKernelError("Release mutation is blocked in an untrusted project");
       if (params.action === "create_candidate") {
+        if (params.target === "mac-app-store" || params.target === "notarized") throw new SafetyKernelError("Use mac_handoff for macOS distribution targets");
         const session = await new SessionRegistry(repository).findLatestByPiSession(ctx.sessionManager.getSessionId());
         if (!session) throw new SafetyKernelError("Candidate creation requires a source-bound writer session");
         const candidate = await createCandidate(repository, session, params.verificationFingerprint ?? "", params.target);
         return { content: [{ type: "text", text: `Candidate ${candidate.fingerprint} is ready for ${candidate.target}; no push or upload occurred.` }], details: { candidate } };
+      }
+      if (params.action === "mac_handoff") {
+        if (params.target !== "mac-app-store" && params.target !== "notarized") throw new SafetyKernelError("mac_handoff requires target mac-app-store or notarized");
+        if (!ctx.hasUI) throw new SafetyKernelError("macOS distribution handoff fails closed without interactive UI");
+        const confirmed = await ctx.ui.confirm("Prepare macOS distribution handoff?", "Record a source-bound manual handoff. Signing, archive, notarization/upload, and distribution will not occur.");
+        if (!confirmed) return { content: [{ type: "text", text: "macOS distribution handoff cancelled." }], details: { handedOff: false } };
+        const session = await new SessionRegistry(repository).findLatestByPiSession(ctx.sessionManager.getSessionId());
+        if (!session) throw new SafetyKernelError("macOS handoff requires a source-bound writer session");
+        const result = await createMacDistributionHandoff(repository, session, params.verificationFingerprint ?? "", params.target, params.actor?.trim() || "founder");
+        return { content: [{ type: "text", text: `macOS ${params.target} handoff written to ${result.handoffPath}. No signing, upload, notarization, or distribution occurred.` }], details: { handedOff: true, ...result } };
       }
       if (params.action === "approve") {
         if (!ctx.hasUI) throw new SafetyKernelError("Ship approval fails closed without interactive UI");

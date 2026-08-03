@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadReleaseManifest, validateMonetizationGate, validatePrivacyGate } from "../extensions/pi-ios/release/gates.ts";
+import { loadMacDistributionManifest, loadReleaseManifest, validateMacSecurityGate, validateMonetizationGate, validatePrivacyGate } from "../extensions/pi-ios/release/gates.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
@@ -24,6 +24,17 @@ describe("release gates", () => {
     await assert.rejects(validateMonetizationGate(project, "monetization.json"), /manifest is missing/);
     await writeFile(join(project, "monetization.json"), JSON.stringify({ schemaVersion: 1, entitlement: "pro", products: [{ productId: "com.example.pro" }], paywallRevision: "v1", appStoreSnapshotFingerprint: "sha256:appstore", providerSnapshotFingerprint: "sha256:provider", requiredProofs: ["purchase", "restore"], providedProofs: ["purchase", "restore"] }));
     assert.equal((await validateMonetizationGate(project, "monetization.json")).status, "ready");
+  });
+
+  it("validates macOS sandbox, entitlements, and distribution targets", async () => {
+    const project = await root();
+    await writeFile(join(project, "App.entitlements"), "<plist><dict><key>com.apple.security.app-sandbox</key><true/></dict></plist>");
+    await writeFile(join(project, "release.json"), JSON.stringify({ schemaVersion: 1, platform: "macos", version: "1.0", build: "1", bundleId: "com.example.mac", target: "notarized", releaseNotes: "Beta", knownIssues: [], supportUrl: "https://example.com/support", privacyUrl: "https://example.com/privacy", security: { entitlementsPath: "App.entitlements", sandbox: true, hardenedRuntime: true, signingIdentity: "Developer ID Application: Example", teamId: "TEAM123", notarizationProfile: "notary-profile" } }));
+    const manifest = await loadMacDistributionManifest(project, "release.json", "notarized");
+    const gate = await validateMacSecurityGate(project, manifest.manifest, { platform: "macos", kind: "project", root: project, container: join(project, "App.xcodeproj"), containerName: "App.xcodeproj", scheme: "App", schemes: ["App"], deploymentTarget: "26.0", entitlementsPath: "App.entitlements", hardenedRuntime: true, bundleIdentifier: "com.example.mac", marketingVersion: "1.0", buildNumber: "1" });
+    assert.equal(gate.sandbox, true);
+    const invalid = { ...manifest.manifest, security: { ...manifest.manifest.security, entitlementsPath: "missing.entitlements" } };
+    await assert.rejects(validateMacSecurityGate(project, invalid, { platform: "macos", kind: "project", root: project, container: join(project, "App.xcodeproj"), containerName: "App.xcodeproj", scheme: "App", schemes: ["App"], hardenedRuntime: true }), /entitlements path/);
   });
 
   it("validates HTTPS release metadata and exact target", async () => {

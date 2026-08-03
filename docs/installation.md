@@ -33,7 +33,7 @@ Before a writer stage, the project must have a clean baseline and valid Git iden
 
 ## Platform selection
 
-Config schema 6 defaults to iOS. For a macOS app, initialize/migrate the runtime, then set `xcode.platform` to `macos` in `.pi-ios/config.json`. macOS runs native `platform=macOS` build/test verification and does not acquire an iOS simulator. macOS release/notarization support is not part of M13a.
+Config schema 6 defaults to iOS. For a macOS app, initialize/migrate the runtime, then set `xcode.platform` to `macos` in `.pi-ios/config.json`. macOS runs native `platform=macOS` build/test verification and does not acquire an iOS simulator. For M13b distribution readiness, use the macOS release manifest template and the `mac_handoff` release tool action; all signing, archive, notarization, upload, and distribution steps remain manual.
 
 ## Config migration
 

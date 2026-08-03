@@ -23,11 +23,15 @@ Configure a macOS project in `.pi-ios/config.json`:
 
 The remaining config fields are initialized and migrated by `pi_ios_runtime`; do not replace the full file with this fragment.
 
+## M13b delivered
+
+- macOS release manifests require App Sandbox, Hardened Runtime, entitlements path, signing identity, team ID, and HTTPS support/privacy URLs.
+- The bounded `macos-release.md` specialist reference covers platform-specific security and manual distribution without loading secrets or release credentials.
+- The security gate reads the project entitlements and verifies `com.apple.security.app-sandbox`, the Xcode `CODE_SIGN_ENTITLEMENTS` path, and `ENABLE_HARDENED_RUNTIME=YES`.
+- `pi_ios_release` exposes `mac_handoff` for `mac-app-store` and `notarized` targets. It requires a clean reviewed commit, fresh release verification, privacy/monetization gates, exact Xcode metadata, and interactive founder acknowledgement.
+- The generated handoff is local and source-bound. It records that signing, archive, upload, notarization, and distribution did not happen, with target-specific manual next steps.
+- iOS TestFlight candidate creation rejects macOS explicitly; macOS distribution uses the separate handoff path.
+
 ## Boundaries
 
-M13a supports macOS discovery, build, test, and source-bound verification. It does not yet claim macOS release readiness, notarization, Mac App Store handoff, macOS-specific accessibility/performance proof, App Sandbox review, or universal iOS+macOS verification.
-
-## Follow-up
-
-- **M13b:** macOS specialist context, App Sandbox/entitlements/Hardened Runtime review, macOS quality evidence, and explicit Mac App Store or notarized distribution handoff.
-- **M13c:** one approved work graph with an iOS+macOS verification matrix and all-platform promotion gate.
+M13a/M13b support macOS discovery, build/test, security readiness, and a manual distribution handoff. They do not invoke `codesign`, `notarytool`, App Store Connect, upload, or distribution. M13c remains the universal iOS+macOS verification matrix and all-platform promotion gate.

@@ -1,5 +1,4 @@
 import type { Risk, Stage } from "../lifecycle/contracts.ts";
-import { SafetyKernelError } from "../state/errors.ts";
 
 export const VERIFICATION_PROFILES = ["docs", "quick", "slice", "integration", "release"] as const;
 export type VerificationProfile = (typeof VERIFICATION_PROFILES)[number];
@@ -36,8 +35,8 @@ export function missingRequiredProofs(
   return [...missing];
 }
 
-export function assertVerificationProfileSupported(profile: VerificationProfile, platform: "ios" | "macos"): void {
-  if (platform === "macos" && profile === "release") throw new SafetyKernelError("macOS release verification is unavailable until M13b; use integration verification for native build/test evidence");
+export function assertVerificationProfileSupported(_profile: VerificationProfile, _platform: "ios" | "macos"): void {
+  // Platform-specific release gates run at the release boundary, not in xcodebuild verification.
 }
 
 export function selectVerificationProfile(input: {

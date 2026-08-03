@@ -23,6 +23,6 @@ describe("verification policy", () => {
     assert.deepEqual(missingRequiredProofs("release", proofs, ["compact-light", "compact-dark"]), ["screenshot"]);
     assert.deepEqual(missingRequiredProofs("integration", [], [], "macos"), []);
     assert.doesNotThrow(() => assertVerificationProfileSupported("integration", "macos"));
-    assert.throws(() => assertVerificationProfileSupported("release", "macos"), /M13b/);
+    assert.doesNotThrow(() => assertVerificationProfileSupported("release", "macos"));
   });
 });
