@@ -7,6 +7,7 @@ import { approvePlan, integrateCurrentStage, recordReview, startMaintenance, sta
 import { loadWorkGraph } from "../planning/work-graph.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
+import type { WriterSession } from "../sessions/types.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 
@@ -28,6 +29,13 @@ export function definitionAcceptancePrompt(
   };
 }
 
+export function selectIntegrationSession(sessions: readonly WriterSession[], piSessionId: string, requestedSessionId?: string): WriterSession | undefined {
+  const ready = sessions.filter((session) => session.status === "ready_for_integration");
+  if (requestedSessionId) return ready.find((session) => session.id === requestedSessionId);
+  return ready.filter((session) => session.piSessionId === piSessionId).sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0]
+    ?? (ready.length === 1 ? ready[0] : undefined);
+}
+
 export function registerLifecycleTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "idev_lifecycle",
@@ -46,6 +54,7 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
       verdictJson: Type.Optional(Type.String()),
       approvedBy: Type.Optional(Type.String()),
       sliceId: Type.Optional(Type.String()),
+      sessionId: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _update, ctx) {
       const repository = await discoverRepository(ctx.cwd);
@@ -95,8 +104,8 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
         return { content: [{ type: "text", text: `Review passed for ${receipt.sourceCommit}; receipt ${receipt.id}.` }], details: { receipt } };
       }
       const registry = new SessionRegistry(repository);
-      const session = await registry.findLatestByPiSession(ctx.sessionManager.getSessionId());
-      if (!session) throw new SafetyKernelError("No writer session is available for stage integration");
+      const session = selectIntegrationSession(Object.values((await registry.load()).sessions), ctx.sessionManager.getSessionId(), params.sessionId);
+      if (!session) throw new SafetyKernelError("No unique completed writer session is available for integration; provide sessionId when multiple sessions are ready");
       let founderAcceptedAssumptionIds: readonly string[] = [];
       let founderAcceptedCritique = false;
       if (session.stage === "define") {
