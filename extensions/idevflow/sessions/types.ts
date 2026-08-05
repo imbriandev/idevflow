@@ -50,6 +50,7 @@ type SessionEventPayload =
   | { readonly kind: "heartbeat"; readonly sessionId: string; readonly heartbeatAt: string; readonly leaseExpiresAt: string }
   | { readonly kind: "postflight_passed"; readonly sessionId: string; readonly receipt: PostflightReceipt }
   | { readonly kind: "session_ready"; readonly sessionId: string; readonly commit: string }
+  | { readonly kind: "session_reopened"; readonly sessionId: string; readonly baseCommit: string; readonly piSessionId: string; readonly reason: string }
   | { readonly kind: "session_status_changed"; readonly sessionId: string; readonly status: WriterStatus; readonly reason: string };
 
 export type SessionEventKind = SessionEventPayload["kind"];

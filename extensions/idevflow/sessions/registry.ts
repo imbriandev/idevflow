@@ -81,6 +81,11 @@ function reduce(events: readonly SessionEvent[]): SessionRegistryState {
         case "session_ready":
           sessions[current.id] = { ...current, status: "ready_for_integration", commit: payload.commit };
           break;
+        case "session_reopened": {
+          const { postflight: _postflight, commit: _commit, ...reopened } = current;
+          sessions[current.id] = { ...reopened, status: "active", baseCommit: payload.baseCommit, piSessionId: payload.piSessionId, statusReason: payload.reason };
+          break;
+        }
         case "session_status_changed":
           sessions[current.id] = { ...current, status: payload.status, statusReason: payload.reason };
           break;
@@ -164,6 +169,15 @@ export class SessionRegistry {
         assertNoClaimConflicts(current.claims, Object.values(state.sessions), session.id);
       },
     );
+  }
+
+  reopen(session: WriterSession, piSessionId: string, reason: string, actor: string): Promise<SessionRegistryState> {
+    if (!session.commit) throw new SafetyKernelError("Completed session is missing its commit");
+    return this.append("session_reopened", { kind: "session_reopened", sessionId: session.id, baseCommit: session.commit, piSessionId, reason }, actor, (state) => {
+      const current = state.sessions[session.id]!;
+      if (current.status !== "ready_for_integration" || current.commit !== session.commit) throw new SafetyKernelError(`Only the current completed session can reopen; found ${current.status}`);
+      assertNoClaimConflicts(current.claims, Object.values(state.sessions), session.id);
+    });
   }
 
   heartbeat(sessionId: string, heartbeatAt: string, leaseExpiresAt: string, actor: string): Promise<SessionRegistryState> {

@@ -79,6 +79,18 @@ export async function writePreflight(repository: RepositoryDescriptor, input: Pr
   }
 }
 
+export async function reopenCompletedSession(repository: RepositoryDescriptor, session: WriterSession, piSessionId: string, reason: string): Promise<WriterSession> {
+  if (session.status !== "ready_for_integration" || !session.commit) throw new SafetyKernelError("Only a completed session can reopen");
+  const [head, status] = await Promise.all([
+    execFileAsync("git", ["rev-parse", "HEAD"], { cwd: session.worktreePath, encoding: "utf8" }),
+    execFileAsync("git", ["status", "--porcelain=v1"], { cwd: session.worktreePath, encoding: "utf8" }),
+  ]);
+  if (head.stdout.trim() !== session.commit || status.stdout.trim()) throw new SafetyKernelError("Completed worktree changed after finish; preserve it and start a new repair session instead");
+  const registry = new SessionRegistry(repository);
+  const reopened = await registry.reopen(session, piSessionId, reason.trim() || "integration validation requires repair", actor(piSessionId));
+  return heartbeatSession(repository, reopened.sessions[session.id]!, await loadConfig(repository.primaryRoot), true);
+}
+
 export async function heartbeatSession(
   repository: RepositoryDescriptor,
   session: WriterSession,
