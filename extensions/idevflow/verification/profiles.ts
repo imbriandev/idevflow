@@ -44,6 +44,8 @@ export function selectVerificationProfile(input: {
   readonly risk: Risk;
   readonly changedFiles: readonly string[];
 }): VerificationProfile {
+  // Define, plan, and learn have docs-only claims; product risk never turns them into app verification.
+  if (["define", "plan", "learn"].includes(input.stage)) return "docs";
   if (input.changedFiles.length > 0 && input.changedFiles.every((path) => /^(?:docs\/|README|.*\.md$)/i.test(path))) return "docs";
   if (input.stage === "ship" || input.risk === "critical") return "release";
   if (input.risk === "high") return "integration";

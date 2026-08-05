@@ -8,6 +8,8 @@ describe("verification policy", () => {
     assert.equal(selectVerificationProfile({ stage: "build", risk: "low", changedFiles: ["Sources/App.swift"] }), "quick");
     assert.equal(selectVerificationProfile({ stage: "build", risk: "medium", changedFiles: ["Sources/App.swift"] }), "slice");
     assert.equal(selectVerificationProfile({ stage: "build", risk: "high", changedFiles: ["Sources/App.swift"] }), "integration");
+    assert.equal(selectVerificationProfile({ stage: "define", risk: "high", changedFiles: ["docs/idevflow/slc.json"] }), "docs");
+    assert.equal(selectVerificationProfile({ stage: "plan", risk: "critical", changedFiles: ["docs/idevflow/work-graph.json"] }), "docs");
     assert.equal(selectVerificationProfile({ stage: "ship", risk: "medium", changedFiles: [] }), "release");
   });
 
