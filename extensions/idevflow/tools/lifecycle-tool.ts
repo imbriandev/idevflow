@@ -3,7 +3,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { loadConfig } from "../config/config.ts";
 import { loadDefinedProduct, validateIdeaQuality } from "../documents/product.ts";
-import { approvePlan, integrateCurrentStage, recordReview, startMaintenance } from "../lifecycle/service.ts";
+import { approvePlan, integrateCurrentStage, recordReview, startMaintenance, startTestRepair } from "../lifecycle/service.ts";
 import { loadWorkGraph } from "../planning/work-graph.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
@@ -14,7 +14,7 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "idev_lifecycle",
     label: "iDevFlow Lifecycle",
-    description: "Integrate a completed stage, start a post-handoff maintenance loop, approve a frozen plan, or record a source-bound review verdict.",
+    description: "Integrate a completed stage, start a bounded test repair, start maintenance, approve a frozen plan, or record a source-bound review verdict.",
     promptSnippet: "Advance deterministic define, plan, build, test, and review gates",
     promptGuidelines: [
       "Use integrate only after finish reports ready_for_integration; document and graph validation happens before integration.",
@@ -22,7 +22,7 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
       "A review pass requires current integration verification and a machine-readable verdict without high or critical findings.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["status", "integrate", "start_maintenance", "approve_plan", "review"] as const),
+      action: StringEnum(["status", "integrate", "start_test_repair", "start_maintenance", "approve_plan", "review"] as const),
       evidence: Type.Optional(Type.String()),
       verificationFingerprint: Type.Optional(Type.String()),
       verdictJson: Type.Optional(Type.String()),
@@ -45,6 +45,15 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
         return { content: [{ type: "text", text: state ? `Lifecycle ${state.lifecycle} at revision ${state.revision}${product ? `; product ${product.fingerprint}` : ""}${graph ? `; graph ${graph.fingerprint}` : ""}.` : "iDevFlow runtime is not initialized." }], details: { state, product, graph } };
       }
       if (!ctx.isProjectTrusted()) throw new SafetyKernelError("Lifecycle mutation is blocked in an untrusted project");
+      if (params.action === "start_test_repair") {
+        if (!ctx.hasUI) throw new SafetyKernelError("Test repair start fails closed without interactive UI");
+        const reason = params.evidence?.trim() ?? "";
+        if (!reason) throw new SafetyKernelError("Test repair requires observed failing behavior or an external blocker");
+        const confirmed = await ctx.ui.confirm("Start bounded test repair?", `Authorize one claimed test-stage repair for: ${reason}. It preserves the current lifecycle route after verified integration and does not approve a product plan or release.`);
+        if (!confirmed) return { content: [{ type: "text", text: "Test repair cancelled." }], details: { started: false } };
+        await startTestRepair(repository, ctx.sessionManager.getSessionId(), reason);
+        return { content: [{ type: "text", text: "Test repair started. Create a test-stage writer session, reproduce the blocker, repair the narrowest cause, and integrate fresh evidence." }], details: { started: true } };
+      }
       if (params.action === "start_maintenance") {
         if (!ctx.hasUI) throw new SafetyKernelError("Maintenance start fails closed without interactive UI");
         const reason = params.evidence?.trim() ?? "";

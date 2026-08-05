@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
-import { mkdir, readFile, readdir } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { loadConfig } from "../config/config.ts";
@@ -47,6 +47,32 @@ export interface StageReceipt {
   readonly integration?: IntegrationReceipt;
   readonly verdict?: ReviewVerdict;
   readonly recordedAt: string;
+}
+
+interface TestRepair {
+  readonly schemaVersion: 1;
+  readonly piSessionId: string;
+  readonly reason: string;
+  readonly returnTo: LifecycleState;
+  readonly startedAt: string;
+}
+
+function testRepairPath(repository: RepositoryDescriptor): string { return join(repository.primaryRoot, ".idevflow", "repairs", "test.json"); }
+async function loadTestRepair(repository: RepositoryDescriptor): Promise<TestRepair | undefined> {
+  try { return JSON.parse(await readFile(testRepairPath(repository), "utf8")) as TestRepair; }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; }
+}
+
+export async function startTestRepair(repository: RepositoryDescriptor, piSessionId: string, reason: string): Promise<void> {
+  if (!reason.trim()) throw new SafetyKernelError("Test repair requires the observed failing behavior or external blocker");
+  if (await loadTestRepair(repository)) throw new SafetyKernelError("A test repair is already active; resume its writer instead of starting another");
+  const state = await new RuntimeStore(repository).status();
+  const allowed: readonly LifecycleState[] = ["idea", "defined", "planned", "blocked", "fix_required", "verification_failed"];
+  if (!state || !allowed.includes(state.lifecycle)) throw new SafetyKernelError(`Test repair requires ${allowed.join(", ")} lifecycle, found ${state?.lifecycle ?? "uninitialized"}`);
+  const repair: TestRepair = { schemaVersion: 1, piSessionId, reason: reason.trim(), returnTo: state.lifecycle, startedAt: new Date().toISOString() };
+  await mkdir(join(repository.primaryRoot, ".idevflow", "repairs"), { recursive: true, mode: 0o700 });
+  await writeFileAtomically(testRepairPath(repository), `${JSON.stringify(repair, null, 2)}\n`);
+  await transition(repository, "testing", `test repair: ${repair.reason}`, actor(piSessionId));
 }
 
 export interface ReviewVerdict {
@@ -131,15 +157,17 @@ export async function integrateCurrentStage(repository: RepositoryDescriptor, se
   if (!evidence.trim()) throw new SafetyKernelError("Stage integration requires evidence");
   if (!["define", "plan", "build", "test", "learn"].includes(session.stage)) throw new SafetyKernelError(`Stage ${session.stage} does not produce an integration receipt`);
   const runtime = await new RuntimeStore(repository).status();
-  const allowed: Partial<Record<WriterSession["stage"], readonly LifecycleState[]>> = { define: ["idea", "testflight_handoff"], plan: ["defined"], build: ["plan_approved", "built", "fix_required", "verification_failed"], test: ["built", "fix_required", "verification_failed"], learn: ["testflight_handoff"] };
+  const repair = session.stage === "test" ? await loadTestRepair(repository) : undefined;
+  if (repair && repair.piSessionId !== session.piSessionId) throw new SafetyKernelError("Active test repair belongs to a different Pi session");
+  const allowed: Partial<Record<WriterSession["stage"], readonly LifecycleState[]>> = { define: ["idea", "testflight_handoff"], plan: ["defined"], build: ["plan_approved", "built", "fix_required", "verification_failed"], test: ["built", "fix_required", "verification_failed", "testing"], learn: ["testflight_handoff"] };
   if (!allowed[session.stage]?.includes(runtime?.lifecycle as LifecycleState)) throw new SafetyKernelError(`Lifecycle ${runtime?.lifecycle ?? "uninitialized"} cannot integrate ${session.stage}`);
   const config = await loadConfig(repository.primaryRoot);
   const verificationFingerprint = await validatedSessionVerification(repository, session);
-  const product = await loadDefinedProduct(session.worktreePath, config.documents);
+  const product = repair ? undefined : await loadDefinedProduct(session.worktreePath, config.documents);
   let acceptedIdeaClaims: readonly string[] | undefined;
   if (session.stage === "define") {
     if (!founderAcceptedCritique) throw new SafetyKernelError("Definition requires interactive founder acceptance of the skeptical critique");
-    const quality = validateIdeaQuality(product.memory, product.slc);
+    const quality = validateIdeaQuality(product!.memory, product!.slc);
     const accepted = new Set(founderAcceptedAssumptionIds);
     const missingAcceptance = quality.unresolvedCriticalAssumptionIds.filter((id) => !accepted.has(id));
     if (missingAcceptance.length) throw new SafetyKernelError(`Definition requires explicit founder acceptance for unresolved high-impact assumptions: ${missingAcceptance.join(", ")}`);
@@ -147,12 +175,12 @@ export async function integrateCurrentStage(repository: RepositoryDescriptor, se
   }
   if (session.stage === "learn") {
     const previous = await loadDefinedProduct(repository.primaryRoot, config.documents);
-    validateLearningUpdate(previous.memory, product.memory);
+    validateLearningUpdate(previous.memory, product!.memory);
   }
   let graphFingerprint: string | undefined;
   let sliceId: string | undefined;
-  if (session.stage !== "define" && session.stage !== "learn") {
-    const graph = await loadWorkGraph(session.worktreePath, config.documents.workGraph, product.fingerprint);
+  if (session.stage !== "define" && session.stage !== "learn" && !repair) {
+    const graph = await loadWorkGraph(session.worktreePath, config.documents.workGraph, product!.fingerprint);
     graphFingerprint = graph.fingerprint;
     if (session.stage === "build") {
       const approval = await readApproval(repository);
@@ -178,9 +206,10 @@ export async function integrateCurrentStage(repository: RepositoryDescriptor, se
   };
   await writeStageReceipt(repository, receipt);
   const by = actor(session.piSessionId);
-  if (session.stage === "define") await transition(repository, "defined", `validated product memory and SLC ${product.fingerprint}`, by);
+  if (session.stage === "define") await transition(repository, "defined", `validated product memory and SLC ${product!.fingerprint}`, by);
   else if (session.stage === "plan") await transition(repository, "planned", `validated work graph ${graphFingerprint}`, by);
   else if (session.stage === "build") { await transition(repository, "building", `started approved slice ${sliceId}`, by); await transition(repository, "built", `integrated verified slice ${sliceId}`, by); }
+  else if (session.stage === "test" && repair) { await rm(testRepairPath(repository), { force: true }); await transition(repository, repair.returnTo, `resolved test repair: ${repair.reason}`, by); }
   else if (session.stage === "test") { await transition(repository, "testing", "started integrated test stage", by); await transition(repository, "tested", "integrated verified test evidence", by); }
   return receipt;
 }
