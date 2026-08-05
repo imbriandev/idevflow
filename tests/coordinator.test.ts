@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { afterEach, describe, it } from "node:test";
+import { mkdir, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { coordinatorBrief } from "../extensions/idevflow/coordinator/prompt.ts";
 import { inspectCoordinator, isLikelyiDevFlowIntent, recommendWorkerDelegation } from "../extensions/idevflow/coordinator/service.ts";
 import type { WorkSlice } from "../extensions/idevflow/planning/work-graph.ts";
@@ -10,6 +13,7 @@ import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
 import { createGitFixture } from "./helpers.ts";
 
+const execFileAsync = promisify(execFile);
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => { for (const cleanup of cleanups.splice(0).reverse()) await cleanup(); });
 
@@ -34,6 +38,20 @@ describe("conversational coordinator", () => {
     const snapshot = await inspectCoordinator(repository, "coordinator");
     assert.equal(snapshot.route, "build");
     assert.equal(snapshot.lifecycle, "plan_approved");
+  });
+
+  it("routes an existing Apple project to a read-only audit before definition", async () => {
+    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
+    await mkdir(`${fixture.root}/Sources`);
+    await writeFile(`${fixture.root}/Sources/App.swift`, "struct App {}\n", "utf8");
+    await execFileAsync("git", ["add", "Sources"], { cwd: fixture.root });
+    await execFileAsync("git", ["-c", "user.name=iDevFlow Tests", "-c", "user.email=tests@example.invalid", "commit", "-m", "add app sources"], { cwd: fixture.root });
+    const repository = await discoverRepository(fixture.root);
+    await new RuntimeStore(repository).initialize("test");
+    const snapshot = await inspectCoordinator(repository, "coordinator");
+    assert.equal(snapshot.route, "existing_audit");
+    assert.match(snapshot.reason, /read-only/);
+    assert.match(coordinatorBrief(snapshot), /Do not write files/);
   });
 
   it("prefers existing writer ownership and never exposes its task", async () => {

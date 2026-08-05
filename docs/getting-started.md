@@ -48,6 +48,14 @@ Or describe the product or change conversationally. iDevFlow initializes durable
 
 Start with `/idev:define` for a new product or `/idev:plan` for an already-defined product.
 
+## Existing projects
+
+If the repository already contains an Apple-platform project, initialization intentionally remains at lifecycle `idea`. iDevFlow does not infer that existing code is defined, planned, tested, or reviewed.
+
+The coordinator will recommend an **existing-project audit** first. Keep that audit read-only. After reviewing the findings, explicitly choose whether to adopt the current product into iDevFlow's definition and planning workflow.
+
+This prevents an existing codebase from receiving unearned lifecycle or release evidence.
+
 ## First safe change
 
 The normal path is:

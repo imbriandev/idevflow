@@ -14,9 +14,11 @@ const SKILL_BY_ROUTE: Partial<Record<CoordinatorSnapshot["route"], string>> = {
 export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
   const skill = SKILL_BY_ROUTE[snapshot.route];
   const worker = snapshot.workerRecommendation;
-  const action = skill
-    ? `Read and follow the available ${skill} skill for the founder request.`
-    : "Explain the required founder decision or recovery action; do not simulate completion.";
+  const action = snapshot.route === "existing_audit"
+    ? "Perform a read-only audit of the existing Apple-platform project. Do not write files, advance lifecycle state, or claim tests/review/release evidence. Report findings and ask whether the founder wants to adopt the current product into iDevFlow."
+    : skill
+      ? `Read and follow the available ${skill} skill for the founder request.`
+      : "Explain the required founder decision or recovery action; do not simulate completion.";
   const dispatch = worker.mode === "pipeline_eligible"
     ? "If the founder explicitly asks to build the approved plan or parallelize work, the existing pipeline may be created and run for its exact approved graph."
     : "Do not create or run a pipeline unless the deterministic pipeline gate later permits it.";
