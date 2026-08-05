@@ -12,14 +12,14 @@ export function registerSessionTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "idev_session",
     label: "iDevFlow Session",
-    description: "Inspect, heartbeat, park, postflight, or finish the current isolated iDevFlow writer session.",
+    description: "Inspect, preserve, repair, heartbeat, park, postflight, or finish an isolated iDevFlow writer session.",
     promptSnippet: "Manage iDevFlow writer heartbeat, postflight, and finish",
     promptGuidelines: [
       "Call idev_session postflight with concise evidence after all source changes and checks are complete.",
       "Call idev_session finish only after postflight and without modifying files afterward.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["status", "heartbeat", "resume", "reopen", "park", "postflight", "finish"] as const),
+      action: StringEnum(["status", "heartbeat", "resume", "reopen", "preserve", "park", "postflight", "finish"] as const),
       evidence: Type.Optional(Type.String()),
       verificationFingerprint: Type.Optional(Type.String()),
       message: Type.Optional(Type.String()),
@@ -29,14 +29,25 @@ export function registerSessionTool(pi: ExtensionAPI): void {
       const repository = await discoverRepository(ctx.cwd);
       const registry = new SessionRegistry(repository);
       let session = await registry.findLatestByPiSession(ctx.sessionManager.getSessionId());
-      if (params.action === "reopen") {
-        const ready = Object.values((await registry.load()).sessions).filter((candidate) => candidate.status === "ready_for_integration");
-        session = params.sessionId ? ready.find((candidate) => candidate.id === params.sessionId) : ready.length === 1 ? ready[0] : undefined;
-        if (!session) throw new SafetyKernelError("No unique completed session is available to reopen; provide sessionId when multiple sessions are ready");
-        if (!ctx.isProjectTrusted() || !ctx.hasUI) throw new SafetyKernelError("Reopening a completed session requires a trusted project with interactive founder confirmation");
-        const confirmed = await ctx.ui.confirm("Reopen completed session for repair?", "This preserves the completed commit as the new base, transfers writer ownership to this chat, and requires fresh postflight before integration.");
-        if (!confirmed) return { content: [{ type: "text", text: "Completed-session reopen cancelled." }], details: { reopened: false } };
-        session = await reopenCompletedSession(repository, session, ctx.sessionManager.getSessionId(), params.message ?? "integration validation requires repair");
+      if (params.action === "reopen" || params.action === "preserve") {
+        const candidates = Object.values((await registry.load()).sessions).filter((candidate) =>
+          params.action === "reopen"
+            ? (candidate.status === "ready_for_integration" || candidate.status === "parked") && Boolean(candidate.commit)
+            : candidate.status === "ready_for_integration",
+        );
+        session = params.sessionId ? candidates.find((candidate) => candidate.id === params.sessionId) : candidates.length === 1 ? candidates[0] : undefined;
+        if (!session) throw new SafetyKernelError(`No unique completed session is available to ${params.action}; provide sessionId when multiple sessions are eligible`);
+        if (!ctx.isProjectTrusted() || !ctx.hasUI) throw new SafetyKernelError(`${params.action === "reopen" ? "Reopening" : "Preserving"} a completed session requires a trusted project with interactive founder confirmation`);
+        if (params.action === "preserve") {
+          const confirmed = await ctx.ui.confirm("Preserve completed session?", "This parks the completed worktree without integrating it and releases its claims so new work can start. It can later be reopened for repair.");
+          if (!confirmed) return { content: [{ type: "text", text: "Completed-session preservation cancelled." }], details: { preserved: false } };
+          const preserved = await registry.changeStatus(session.id, "parked", params.message?.trim() || "preserved by founder", `pi-session:${ctx.sessionManager.getSessionId()}`);
+          session = preserved.sessions[session.id]!;
+        } else {
+          const confirmed = await ctx.ui.confirm("Reopen completed session for repair?", "This preserves the completed commit as the new base, transfers writer ownership to this chat, and requires fresh postflight before integration.");
+          if (!confirmed) return { content: [{ type: "text", text: "Completed-session reopen cancelled." }], details: { reopened: false } };
+          session = await reopenCompletedSession(repository, session, ctx.sessionManager.getSessionId(), params.message ?? "integration validation requires repair");
+        }
       }
       if (!session) throw new SafetyKernelError("No current iDevFlow writer session");
       if (params.action === "resume") {

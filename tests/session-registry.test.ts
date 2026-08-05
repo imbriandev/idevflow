@@ -65,12 +65,14 @@ describe("writer session registry", () => {
     await assert.rejects(registry.recordPostflight(active.id, { evidence: "old session", changedFiles: ["Sources/App"], diffHash: "x", verificationReceiptId: "x", verificationFingerprint: "x", verificationProfile: "quick", recordedAt: new Date().toISOString() }, "test"), /requires active/);
   });
 
-  it("reopens a completed session on its completed commit for a fresh postflight", async () => {
+  it("preserves a completed session, then reopens it on its completed commit for fresh postflight", async () => {
     const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
     const registry = new SessionRegistry(await discoverRepository(fixture.root));
     const completed = { ...session("completed", "docs"), status: "ready_for_integration" as const, commit: "b".repeat(40) };
     await registry.start(completed, "test");
-    const reopened = (await registry.reopen(completed, "new-pi-chat", "schema repair", "test")).sessions[completed.id]!;
+    const preserved = (await registry.changeStatus(completed.id, "parked", "founder starting over", "test")).sessions[completed.id]!;
+    assert.equal(preserved.status, "parked");
+    const reopened = (await registry.reopen(preserved, "new-pi-chat", "schema repair", "test")).sessions[completed.id]!;
     assert.equal(reopened.status, "active");
     assert.equal(reopened.piSessionId, "new-pi-chat");
     assert.equal(reopened.baseCommit, completed.commit);

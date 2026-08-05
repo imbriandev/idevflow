@@ -175,7 +175,7 @@ export class SessionRegistry {
     if (!session.commit) throw new SafetyKernelError("Completed session is missing its commit");
     return this.append("session_reopened", { kind: "session_reopened", sessionId: session.id, baseCommit: session.commit, piSessionId, reason }, actor, (state) => {
       const current = state.sessions[session.id]!;
-      if (current.status !== "ready_for_integration" || current.commit !== session.commit) throw new SafetyKernelError(`Only the current completed session can reopen; found ${current.status}`);
+      if ((current.status !== "ready_for_integration" && current.status !== "parked") || current.commit !== session.commit) throw new SafetyKernelError(`Only the current preserved completed session can reopen; found ${current.status}`);
       assertNoClaimConflicts(current.claims, Object.values(state.sessions), session.id);
     });
   }
@@ -197,7 +197,7 @@ export class SessionRegistry {
       const current = state.sessions[sessionId]!;
       const allowed = (current.status === "active" && (status === "parked" || status === "stale"))
         || (current.status === "postflight_passed" && (status === "parked" || status === "stale"))
-        || (current.status === "ready_for_integration" && status === "integrated");
+        || (current.status === "ready_for_integration" && (status === "integrated" || status === "parked"));
       if (!allowed) throw new SafetyKernelError(`Cannot change session ${sessionId} from ${current.status} to ${status}`);
     });
   }

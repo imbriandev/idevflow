@@ -22,6 +22,7 @@ export interface BaselineReport {
   readonly baseBranch: string;
   readonly baseCommit: string | null;
   readonly clean: boolean;
+  readonly localOnlyChanges: readonly string[];
   readonly problems: readonly string[];
 }
 
@@ -32,8 +33,12 @@ export async function inspectBaseline(
   const problems: string[] = [];
   const head = await git(repository, ["rev-parse", "--verify", "HEAD"]).catch(() => null);
   const currentBranch = await git(repository, ["symbolic-ref", "--quiet", "--short", "HEAD"]).catch(() => null);
-  const status = await git(repository, ["status", "--porcelain=v1", "--untracked-files=normal"]);
+  const [status, localSettings] = await Promise.all([
+    git(repository, ["status", "--porcelain=v1", "--untracked-files=normal", "--", ".", ":(exclude).pi/settings.json"]),
+    git(repository, ["status", "--porcelain=v1", "--untracked-files=normal", "--", ".pi/settings.json"]),
+  ]);
   const clean = status.length === 0;
+  const localOnlyChanges = localSettings ? [".pi/settings.json"] : [];
   let baseCommit: string | null = null;
   const baseRefValid = await git(repository, ["check-ref-format", "--branch", config.baseBranch]).then(() => true).catch(() => false);
   const integrationRefValid = await git(repository, ["check-ref-format", "--branch", config.integrationBranch]).then(() => true).catch(() => false);
@@ -58,6 +63,7 @@ export async function inspectBaseline(
     baseBranch: config.baseBranch,
     baseCommit,
     clean,
+    localOnlyChanges,
     problems,
   };
 }

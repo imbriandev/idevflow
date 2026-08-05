@@ -80,7 +80,7 @@ export async function writePreflight(repository: RepositoryDescriptor, input: Pr
 }
 
 export async function reopenCompletedSession(repository: RepositoryDescriptor, session: WriterSession, piSessionId: string, reason: string): Promise<WriterSession> {
-  if (session.status !== "ready_for_integration" || !session.commit) throw new SafetyKernelError("Only a completed session can reopen");
+  if ((session.status !== "ready_for_integration" && session.status !== "parked") || !session.commit) throw new SafetyKernelError("Only a completed or preserved session can reopen");
   const [head, status] = await Promise.all([
     execFileAsync("git", ["rev-parse", "HEAD"], { cwd: session.worktreePath, encoding: "utf8" }),
     execFileAsync("git", ["status", "--porcelain=v1"], { cwd: session.worktreePath, encoding: "utf8" }),

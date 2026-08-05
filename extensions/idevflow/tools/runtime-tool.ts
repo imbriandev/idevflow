@@ -61,7 +61,7 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
           : migration.config ?? await loadConfig(repository.primaryRoot);
       const baseline = await inspectBaseline(repository, config);
       const text = state
-        ? `iDevFlow runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}; baseline ${baseline.ready ? "ready" : "blocked"}.`
+        ? `iDevFlow runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}; baseline ${baseline.ready ? (baseline.localOnlyChanges.length ? "ready (local Pi settings ignored)" : "ready") : "blocked"}.`
         : "iDevFlow runtime is not initialized for this repository.";
       return {
         content: [{ type: "text", text }],
