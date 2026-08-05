@@ -6,7 +6,7 @@ import { applyConfigMigration, discoverConfigMigration, initializeConfig, loadCo
 import { inspectBaseline } from "../git/baseline.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
-import { adoptExistingProject, hasExistingAppleProject } from "../recovery/existing-project.ts";
+import { CONTINUATION_DISPOSITIONS, adoptExistingProject, chooseExistingProjectContinuation, hasExistingAppleProject } from "../recovery/existing-project.ts";
 
 export function registerRuntimeTool(pi: ExtensionAPI): void {
   pi.registerTool({
@@ -19,7 +19,9 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
       "Use idev_runtime initialize only in a trusted Git project and before future write-capable kernel operations.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["status", "initialize", "migrate", "adopt_existing"] as const),
+      action: StringEnum(["status", "initialize", "migrate", "adopt_existing", "choose_continuation"] as const),
+      disposition: Type.Optional(StringEnum(CONTINUATION_DISPOSITIONS)),
+      outcome: Type.Optional(Type.String()),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const repository = await discoverRepository(ctx.cwd);
@@ -34,6 +36,14 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
         if (!approved) return { content: [{ type: "text", text: "Existing-project adoption cancelled." }], details: { adopted: false } };
         const adoption = await adoptExistingProject(repository, `pi-session:${ctx.sessionManager.getSessionId()}`);
         return { content: [{ type: "text", text: `Existing project adopted with an audit snapshot at ${adoption.repository.head ?? "uncommitted baseline"}. Define the current product before planning the next change.` }], details: { adopted: true, adoption } };
+      }
+      if (params.action === "choose_continuation") {
+        if (!ctx.hasUI) throw new Error("Existing-project continuation fails closed without interactive approval");
+        if (!params.disposition || !params.outcome) throw new Error("Continuation requires disposition and founder outcome");
+        const approved = await ctx.ui.confirm("Choose existing-project continuation?", `Continue by ${params.disposition.replaceAll("_", " ")}: ${params.outcome}`);
+        if (!approved) return { content: [{ type: "text", text: "Existing-project continuation cancelled." }], details: { selected: false } };
+        const adoption = await chooseExistingProjectContinuation(repository, params.disposition, params.outcome, `pi-session:${ctx.sessionManager.getSessionId()}`);
+        return { content: [{ type: "text", text: `Founder continuation selected: ${adoption.continuation!.disposition.replaceAll("_", " ")}. Define the current product state and this outcome before planning.` }], details: { selected: true, adoption } };
       }
       if (params.action === "migrate") {
         if (!ctx.hasUI) throw new Error("Config migration fails closed without interactive approval");

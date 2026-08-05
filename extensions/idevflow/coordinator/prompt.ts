@@ -16,6 +16,8 @@ export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
   const worker = snapshot.workerRecommendation;
   const action = snapshot.route === "existing_audit"
     ? "Call idev_doctor with action=audit for a read-only audit of the existing Apple-platform project. Do not write files, advance lifecycle state, or claim tests/review/release evidence. Report findings, then ask whether the founder wants to acknowledge adoption with idev_runtime action=adopt_existing."
+    : snapshot.route === "existing_continuation"
+      ? "Ask the founder to select exactly one near-term outcome — repair, release validation, or feature work — and record it with idev_runtime action=choose_continuation. Do not plan or create a writer session yet."
     : snapshot.route === "maintenance"
       ? "Ask whether the founder is recording learning or starting a maintenance change. For a bug or change, require its user-visible impact and call idev_lifecycle action=start_maintenance before planning; do not bypass plan approval."
     : skill

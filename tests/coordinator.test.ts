@@ -11,7 +11,7 @@ import { discoverRepository } from "../extensions/idevflow/repository/discovery.
 import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
-import { adoptExistingProject } from "../extensions/idevflow/recovery/existing-project.ts";
+import { adoptExistingProject, chooseExistingProjectContinuation } from "../extensions/idevflow/recovery/existing-project.ts";
 import { startMaintenance } from "../extensions/idevflow/lifecycle/service.ts";
 import { createGitFixture } from "./helpers.ts";
 
@@ -55,7 +55,11 @@ describe("conversational coordinator", () => {
     assert.match(snapshot.reason, /read-only/);
     assert.match(coordinatorBrief(snapshot), /idev_doctor with action=audit/);
     await adoptExistingProject(repository, "test");
-    assert.equal((await inspectCoordinator(repository, "coordinator")).route, "define");
+    assert.equal((await inspectCoordinator(repository, "coordinator")).route, "existing_continuation");
+    await chooseExistingProjectContinuation(repository, "repair", "Repair the observed subscription purchase failure.", "founder");
+    const continuation = await inspectCoordinator(repository, "coordinator");
+    assert.equal(continuation.route, "define");
+    assert.match(continuation.reason, /subscription purchase failure/);
   });
 
   it("routes a shipped product to explicit maintenance and requires a reason", async () => {

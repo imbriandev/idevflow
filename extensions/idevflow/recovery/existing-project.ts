@@ -4,6 +4,8 @@ import { loadConfig } from "../config/config.ts";
 import { inspectBaseline, type BaselineReport } from "../git/baseline.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { writeFileAtomically } from "../state/atomic-file.ts";
+import { withFileLock } from "../state/file-lock.ts";
+import { containsSensitiveText } from "../process/redaction.ts";
 import { discoverXcodeProject } from "../xcode/discovery.ts";
 
 const ADOPTION_FILE = "existing-project-adoption.json";
@@ -11,12 +13,23 @@ const IGNORED_DIRECTORIES = new Set([".git", ".idevflow", "DerivedData", ".build
 
 export const EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION = 1 as const;
 
+export const CONTINUATION_DISPOSITIONS = ["repair", "release_validation", "feature"] as const;
+export type ContinuationDisposition = (typeof CONTINUATION_DISPOSITIONS)[number];
+
+export interface ExistingProjectContinuation {
+  readonly disposition: ContinuationDisposition;
+  readonly outcome: string;
+  readonly selectedAt: string;
+  readonly selectedBy: string;
+}
+
 export interface ExistingProjectAdoption {
   readonly schemaVersion: typeof EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION;
   readonly adoptedAt: string;
   readonly actor: string;
   readonly repository: { readonly fingerprint: string; readonly head: string | null };
   readonly audit: ExistingProjectAudit;
+  readonly continuation?: ExistingProjectContinuation;
 }
 
 export interface ExistingProjectAudit {
@@ -93,6 +106,14 @@ export async function inspectExistingProject(repository: RepositoryDescriptor): 
 }
 
 function adoptionPath(root: string): string { return join(root, ".idevflow", ADOPTION_FILE); }
+function adoptionLockPath(root: string): string { return join(root, ".idevflow", "state", "locks", "existing-project-adoption.lock"); }
+
+function validContinuationText(value: string): string {
+  const text = value.trim();
+  if (!text || text.length > 500) throw new Error("Continuation outcome must be between 1 and 500 characters");
+  if (containsSensitiveText(text)) throw new Error("Continuation outcome must not contain credentials or secrets");
+  return text;
+}
 
 export async function loadExistingProjectAdoption(root: string): Promise<ExistingProjectAdoption | undefined> {
   try {
@@ -109,13 +130,28 @@ export async function isExistingProjectAdopted(repository: RepositoryDescriptor)
 
 export async function adoptExistingProject(repository: RepositoryDescriptor, actor: string): Promise<ExistingProjectAdoption> {
   await mkdir(join(repository.primaryRoot, ".idevflow"), { recursive: true, mode: 0o700 });
-  const adoption: ExistingProjectAdoption = {
-    schemaVersion: EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION,
-    adoptedAt: new Date().toISOString(),
-    actor,
-    repository: { fingerprint: repository.fingerprint, head: repository.head },
-    audit: await inspectExistingProject(repository),
-  };
-  await writeFileAtomically(adoptionPath(repository.primaryRoot), `${JSON.stringify(adoption, null, 2)}\n`);
-  return adoption;
+  return withFileLock(adoptionLockPath(repository.primaryRoot), async () => {
+    const adoption: ExistingProjectAdoption = {
+      schemaVersion: EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION,
+      adoptedAt: new Date().toISOString(),
+      actor,
+      repository: { fingerprint: repository.fingerprint, head: repository.head },
+      audit: await inspectExistingProject(repository),
+    };
+    await writeFileAtomically(adoptionPath(repository.primaryRoot), `${JSON.stringify(adoption, null, 2)}\n`);
+    return adoption;
+  });
+}
+
+export async function chooseExistingProjectContinuation(repository: RepositoryDescriptor, disposition: ContinuationDisposition, outcome: string, actor: string): Promise<ExistingProjectAdoption> {
+  const selectedOutcome = validContinuationText(outcome);
+  return withFileLock(adoptionLockPath(repository.primaryRoot), async () => {
+    const adoption = await loadExistingProjectAdoption(repository.primaryRoot);
+    if (!adoption || adoption.repository.fingerprint !== repository.fingerprint || adoption.repository.head !== repository.head) {
+      throw new Error("A current existing-project adoption audit is required before choosing a continuation");
+    }
+    const next: ExistingProjectAdoption = { ...adoption, continuation: { disposition, outcome: selectedOutcome, selectedAt: new Date().toISOString(), selectedBy: actor } };
+    await writeFileAtomically(adoptionPath(repository.primaryRoot), `${JSON.stringify(next, null, 2)}\n`);
+    return next;
+  });
 }

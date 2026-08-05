@@ -10,13 +10,14 @@ import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { loadLatestPlatformMatrix } from "../verification/matrix.ts";
-import { hasExistingAppleProject, isExistingProjectAdopted } from "../recovery/existing-project.ts";
+import { hasExistingAppleProject, isExistingProjectAdopted, loadExistingProjectAdoption } from "../recovery/existing-project.ts";
 
 export type CoordinatorRoute =
   | "initialize"
   | "baseline_blocked"
   | "define"
   | "existing_audit"
+  | "existing_continuation"
   | "plan"
   | "founder_plan_approval"
   | "build"
@@ -120,20 +121,29 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
   }
 
   const route = lifecycleRoute(runtime.lifecycle);
-  if (runtime.lifecycle === "idea" && await hasExistingAppleProject(repository.primaryRoot) && !await isExistingProjectAdopted(repository)) {
+  if (runtime.lifecycle === "idea" && await hasExistingAppleProject(repository.primaryRoot)) {
+    const adoption = await loadExistingProjectAdoption(repository.primaryRoot);
+    if (!await isExistingProjectAdopted(repository)) {
+      return {
+        initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "existing_audit",
+        reason: "An existing Apple-platform project was detected. Audit it read-only before defining or changing iDevFlow lifecycle state.",
+        baselineReady: true, activeWriter: false, activePipeline: false, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus,
+        workerRecommendation: unavailableRecommendation("Existing-project audit must finish before lifecycle planning or worker dispatch."),
+      };
+    }
+    if (!adoption?.continuation) {
+      return {
+        initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "existing_continuation",
+        reason: "The current project audit is adopted. The founder must choose one outcome: repair, release validation, or feature work.",
+        baselineReady: true, activeWriter: false, activePipeline: false, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus,
+        workerRecommendation: unavailableRecommendation("A founder continuation decision is required before defining the current product state."),
+      };
+    }
     return {
-      initialized: true,
-      lifecycle: runtime.lifecycle,
-      revision: runtime.revision,
-      route: "existing_audit",
-      reason: "An existing Apple-platform project was detected. Audit it read-only before defining or changing iDevFlow lifecycle state.",
-      baselineReady: true,
-      activeWriter: false,
-      activePipeline: false,
-      candidateStatus: candidate?.status,
-      requiredPlatforms: config.xcode.requiredPlatforms,
-      platformStatus,
-      workerRecommendation: unavailableRecommendation("Existing-project audit must finish before lifecycle planning or worker dispatch."),
+      initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "define",
+      reason: `Define the current product state for ${adoption.continuation.disposition.replaceAll("_", " ")}: ${adoption.continuation.outcome}`,
+      baselineReady: true, activeWriter: false, activePipeline: false, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus,
+      workerRecommendation: unavailableRecommendation("Current-state definition must be integrated before planning or worker dispatch."),
     };
   }
   let workerRecommendation = unavailableRecommendation("Worker dispatch is available only after plan approval with a current work graph.");
