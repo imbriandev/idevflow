@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0-beta.7 — 2026-08-05
+
+- Keep define, plan, and learn verification documentation-only even when their risk is high or critical.
+- Add a founder-confirmed bounded test-repair route that preserves the prior lifecycle after fresh evidence.
+
 ## 0.3.0-beta.6 — 2026-08-05
 
 - Add `idev_apple` signing audits, founder-confirmed device provisioning, and exact-candidate local archives.
