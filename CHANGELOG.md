@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0-beta.4 — 2026-08-05
+
+- Add a read-only existing-project audit and explicit adoption acknowledgement before lifecycle definition.
+- Make the dashboard distinguish an existing project from an iDevFlow-adopted project.
+- Notify at Pi session start when the public npm beta tag differs from the installed version; the lookup sends no project data and can be disabled.
+
 ## 0.3.0-beta.3 — 2026-08-05
 
 - Add a read-only existing-project audit route when an Apple-platform project is detected before lifecycle adoption.
