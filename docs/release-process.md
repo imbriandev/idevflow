@@ -32,4 +32,4 @@ A package release publishes iDevFlow tooling. It is distinct from an iOS app rel
 
 ## App handoff reminder
 
-For an iOS candidate, `idev_release promote` changes only the local base branch after a candidate-bound approval. The manual TestFlight handoff package records the exact evidence and explicit next actions. A macOS handoff records distribution readiness without signing, archive, upload, notarization, or distribution. All external side effects remain separate manual operations.
+For an iOS candidate, `idev_release promote` changes only the local base branch after a candidate-bound approval. `idev_apple archive` may then create a separately founder-approved local signed archive and candidate-bound receipt; it does not export or upload. The manual TestFlight handoff package records the exact evidence and explicit next actions. A macOS handoff records distribution readiness without signing, archive, upload, notarization, or distribution. All external side effects remain separate manual operations. See the [Apple release capability matrix](release-capabilities.md).

@@ -46,7 +46,7 @@ The seven lifecycle commands remain optional manual escape hatches:
 - `idev_simulator` / `idev_proof` — capture simulator and XCTest-backed quality evidence.
 - `idev_doctor` — diagnose and conservatively repair local runtime state.
 
-Push, App Store Connect upload, and tester distribution remain explicit founder boundaries. `idev_apple` can diagnose signing and perform separately confirmed local provisioning/archive actions, but never receives App Store Connect credentials.
+Push, IPA export, App Store Connect upload, tester selection, and distribution remain explicit founder boundaries. `idev_apple` can diagnose signing and perform separately confirmed local provisioning/archive actions, but never receives App Store Connect credentials. See the [Apple release capability matrix](docs/release-capabilities.md).
 
 ## Installation
 
@@ -83,6 +83,7 @@ pi -e .
 - [Runtime state model](docs/architecture/state-model.md)
 - [Security notes](docs/security.md)
 - [Release process](docs/release-process.md)
+- [Apple release capability matrix](docs/release-capabilities.md)
 - [Local-project install playbook](docs/local-project-install-playbook.md)
 - [Operations playbook](docs/operations-playbook.md)
 - [Capability matrix](docs/plans/parity-matrix.md)

@@ -17,7 +17,8 @@ Commands are optional entry points. Typed tools remain authoritative. For an exi
 
 ## Runtime and recovery
 
-- `idev_runtime` — initialize, inspect, migrate, and manage project runtime state.
+- `idev_runtime` — initialize, inspect, migrate, adopt an existing project, and select its repair/release-validation/feature continuation.
+- `idev_blocker` — record and resolve classified code, verification, Apple, external-validation, and release blockers; external records can require ship-time evidence.
 - `idev_doctor` — audit/report runtime state; repair partial session tails and expired leases; explicitly release an orphan writer or a confirmed stuck lock without deleting source.
 
 ## Context and lifecycle
@@ -37,8 +38,11 @@ Commands are optional entry points. Typed tools remain authoritative. For an exi
 ## Release and coordination
 
 - `idev_release` — create, approve, promote, and hand off release candidates.
+- `idev_apple` — read signing settings, founder-confirm one development provisioning action, or create a local signed archive and receipt for an exact promoted candidate; never export, upload, or distribute.
 - `idev_pipeline` — create, schedule, reconcile, observe, and integrate an approved work graph.
 - `idev_pipeline_worker` — submit work from an authorized worker process.
+
+See [Apple release capability matrix](release-capabilities.md) for the exact founder boundary at each release operation.
 
 ## Safety rule
 
