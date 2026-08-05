@@ -1,8 +1,11 @@
 import { execFile } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { hashPath } from "../artifacts/manifest.ts";
 import type { iDevFlowConfig } from "../config/config.ts";
+import { writeFileAtomically } from "../state/atomic-file.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import { discoverXcodeProject } from "../xcode/discovery.ts";
 
@@ -90,12 +93,55 @@ export async function provisionAppleDevice(root: string, config: iDevFlowConfig,
   await command("xcodebuild", [...projectArgs(project), "-configuration", config.xcode.configuration, "-destination", `id=${deviceId}`, "-allowProvisioningUpdates", "-allowProvisioningDeviceRegistration", "build"], root);
 }
 
-export async function archiveAppleApp(root: string, config: iDevFlowConfig, archiveId: string): Promise<string> {
+export interface ArchiveSigningEvidence {
+  readonly appPath: string;
+  readonly authorities: readonly string[];
+  readonly teamId?: string;
+  readonly entitlementsFingerprint: string;
+  readonly distributionSigned: boolean;
+}
+
+export interface ArchiveReceipt {
+  readonly schemaVersion: 1;
+  readonly candidate: { readonly id: string; readonly fingerprint: string; readonly commit: string; readonly target: string };
+  readonly archive: { readonly path: string; readonly sha256: string; readonly bytes: number };
+  readonly signing: ArchiveSigningEvidence;
+  readonly configurationFindings: readonly string[];
+  readonly verdict: "ready_for_founder_upload_review" | "signing_attention";
+  readonly createdAt: string;
+  readonly boundary: { readonly exported: false; readonly uploaded: false; readonly distributed: false };
+}
+
+export function archiveSigningEvidence(appPath: string, details: string): ArchiveSigningEvidence {
+  const authorities = [...details.matchAll(/^Authority=(.+)$/gm)].map((match) => match[1]!.trim());
+  const teamId = details.match(/^TeamIdentifier=(.+)$/m)?.[1]?.trim();
+  const entitlements = details.match(/<\?xml[\s\S]*<\/plist>/)?.[0] ?? "";
+  return { appPath, authorities, ...(teamId ? { teamId } : {}), entitlementsFingerprint: createHash("sha256").update(entitlements).digest("hex"), distributionSigned: authorities.some((authority) => /Apple Distribution|iPhone Distribution/i.test(authority)) };
+}
+
+async function archivedAppPath(archivePath: string): Promise<string> {
+  const directory = join(archivePath, "Products", "Applications");
+  const apps = (await readdir(directory, { withFileTypes: true })).filter((entry) => entry.isDirectory() && entry.name.endsWith(".app"));
+  if (apps.length !== 1) throw new SafetyKernelError("Archive must contain exactly one iOS app bundle");
+  return join(directory, apps[0]!.name);
+}
+
+export async function archiveAppleApp(root: string, config: iDevFlowConfig, archiveId: string): Promise<{ archivePath: string; signing: ArchiveSigningEvidence }> {
   const project = await discoverXcodeProject(root, config, undefined, "Release");
   if ((project.kind !== "workspace" && project.kind !== "project") || project.platform !== "ios") throw new SafetyKernelError("TestFlight archive requires an iOS Xcode app project or workspace");
   const directory = join(root, ".idevflow", "release", "archives");
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const archivePath = join(directory, `${archiveId}.xcarchive`);
   await command("xcodebuild", [...projectArgs(project), "-configuration", "Release", "-destination", "generic/platform=iOS", "-allowProvisioningUpdates", "-archivePath", archivePath, "archive"], root);
-  return archivePath;
+  const appPath = await archivedAppPath(archivePath);
+  const details = await command("codesign", ["-d", "--entitlements", ":-", appPath], root);
+  return { archivePath, signing: archiveSigningEvidence(appPath, `${details.stdout}\n${details.stderr}`) };
+}
+
+export async function writeArchiveReceipt(root: string, candidate: { id: string; fingerprint: string; commit: string; target: string }, archivePath: string, signing: ArchiveSigningEvidence, configurationFindings: readonly string[]): Promise<{ receipt: ArchiveReceipt; path: string }> {
+  const archive = await hashPath(archivePath);
+  const receipt: ArchiveReceipt = { schemaVersion: 1, candidate: { id: candidate.id, fingerprint: candidate.fingerprint, commit: candidate.commit, target: candidate.target }, archive: { path: archivePath, ...archive }, signing, configurationFindings, verdict: signing.distributionSigned && !configurationFindings.length ? "ready_for_founder_upload_review" : "signing_attention", createdAt: new Date().toISOString(), boundary: { exported: false, uploaded: false, distributed: false } };
+  const path = join(root, ".idevflow", "release", "archives", `${candidate.id}.json`);
+  await writeFileAtomically(path, `${JSON.stringify(receipt, null, 2)}\n`);
+  return { receipt, path };
 }

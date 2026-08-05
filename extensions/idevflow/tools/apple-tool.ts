@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { archiveAppleApp, auditAppleSigning, provisionAppleDevice } from "../apple/service.ts";
+import { archiveAppleApp, auditAppleSigning, provisionAppleDevice, writeArchiveReceipt } from "../apple/service.ts";
 import { loadConfig } from "../config/config.ts";
 import { integrationHead } from "../git/integration.ts";
 import { loadCandidate } from "../release/service.ts";
@@ -61,8 +61,10 @@ export function registerAppleTool(pi: ExtensionAPI): void {
       if (!(await cleanAtCommit(repository.primaryRoot, candidate.commit))) throw new SafetyKernelError("Archive requires the primary worktree to be clean at the exact promoted candidate commit");
       const approved = await ctx.ui.confirm("Archive exact TestFlight candidate?", `Xcode may update signing profiles and create a local signed archive for ${candidate.releaseManifest.bundleId} ${candidate.releaseManifest.version} (${candidate.releaseManifest.build}). It will not upload or distribute.`);
       if (!approved) return { content: [{ type: "text", text: "Apple archive cancelled." }], details: { archived: false } };
-      const archivePath = await archiveAppleApp(repository.primaryRoot, config, candidate.id);
-      return { content: [{ type: "text", text: `Signed archive created at ${archivePath}. Inspect distribution signing, then obtain a separate founder approval before any TestFlight upload.` }], details: { archived: true, archivePath, candidateFingerprint: candidate.fingerprint, uploaded: false, distributed: false } };
+      const archive = await archiveAppleApp(repository.primaryRoot, config, candidate.id);
+      const audit = await auditAppleSigning(repository.primaryRoot, config);
+      const saved = await writeArchiveReceipt(repository.primaryRoot, candidate, archive.archivePath, archive.signing, audit.findings);
+      return { content: [{ type: "text", text: `Signed archive created at ${archive.archivePath}; receipt ${saved.path} is ${saved.receipt.verdict}. Export, upload, and distribution were not performed.` }], details: { archived: true, archivePath: archive.archivePath, receipt: saved.receipt, receiptPath: saved.path, candidateFingerprint: candidate.fingerprint, uploaded: false, distributed: false } };
     },
   });
 }

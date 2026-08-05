@@ -4,7 +4,7 @@ import { readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 import type { ArtifactRecord } from "../verification/types.ts";
 
-async function hashPath(path: string): Promise<{ sha256: string; bytes: number }> {
+export async function hashPath(path: string): Promise<{ sha256: string; bytes: number }> {
   const info = await stat(path);
   if (info.isFile()) {
     const hash = createHash("sha256");
