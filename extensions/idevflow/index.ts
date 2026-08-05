@@ -23,6 +23,7 @@ import { registerRuntimeTool } from "./tools/runtime-tool.ts";
 import { registerSessionTool } from "./tools/session-tool.ts";
 import { registerSimulatorTool } from "./tools/simulator-tool.ts";
 import { registerVerificationTool } from "./tools/verification-tool.ts";
+import { registerVisualReviewTool } from "./tools/visual-review-tool.ts";
 import { formatCoordinatorDashboard, updateCoordinatorStatus, updateStatus } from "./ui/status.ts";
 import { checkForUpdate } from "./ui/update.ts";
 import { heartbeatPipelineWorker } from "./workers/service.ts";
@@ -51,6 +52,7 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   registerExecTool(pi);
   registerSimulatorTool(pi);
   registerProofTool(pi);
+  registerVisualReviewTool(pi);
   registerVerificationTool(pi);
   registerDoctorTool(pi);
   registerToolGate(pi, () => state);

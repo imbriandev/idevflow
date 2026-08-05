@@ -10,6 +10,10 @@ As of 2026-07-29, `npm audit` reports `GHSA-mh99-v99m-4gvg` in `brace-expansion@
 
 At Pi session start, iDevFlow may request the public `https://registry.npmjs.org/idevflow` metadata to compare the installed version with the public `beta` dist-tag. The request contains no project, source, runtime, credential, or user data. Set `IDEVFLOW_DISABLE_UPDATE_CHECK=1` to disable it.
 
+## AI visual review
+
+`idev_visual_review` is opt-in and interactive. It sends only the selected source-bound PNG screenshot and a fixed review prompt to the active Pi provider/model; it does not grant the reviewer source, tools, runtime state, or mutation authority. The report is advisory evidence and never independently passes verification or release gates. Do not submit screenshots containing secrets or private user data.
+
 ## Runtime model
 
 Pi extensions execute with the user's system permissions. iDevFlow therefore fails closed for untrusted project mutation, direct write paths outside claimed worktrees, expired writer or simulator leases, mutating shell commands, non-interactive registry repair, stale postflight receipts, weak verification profiles, missing xcresult/test evidence, source-mismatched quality proof, and candidate actions that later milestones will approval-bind.
