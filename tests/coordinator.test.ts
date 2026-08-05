@@ -88,6 +88,19 @@ describe("conversational coordinator", () => {
     assert.equal((await new RuntimeStore(repository).status())?.revision, state.revision);
   });
 
+  it("routes completed sessions to founder integration without exposing their task", async () => {
+    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
+    const repository = await discoverRepository(fixture.root);
+    await new RuntimeStore(repository).initialize("test");
+    const now = new Date().toISOString();
+    await new SessionRegistry(repository).start({ id: randomUUID(), piSessionId: "completed-agent", stage: "define", task: "private product request", risk: "medium", status: "ready_for_integration", branch: "idev/complete", worktreePath: fixture.root, baseCommit: repository.head!, claims: ["docs"], createdAt: now, heartbeatAt: now, leaseExpiresAt: new Date(Date.now() + 60_000).toISOString() }, "test");
+    const snapshot = await inspectCoordinator(repository, "coordinator");
+    assert.equal(snapshot.route, "integrate_writer");
+    assert.equal(snapshot.integrationReadyStage, "define");
+    assert.doesNotMatch(JSON.stringify(snapshot), /private product request/);
+    assert.match(coordinatorBrief(snapshot), /founder-confirmed integration/);
+  });
+
   it("permits only independent low/medium-risk work to be pipeline eligible", () => {
     assert.equal(recommendWorkerDelegation([slice("one", "low"), slice("two", "medium")]).mode, "pipeline_eligible");
     assert.equal(recommendWorkerDelegation([slice("one", "low"), slice("two", "high")]).mode, "pipeline_blocked_by_risk");

@@ -28,6 +28,7 @@ export type CoordinatorRoute =
   | "maintenance"
   | "learn"
   | "resume_writer"
+  | "integrate_writer"
   | "observe_pipeline"
   | "repair";
 
@@ -45,6 +46,7 @@ export interface CoordinatorSnapshot {
   readonly reason: string;
   readonly baselineReady: boolean;
   readonly activeWriter: boolean;
+  readonly integrationReadyStage?: string;
   readonly activePipeline: boolean;
   readonly candidateStatus?: string | undefined;
   readonly requiredPlatforms?: readonly string[];
@@ -103,7 +105,8 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
   const baseline = await inspectBaseline(repository, config);
   const registry = new SessionRegistry(repository);
   const sessions = Object.values((await registry.load()).sessions);
-  const activeWriter = sessions.some((session) => session.status === "active" || session.status === "ready_for_integration");
+  const activeWriter = sessions.some((session) => session.status === "active");
+  const integrationReady = sessions.filter((session) => session.status === "ready_for_integration").sort((left, right) => right.createdAt.localeCompare(left.createdAt))[0];
   const pipelines = await new PipelineStore(repository).list();
   const activePipeline = pipelines.some((pipeline) => ACTIVE_PIPELINE_STATUSES.has(pipeline.status));
   const candidate = await loadCandidate(repository);
@@ -114,7 +117,10 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
     return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "baseline_blocked", reason: baseline.problems.join("; "), baselineReady: false, activeWriter, activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Restore a clean, valid Git baseline before coordinator work.") };
   }
   if (activeWriter) {
-    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "resume_writer", reason: "An authorized writer session already owns active work.", baselineReady: true, activeWriter: true, activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Do not start overlapping work while a writer session is active or awaiting integration.") };
+    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "resume_writer", reason: "An authorized writer session already owns active work.", baselineReady: true, activeWriter: true, ...(integrationReady ? { integrationReadyStage: integrationReady.stage } : {}), activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Do not start overlapping work while a writer session is active.") };
+  }
+  if (integrationReady) {
+    return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "integrate_writer", reason: `A completed ${integrationReady.stage} session is ready for founder-confirmed integration.`, baselineReady: true, activeWriter: false, integrationReadyStage: integrationReady.stage, activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Integrate or deliberately preserve the completed session before starting overlapping work.") };
   }
   if (activePipeline) {
     return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "observe_pipeline", reason: "A pipeline already owns the approved graph; inspect, reconcile, resume, or pause it instead of creating another.", baselineReady: true, activeWriter: false, activePipeline: true, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Existing pipeline ownership prevents duplicate dispatch.") };
