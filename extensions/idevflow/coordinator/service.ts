@@ -38,6 +38,12 @@ export interface WorkerRecommendation {
   readonly eligibleSliceIds: readonly string[];
 }
 
+export interface FounderStatus {
+  readonly stage: string;
+  readonly blocked: string;
+  readonly choices: readonly string[];
+}
+
 export interface CoordinatorSnapshot {
   readonly initialized: boolean;
   readonly lifecycle?: string;
@@ -89,6 +95,32 @@ function lifecycleRoute(lifecycle: string): { route: CoordinatorRoute; reason: s
     case "testflight_handoff": return { route: "maintenance", reason: "The product is shipped. Record learning, or explicitly start a narrow maintenance loop for a bug or change." };
     default: return { route: "repair", reason: "Lifecycle is interrupted or requires a bounded repair decision." };
   }
+}
+
+export function founderStatus(snapshot: CoordinatorSnapshot): FounderStatus {
+  const stage: Record<CoordinatorRoute, string> = {
+    initialize: "Set up iDevFlow", baseline_blocked: "Project needs attention", define: "Shape the app", existing_audit: "Assess existing app", existing_continuation: "Choose current outcome", plan: "Plan the build", founder_plan_approval: "Approve the build plan", build: "Build the app", test: "Prove the behavior", review: "Review the evidence", ship: "Prepare TestFlight handoff", founder_ship_approval: "Approve handoff preparation", maintenance: "Improve the shipped app", learn: "Learn from feedback", resume_writer: "Continue work", integrate_writer: "Choose completed work", observe_pipeline: "Build in progress", repair: "Recover workflow",
+  };
+  const choices: Partial<Record<CoordinatorRoute, readonly string[]>> = {
+    existing_audit: ["Assess this app"],
+    existing_continuation: ["Fix a problem", "Validate release readiness", "Build a feature"],
+    integrate_writer: ["Accept it", "Repair it", "Keep it and start over"],
+    maintenance: ["Record feedback", "Fix a problem", "Plan a change"],
+    founder_plan_approval: ["Approve the plan", "Revise the plan"],
+    founder_ship_approval: ["Approve handoff preparation", "Keep working"],
+    baseline_blocked: ["Fix project changes", "See technical details"],
+    resume_writer: ["Continue work", "See progress"],
+  };
+  const blocked = snapshot.route === "baseline_blocked"
+    ? "Uncommitted product changes need attention before a new build starts."
+    : snapshot.route === "resume_writer"
+      ? "Another build is already in progress."
+      : snapshot.route === "integrate_writer"
+        ? `Completed ${snapshot.integrationReadyStage ?? "work"} needs your decision.`
+        : snapshot.route === "observe_pipeline"
+          ? "The approved build is already in progress."
+          : snapshot.reason;
+  return { stage: stage[snapshot.route], blocked, choices: choices[snapshot.route] ?? ["Continue"] };
 }
 
 export function isLikelyiDevFlowIntent(prompt: string): boolean {

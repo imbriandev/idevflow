@@ -5,7 +5,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { coordinatorBrief } from "../extensions/idevflow/coordinator/prompt.ts";
-import { inspectCoordinator, isLikelyiDevFlowIntent, recommendWorkerDelegation } from "../extensions/idevflow/coordinator/service.ts";
+import { founderStatus, inspectCoordinator, isLikelyiDevFlowIntent, recommendWorkerDelegation } from "../extensions/idevflow/coordinator/service.ts";
+import { formatCoordinatorDashboard } from "../extensions/idevflow/ui/status.ts";
 import type { WorkSlice } from "../extensions/idevflow/planning/work-graph.ts";
 import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
 import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
@@ -114,7 +115,9 @@ describe("conversational coordinator", () => {
     assert.equal(snapshot.route, "integrate_writer");
     assert.equal(snapshot.integrationReadyStage, "define");
     assert.doesNotMatch(JSON.stringify(snapshot), /private product request/);
-    assert.match(coordinatorBrief(snapshot), /founder-confirmed integration/);
+    const brief = coordinatorBrief(snapshot);
+    assert.match(brief, /Accept it \| Repair it \| Keep it and start over/);
+    assert.doesNotMatch(brief, /private product request/);
   });
 
   it("permits only independent low/medium-risk work to be pipeline eligible", () => {
@@ -123,9 +126,13 @@ describe("conversational coordinator", () => {
     assert.equal(recommendWorkerDelegation([slice("one", "low", ["earlier"]), slice("two", "medium")]).mode, "single_agent");
   });
 
-  it("adds a conversational brief without treating prose as authority", () => {
-    const brief = coordinatorBrief({ initialized: true, lifecycle: "planned", revision: 3, route: "founder_plan_approval", reason: "approval required", baselineReady: true, activeWriter: false, activePipeline: false, workerRecommendation: { mode: "pipeline_unavailable", reason: "approval required", eligibleSliceIds: [] } });
+  it("shows founders a decision card without internal workflow nouns", () => {
+    const snapshot = { initialized: true, lifecycle: "planned", revision: 3, route: "founder_plan_approval" as const, reason: "approval required", baselineReady: true, activeWriter: false, activePipeline: false, workerRecommendation: { mode: "pipeline_unavailable" as const, reason: "approval required", eligibleSliceIds: [] } };
+    const brief = coordinatorBrief(snapshot);
     assert.match(brief, /Never advance a lifecycle gate/);
+    assert.match(formatCoordinatorDashboard(snapshot), /Approve the build plan/);
+    assert.doesNotMatch(formatCoordinatorDashboard(snapshot), /route|receipt|worktree/i);
+    assert.equal(founderStatus(snapshot).stage, "Approve the build plan");
     assert.equal(isLikelyiDevFlowIntent("I want to build an iOS app"), true);
     assert.equal(isLikelyiDevFlowIntent("Explain this generic TypeScript function"), false);
   });

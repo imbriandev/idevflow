@@ -38,9 +38,11 @@ idev_lifecycle start_maintenance
 
 This returns the lifecycle to `defined` using the existing product definition. Plan and approve the narrowest change before implementation; maintenance never bypasses review or release verification.
 
-## Conversational mode
+## Founder mode
 
-You can describe the next product decision or defect instead of invoking a command. The coordinator reads durable state at interaction boundaries and recommends the safe next route. It does not replace lifecycle gates or run in the background.
+Describe the outcome, not the workflow: “assess this app”, “build this feature”, “fix this defect”, “keep this and start over”, or “prepare a TestFlight handoff”. iDevFlow chooses the eligible session and keeps Git worktrees, claims, receipts, and recovery details behind the status card. It asks for a decision only when work is ambiguous, irreversible, or needs founder-owned Apple evidence.
+
+The coordinator does not replace lifecycle gates or run in the background. “Prepare TestFlight handoff” means verified local preparation and a founder handoff; iDevFlow never uploads, selects testers, or distributes.
 
 ## Interruption
 

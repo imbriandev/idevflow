@@ -1,4 +1,4 @@
-import type { CoordinatorSnapshot } from "./service.ts";
+import { founderStatus, type CoordinatorSnapshot } from "./service.ts";
 
 const SKILL_BY_ROUTE: Partial<Record<CoordinatorSnapshot["route"], string>> = {
   define: "idev-define",
@@ -19,7 +19,7 @@ export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
     : snapshot.route === "existing_continuation"
       ? "Ask the founder to select exactly one near-term outcome — repair, release validation, or feature work — and record it with idev_runtime action=choose_continuation. Do not plan or create a writer session yet."
     : snapshot.route === "integrate_writer"
-      ? `Explain that the completed ${snapshot.integrationReadyStage ?? "lifecycle"} session is waiting for founder-confirmed integration. Inspect its receipt, then call idev_lifecycle action=integrate only if its exact evidence is accepted; do not start a new writer.`
+      ? "Present the founder choices: accept the completed work, repair its validation issue, or keep it and start over. Inspect its receipt before acceptance; use idev_lifecycle integrate only after acceptance, idev_session reopen for repair, or idev_session preserve to keep it. Do not start a new writer until the completed work is resolved."
     : snapshot.route === "maintenance"
       ? "Ask whether the founder is recording learning or starting a maintenance change. For a bug or change, require its user-visible impact and call idev_lifecycle action=start_maintenance before planning; do not bypass plan approval."
     : skill
@@ -28,14 +28,12 @@ export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
   const dispatch = worker.mode === "pipeline_eligible"
     ? "If the founder explicitly asks to build the approved plan or parallelize work, the existing pipeline may be created and run for its exact approved graph."
     : "Do not create or run a pipeline unless the deterministic pipeline gate later permits it.";
+  const founder = founderStatus(snapshot);
   return `[IDEVFLOW COORDINATOR]
-Lifecycle: ${snapshot.lifecycle ?? "uninitialized"}${snapshot.revision ? ` (runtime r${snapshot.revision})` : ""}
-Next safe route: ${snapshot.route}
-Reason: ${snapshot.reason}
-Required platforms: ${snapshot.requiredPlatforms?.join(", ") ?? "not configured"}
-Platform evidence: ${snapshot.platformStatus ? Object.entries(snapshot.platformStatus).map(([platform, status]) => `${platform}=${status}`).join(", ") : "none"}
-Worker policy: ${worker.mode}; ${worker.reason}
+Founder status: ${founder.stage}
+Blocked: ${founder.blocked}
+Choices: ${founder.choices.join(" | ")}
 ${action}
 ${dispatch}
-Runtime state, receipts, approved graphs, and kernel tools are authoritative. Never advance a lifecycle gate, approval, integration, promotion, push, upload, or distribution from prose. Do not ask the founder to memorize slash commands; guide the next safe conversational step instead.`;
+Runtime state, receipts, approved graphs, and kernel tools are authoritative. Never advance a lifecycle gate, approval, integration, promotion, push, upload, or distribution from prose. Ask the founder only for the displayed decision; never require a command, session ID, worktree, claim, or receipt fingerprint.`;
 }
