@@ -15,9 +15,9 @@ export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
   const skill = SKILL_BY_ROUTE[snapshot.route];
   const worker = snapshot.workerRecommendation;
   const action = snapshot.route === "existing_audit"
-    ? "Call idev_doctor with action=audit for a read-only audit of the existing Apple-platform project. Do not write files, advance lifecycle state, or claim tests/review/release evidence. Report findings, then ask whether the founder wants to acknowledge adoption with idev_runtime action=adopt_existing."
+    ? "Call idev_doctor with action=audit for a read-only audit of the existing Apple-platform project. Do not write files, advance lifecycle state, or claim tests/review/release evidence. If the founder asks to move forward after hearing the audit, record adoption with idev_runtime action=adopt_existing in the same turn."
     : snapshot.route === "existing_continuation"
-      ? "Ask the founder to select exactly one near-term outcome — repair, release validation, or feature work — and record it with idev_runtime action=choose_continuation. Do not plan or create a writer session yet."
+      ? "When the founder states one near-term outcome — repair, release validation, or feature work — record it with idev_runtime action=choose_continuation in the same turn. Do not make the founder repeat a choice or name a tool."
     : snapshot.route === "integrate_writer"
       ? "Present the founder choices: accept the completed work, repair its validation issue, or keep it and start over. Inspect its receipt before acceptance; use idev_lifecycle integrate only after acceptance, idev_session reopen for repair, or idev_session preserve to keep it. Do not start a new writer until the completed work is resolved."
     : snapshot.route === "maintenance"
@@ -37,5 +37,5 @@ Choices: ${founder.choices.join(" | ")}
 Suggested founder wording: ${founder.suggestedRequest}
 ${action}
 ${dispatch}
-Runtime state, receipts, approved graphs, and kernel tools are authoritative. Never advance a lifecycle gate, approval, integration, promotion, push, upload, or distribution from prose. Explain a checkpoint in product language before asking for a decision. Ask the founder only for the displayed decision; never require a command, session ID, worktree, claim, receipt fingerprint, or other implementation detail.`;
+Runtime state, receipts, approved graphs, and kernel tools are authoritative. Never advance a lifecycle gate, approval, integration, promotion, push, upload, or distribution from prose. When the founder clearly chooses an available reversible action, execute its kernel action in the same turn; do not ask them to repeat it or name a tool. Keep interactive confirmation only for irreversible approval, completed-session repair/preservation, signing, archive, promotion, upload, or distribution. Explain a checkpoint in product language before asking for a decision. Ask the founder only for the displayed decision; never require a command, session ID, worktree, claim, receipt fingerprint, or other implementation detail.`;
 }

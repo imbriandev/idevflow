@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
+import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { createDiagnosticReport } from "../extensions/idevflow/recovery/report.ts";
 import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
@@ -7,6 +8,7 @@ import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { registerPipelineTool } from "../extensions/idevflow/tools/pipeline-tool.ts";
 import { registerReleaseTool } from "../extensions/idevflow/tools/release-tool.ts";
+import { registerRuntimeTool } from "../extensions/idevflow/tools/runtime-tool.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -46,6 +48,19 @@ describe("production diagnostics and interaction gates", () => {
     const context = nonInteractiveContext(fixture.root);
     await assert.rejects(registry.tools.get("idev_pipeline")!.execute("id", { action: "approve_risk", pipelineId: "demo", sliceId: "high-risk" }, undefined, undefined, context), /fails closed without interactive UI/);
     await assert.rejects(registry.tools.get("idev_release")!.execute("id", { action: "approve" }, undefined, undefined, context), /fails closed without interactive UI/);
+  });
+
+  it("records a founder-requested existing-project route without an extra confirmation", async () => {
+    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
+    await mkdir(`${fixture.root}/Sources`); await writeFile(`${fixture.root}/Sources/App.swift`, "struct App {}\n");
+    const registry = toolRegistry(); registerRuntimeTool(registry as any);
+    const runtime = registry.tools.get("idev_runtime")!;
+    const context = nonInteractiveContext(fixture.root);
+    await runtime.execute("id", { action: "initialize" }, undefined, undefined, context);
+    const adopted: any = await runtime.execute("id", { action: "adopt_existing" }, undefined, undefined, context);
+    assert.equal(adopted.details.adopted, true);
+    const selected: any = await runtime.execute("id", { action: "choose_continuation", disposition: "repair", outcome: "Fix subscription restore." }, undefined, undefined, context);
+    assert.equal(selected.details.selected, true);
   });
 
   it("honors an interactive cancellation before coordinator mutation", async () => {

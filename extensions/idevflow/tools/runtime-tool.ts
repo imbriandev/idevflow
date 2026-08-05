@@ -30,18 +30,12 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
         throw new Error(`Refusing to ${params.action} iDevFlow state in an untrusted project`);
       }
       if (params.action === "adopt_existing") {
-        if (!ctx.hasUI) throw new Error("Existing-project adoption fails closed without interactive approval");
         if (!await hasExistingAppleProject(repository.primaryRoot)) throw new Error("No existing Apple-platform project was detected for adoption");
-        const approved = await ctx.ui.confirm("Adopt existing project?", "This acknowledges that existing code is not iDevFlow verification or release evidence. It does not modify source or advance the lifecycle.");
-        if (!approved) return { content: [{ type: "text", text: "Existing-project adoption cancelled." }], details: { adopted: false } };
         const adoption = await adoptExistingProject(repository, `pi-session:${ctx.sessionManager.getSessionId()}`);
         return { content: [{ type: "text", text: `Existing project adopted with an audit snapshot at ${adoption.repository.head ?? "uncommitted baseline"}. Define the current product before planning the next change.` }], details: { adopted: true, adoption } };
       }
       if (params.action === "choose_continuation") {
-        if (!ctx.hasUI) throw new Error("Existing-project continuation fails closed without interactive approval");
         if (!params.disposition || !params.outcome) throw new Error("Continuation requires disposition and founder outcome");
-        const approved = await ctx.ui.confirm("Choose existing-project continuation?", `Continue by ${params.disposition.replaceAll("_", " ")}: ${params.outcome}`);
-        if (!approved) return { content: [{ type: "text", text: "Existing-project continuation cancelled." }], details: { selected: false } };
         const adoption = await chooseExistingProjectContinuation(repository, params.disposition, params.outcome, `pi-session:${ctx.sessionManager.getSessionId()}`);
         return { content: [{ type: "text", text: `Founder continuation selected: ${adoption.continuation!.disposition.replaceAll("_", " ")}. Define the current product state and this outcome before planning.` }], details: { selected: true, adoption } };
       }
