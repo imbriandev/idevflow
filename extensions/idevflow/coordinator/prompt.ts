@@ -31,9 +31,11 @@ export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
   const founder = founderStatus(snapshot);
   return `[IDEVFLOW COORDINATOR]
 Founder status: ${founder.stage}
-Blocked: ${founder.blocked}
+What this means: ${founder.meaning}
+Current checkpoint: ${founder.blocked}
 Choices: ${founder.choices.join(" | ")}
+Suggested founder wording: ${founder.suggestedRequest}
 ${action}
 ${dispatch}
-Runtime state, receipts, approved graphs, and kernel tools are authoritative. Never advance a lifecycle gate, approval, integration, promotion, push, upload, or distribution from prose. Ask the founder only for the displayed decision; never require a command, session ID, worktree, claim, or receipt fingerprint.`;
+Runtime state, receipts, approved graphs, and kernel tools are authoritative. Never advance a lifecycle gate, approval, integration, promotion, push, upload, or distribution from prose. Explain a checkpoint in product language before asking for a decision. Ask the founder only for the displayed decision; never require a command, session ID, worktree, claim, receipt fingerprint, or other implementation detail.`;
 }

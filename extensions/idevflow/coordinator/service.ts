@@ -42,6 +42,10 @@ export interface FounderStatus {
   readonly stage: string;
   readonly blocked: string;
   readonly choices: readonly string[];
+  /** Plain-language explanation of the current checkpoint. */
+  readonly meaning: string;
+  /** A natural-language request the founder can send without knowing a command or tool. */
+  readonly suggestedRequest: string;
 }
 
 export interface CoordinatorSnapshot {
@@ -111,6 +115,80 @@ export function founderStatus(snapshot: CoordinatorSnapshot): FounderStatus {
     baseline_blocked: ["Fix project changes", "See technical details"],
     resume_writer: ["Continue work", "See progress"],
   };
+  const guidance: Record<CoordinatorRoute, Pick<FounderStatus, "meaning" | "suggestedRequest">> = {
+    initialize: {
+      meaning: "iDevFlow has not set up its local project notebook yet. This does not change your app source.",
+      suggestedRequest: "Set up iDevFlow for this project, then help me define the app.",
+    },
+    baseline_blocked: {
+      meaning: "There are local source changes that could be mixed into new work. Decide what to keep before starting another change.",
+      suggestedRequest: "Show me the project changes and recommend the safest next step.",
+    },
+    define: {
+      meaning: "Agree on the smallest useful app outcome before spending time building it.",
+      suggestedRequest: "Help me define the smallest complete first version of this app.",
+    },
+    existing_audit: {
+      meaning: "Your app already has code. First inspect its current health without changing anything.",
+      suggestedRequest: "Assess this existing app and explain the highest-priority issues in plain language.",
+    },
+    existing_continuation: {
+      meaning: "Choose one immediate outcome so the next work stays focused.",
+      suggestedRequest: "I want to fix a problem in the current app.",
+    },
+    plan: {
+      meaning: "Turn the agreed outcome into a small, reviewable build plan.",
+      suggestedRequest: "Plan the smallest safe way to build the defined app outcome.",
+    },
+    founder_plan_approval: {
+      meaning: "The build plan is ready. This checkpoint prevents the app from being changed against a plan you have not seen.",
+      suggestedRequest: "Explain the plan in plain language, including trade-offs, then let me approve or revise it.",
+    },
+    build: {
+      meaning: "The agreed work can now be implemented and checked in an isolated workspace.",
+      suggestedRequest: "Build the next approved slice and keep me updated in plain language.",
+    },
+    test: {
+      meaning: "Prove the behavior works before treating the change as complete.",
+      suggestedRequest: "Test the current change and explain any failure and its next step simply.",
+    },
+    review: {
+      meaning: "Review the tested change for user impact and technical risk before preparing a beta.",
+      suggestedRequest: "Review this change and give me a clear go, fix, or defer recommendation.",
+    },
+    ship: {
+      meaning: "Prepare a verified beta handoff. Uploading to App Store Connect and choosing testers remain your explicit actions.",
+      suggestedRequest: "Prepare this version for TestFlight and give me the exact remaining founder checklist.",
+    },
+    founder_ship_approval: {
+      meaning: "The exact beta candidate is ready for your approval. This prevents a different commit from being promoted by accident.",
+      suggestedRequest: "Summarize what will be promoted, known risks, and the remaining TestFlight steps before I approve it.",
+    },
+    maintenance: {
+      meaning: "The app has been handed off. Start a small maintenance loop only for a concrete bug or change.",
+      suggestedRequest: "I need to fix this user-visible problem: [describe what the user sees].",
+    },
+    learn: {
+      meaning: "Use feedback to choose the next small bet rather than building every request.",
+      suggestedRequest: "Here is feedback from users: [paste it]. Help me decide what to do now, later, or not at all.",
+    },
+    resume_writer: {
+      meaning: "A build is already in progress. Continue or inspect that work before starting something overlapping.",
+      suggestedRequest: "Show me the progress of the current work and what decision, if any, you need from me.",
+    },
+    integrate_writer: {
+      meaning: "Completed work is waiting for your product decision: accept it, repair it, or keep it aside.",
+      suggestedRequest: "Summarize the completed work, evidence, and any risks so I can choose accept, repair, or keep it aside.",
+    },
+    observe_pipeline: {
+      meaning: "Approved work is already being built. Watching it avoids duplicate or conflicting changes.",
+      suggestedRequest: "Show me build progress, risks, and whether you need a decision from me.",
+    },
+    repair: {
+      meaning: "The workflow needs a small recovery decision before it can safely continue.",
+      suggestedRequest: "Explain what needs recovery in plain language and recommend the safest next action.",
+    },
+  };
   const blocked = snapshot.route === "baseline_blocked"
     ? "Uncommitted product changes need attention before a new build starts."
     : snapshot.route === "resume_writer"
@@ -120,7 +198,12 @@ export function founderStatus(snapshot: CoordinatorSnapshot): FounderStatus {
         : snapshot.route === "observe_pipeline"
           ? "The approved build is already in progress."
           : snapshot.reason;
-  return { stage: stage[snapshot.route], blocked, choices: choices[snapshot.route] ?? ["Continue"] };
+  return {
+    stage: stage[snapshot.route],
+    blocked,
+    choices: choices[snapshot.route] ?? ["Continue"],
+    ...guidance[snapshot.route],
+  };
 }
 
 export function isLikelyiDevFlowIntent(prompt: string): boolean {

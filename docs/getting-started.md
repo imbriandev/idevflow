@@ -46,6 +46,21 @@ Open the Apple-platform project in Pi and run:
 
 Or describe the product or change conversationally. iDevFlow initializes durable project state when the runtime tool is first used. State lives in the project at `.idevflow/`; it is local, ignored by Git, and independent of Pi conversation history.
 
+## Founder-first operation
+
+You do not need to know the lifecycle commands, tools, worktrees, or receipts. Run `/idev` whenever you are unsure: it explains the current checkpoint in plain language, what it protects, your available choices, and a sentence you can send to continue.
+
+Use normal product language, for example:
+
+```text
+Help me define the smallest complete first version of this app.
+Explain the plan in plain language, then let me approve or revise it.
+Build the next approved slice and keep me updated in plain language.
+Prepare this version for TestFlight and give me the exact remaining founder checklist.
+```
+
+Some checkpoints intentionally require your confirmation: accepting a plan, resolving completed work, promoting a beta, signing, and external distribution. They are the moments where a change would otherwise be hard to undo or could affect your Apple account. Ask “why is this paused?” at any time; the coordinator should answer without requiring technical terms.
+
 Start with `/idev:define` for a new product or `/idev:plan` for an already-defined product.
 
 ## Existing projects

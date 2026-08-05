@@ -23,10 +23,12 @@ export function formatCoordinatorDashboard(snapshot: CoordinatorSnapshot): strin
   const founder = founderStatus(snapshot);
   return [
     `iDevFlow · ${founder.stage}`,
-    `Blocked: ${founder.blocked}`,
-    `Next: ${founder.choices.join(" · ")}`,
+    `What this means: ${founder.meaning}`,
+    `Current checkpoint: ${founder.blocked}`,
+    `Your choices: ${founder.choices.join(" · ")}`,
+    `You can say: “${founder.suggestedRequest}”`,
     ...(snapshot.candidateStatus ? [`Handoff: ${snapshot.candidateStatus}`] : []),
-    "Technical details are available on request.",
+    "Ask for technical details only if you want them.",
   ].join("\n");
 }
 

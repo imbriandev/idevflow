@@ -131,8 +131,11 @@ describe("conversational coordinator", () => {
     const brief = coordinatorBrief(snapshot);
     assert.match(brief, /Never advance a lifecycle gate/);
     assert.match(formatCoordinatorDashboard(snapshot), /Approve the build plan/);
+    assert.match(formatCoordinatorDashboard(snapshot), /What this means: The build plan is ready/);
+    assert.match(formatCoordinatorDashboard(snapshot), /You can say:/);
     assert.doesNotMatch(formatCoordinatorDashboard(snapshot), /route|receipt|worktree/i);
     assert.equal(founderStatus(snapshot).stage, "Approve the build plan");
+    assert.match(founderStatus(snapshot).suggestedRequest, /plain language/);
     assert.equal(isLikelyiDevFlowIntent("I want to build an iOS app"), true);
     assert.equal(isLikelyiDevFlowIntent("Explain this generic TypeScript function"), false);
   });
