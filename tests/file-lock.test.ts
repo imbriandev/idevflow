@@ -4,7 +4,7 @@ import { mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { acquireFileLock } from "../extensions/idevflow/state/file-lock.ts";
+import { acquireFileLock, forceReleaseFileLock } from "../extensions/idevflow/state/file-lock.ts";
 import { LockTimeoutError } from "../extensions/idevflow/state/errors.ts";
 
 const roots: string[] = [];
@@ -43,6 +43,13 @@ describe("cross-process file lock", () => {
     const acquired = await acquireFileLock(lockPath, { timeoutMs: 100, staleMs: 1, retryMs: 2 });
     assert.notEqual(acquired.owner.token, "dead");
     await acquired.release();
+  });
+
+  it("supports explicit manual recovery for a stuck lock", async () => {
+    const { lockPath } = lockFixture();
+    await mkdir(lockPath, { recursive: true });
+    assert.equal(await forceReleaseFileLock(lockPath), true);
+    assert.equal(await forceReleaseFileLock(lockPath), false);
   });
 
   it("makes release idempotent for its own handle", async () => {

@@ -17,7 +17,7 @@ export function registerPipelineTool(pi: ExtensionAPI, extensionPath: string): v
       "High and critical slices require interactive risk approval. Only the coordinator can integrate worker receipts.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["status", "create", "run", "reconcile", "approve_risk", "retry_slice", "pause", "resume", "takeover", "cancel"] as const),
+      action: StringEnum(["status", "create", "run", "reconcile", "approve_risk", "retry_slice", "pause", "resume", "takeover", "force_takeover", "cancel"] as const),
       pipelineId: Type.Optional(Type.String()),
       sliceId: Type.Optional(Type.String()),
       reason: Type.Optional(Type.String()),
@@ -63,11 +63,12 @@ export function registerPipelineTool(pi: ExtensionAPI, extensionPath: string): v
         const pipeline = await service.retrySlice(id, params.sliceId, piSessionId, params.reason ?? "");
         return { content: [{ type: "text", text: `Slice ${params.sliceId} returned to pending with preserved prior source.` }], details: { retried: true, pipeline } };
       }
-      if (params.action === "takeover") {
+      if (params.action === "takeover" || params.action === "force_takeover") {
         if (!ctx.hasUI) throw new SafetyKernelError("Coordinator takeover fails closed without interactive UI");
-        const confirmed = await ctx.ui.confirm("Take over expired pipeline coordinator?", params.reason ?? "No reason provided");
+        const force = params.action === "force_takeover";
+        const confirmed = await ctx.ui.confirm(force ? "Force-take over pipeline coordinator?" : "Take over expired pipeline coordinator?", force ? "Only continue after confirming the current coordinator is gone. Worker source will be preserved." : params.reason ?? "No reason provided");
         if (!confirmed) return { content: [{ type: "text", text: "Coordinator takeover cancelled." }], details: { takenOver: false } };
-        const pipeline = await service.takeover(id, piSessionId, params.reason ?? "");
+        const pipeline = force ? await service.forceTakeover(id, piSessionId, params.reason ?? "") : await service.takeover(id, piSessionId, params.reason ?? "");
         return { content: [{ type: "text", text: `Coordinator lease for ${id} transferred to this Pi session.` }], details: { takenOver: true, pipeline } };
       }
       if (params.action === "cancel") {

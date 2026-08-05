@@ -1,10 +1,13 @@
 import { execFile } from "node:child_process";
 import { access } from "node:fs/promises";
+import { join } from "node:path";
 import { promisify } from "node:util";
 import { PipelineStore } from "../pipeline/store.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import type { WriterSession } from "../sessions/types.ts";
+import { SimulatorLeaseStore } from "../simulator/leases.ts";
+import { forceReleaseFileLock, inspectFileLock } from "../state/file-lock.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -57,6 +60,44 @@ export async function diagnoseSessions(repository: RepositoryDescriptor): Promis
   return diagnostics;
 }
 
+export async function diagnoseSimulatorLeases(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {
+  const [leases, sessions] = await Promise.all([new SimulatorLeaseStore(repository).load(), new SessionRegistry(repository).load()]);
+  const now = Date.now();
+  return Object.values(leases.leases).map((lease) => {
+    const owner = sessions.sessions[lease.sessionId];
+    const expired = Date.parse(lease.expiresAt) < now;
+    const orphaned = !owner || owner.status === "stale" || owner.status === "parked";
+    return {
+      sessionId: `simulator:${lease.udid}`,
+      severity: expired || orphaned ? "warning" : "info",
+      message: `${lease.name} leased by ${lease.sessionId}${expired ? " (expired)" : ""}`,
+      recommendation: expired ? "Acquire a simulator lease to prune it" : orphaned ? "Use doctor release for the writer session; its simulator lease will be released" : "Continue the owning writer session",
+    };
+  });
+}
+
+export type DoctorLockTarget = "runtime" | "sessions" | "pipeline" | "simulators" | "integration";
+
+function lockPath(repository: RepositoryDescriptor, target: DoctorLockTarget): string {
+  const root = join(repository.primaryRoot, ".idevflow", "state");
+  return target === "sessions" ? join(root, "sessions", "registry.lock")
+    : target === "simulators" ? join(root, "simulators", "leases.lock")
+      : target === "integration" ? join(root, "locks", "integration.lock")
+        : join(root, "locks", `${target}.lock`);
+}
+
+export async function diagnoseLocks(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {
+  const diagnostics = await Promise.all((["runtime", "sessions", "pipeline", "simulators", "integration"] as const).map(async (target): Promise<SessionDiagnostic | undefined> => {
+    const lock = await inspectFileLock(lockPath(repository, target));
+    return lock ? { sessionId: `lock:${target}`, severity: "warning", message: `Lock held by pid ${lock.owner?.pid ?? "unknown"} on ${lock.owner?.hostname ?? "unknown"}`, recommendation: "If the owner is gone and normal recovery times out, use doctor release_lock with explicit confirmation" } : undefined;
+  }));
+  return diagnostics.filter((item): item is SessionDiagnostic => item !== undefined);
+}
+
+export async function releaseLock(repository: RepositoryDescriptor, target: DoctorLockTarget): Promise<boolean> {
+  return forceReleaseFileLock(lockPath(repository, target));
+}
+
 export async function diagnosePipelines(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {
   const pipelines = await new PipelineStore(repository).list();
   const now = Date.now();
@@ -75,15 +116,29 @@ export async function diagnosePipelines(repository: RepositoryDescriptor): Promi
 
 export async function repairExpiredSessions(repository: RepositoryDescriptor, actor: string): Promise<WriterSession[]> {
   const registry = new SessionRegistry(repository);
+  await registry.repairPartialTail();
   const state = await registry.load();
   const repaired: WriterSession[] = [];
   const now = Date.now();
   for (const session of Object.values(state.sessions)) {
     if (session.status !== "active" || Date.parse(session.leaseExpiresAt) >= now) continue;
+    await new SimulatorLeaseStore(repository).release(session.id);
     const next = await registry.changeStatus(session.id, "stale", "lease expired; source worktree preserved", actor);
     repaired.push(next.sessions[session.id]!);
   }
   return repaired;
+}
+
+export async function releaseActiveSession(repository: RepositoryDescriptor, sessionId: string, reason: string, actor: string): Promise<WriterSession> {
+  if (!sessionId.trim()) throw new Error("Session ID is required");
+  if (!reason.trim()) throw new Error("Release reason is required");
+  const registry = new SessionRegistry(repository);
+  const session = (await registry.load()).sessions[sessionId];
+  if (!session) throw new Error(`Unknown writer session ${sessionId}`);
+  if (session.status !== "active") throw new Error(`Session ${sessionId} is ${session.status}, not active`);
+  await new SimulatorLeaseStore(repository).release(sessionId);
+  const next = await registry.changeStatus(sessionId, "stale", `manually released: ${reason.trim()}; source worktree preserved`, actor);
+  return next.sessions[sessionId]!;
 }
 
 export interface WorktreeInfo {

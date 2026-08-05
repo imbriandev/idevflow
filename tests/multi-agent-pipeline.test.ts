@@ -108,6 +108,7 @@ describe("multi-agent pipeline", () => {
     assert.equal(await readFile(join(completed.candidate!.candidateWorktree, "Sources/B.swift"), "utf8"), "// slice-b\n");
     await execFileAsync("git", ["checkout", config.integrationBranch], { cwd: fixture.root });
     await execFileAsync("git", ["commit", "--allow-empty", "-m", "external integration drift"], { cwd: fixture.root });
-    assert.equal((await service.status("parallel-pipeline")).pipelines[0]?.status, "stale_candidate");
+    assert.equal((await service.status("parallel-pipeline")).pipelines[0]?.status, "candidate_ready");
+    assert.equal((await service.reconcile("parallel-pipeline", "coordinator")).status, "stale_candidate");
   });
 });

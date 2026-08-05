@@ -53,6 +53,28 @@ describe("writer session registry", () => {
     assert.equal(Object.keys((await registry.load()).sessions).length, 2);
   });
 
+  it("does not let a released session revive through stale in-memory state", async () => {
+    const fixture = await createGitFixture();
+    cleanups.push(fixture.cleanup);
+    const registry = new SessionRegistry(await discoverRepository(fixture.root));
+    const active = session("released", "Sources/App");
+    await registry.start(active, "test");
+    await registry.changeStatus(active.id, "stale", "manual recovery", "test");
+    await assert.rejects(registry.heartbeat(active.id, new Date().toISOString(), new Date(Date.now() + 60_000).toISOString(), "test"), /requires active/);
+    await assert.rejects(registry.claim(active.id, ["Sources/Other"], "test"), /requires active/);
+    await assert.rejects(registry.recordPostflight(active.id, { evidence: "old session", changedFiles: ["Sources/App"], diffHash: "x", verificationReceiptId: "x", verificationFingerprint: "x", verificationProfile: "quick", recordedAt: new Date().toISOString() }, "test"), /requires active/);
+  });
+
+  it("repairs a partial tail only through explicit recovery", async () => {
+    const fixture = await createGitFixture();
+    cleanups.push(fixture.cleanup);
+    const registry = new SessionRegistry(await discoverRepository(fixture.root));
+    await registry.start(session("one", "Sources/One"), "test");
+    await appendFile(registry.journalPath, "{\"partial\":", "utf8");
+    assert.equal(await registry.repairPartialTail(), true);
+    assert.equal(Object.keys((await registry.load()).sessions).length, 1);
+  });
+
   it("refuses to resume a parked session after another session claims its path", async () => {
     const fixture = await createGitFixture();
     cleanups.push(fixture.cleanup);

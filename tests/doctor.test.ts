@@ -5,9 +5,10 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { DEFAULT_CONFIG } from "../extensions/idevflow/config/config.ts";
-import { diagnoseSessions, repairExpiredSessions } from "../extensions/idevflow/recovery/doctor.ts";
+import { diagnoseSessions, releaseActiveSession, repairExpiredSessions } from "../extensions/idevflow/recovery/doctor.ts";
 import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
 import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
+import { SimulatorLeaseStore } from "../extensions/idevflow/simulator/leases.ts";
 import { heartbeatSession } from "../extensions/idevflow/sessions/service.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { createGitFixture } from "./helpers.ts";
@@ -30,6 +31,36 @@ describe("doctor", () => {
     });
     const diagnostics = await diagnoseSessions(await discoverRepository(fixture.root));
     assert.equal(diagnostics.some((item) => item.sessionId.startsWith("orphan:") && item.severity === "warning"), true);
+  });
+
+  it("manually releases an active session without deleting its worktree", async () => {
+    const fixture = await createGitFixture();
+    cleanups.push(fixture.cleanup);
+    const repository = await discoverRepository(fixture.root);
+    const registry = new SessionRegistry(repository);
+    const active: WriterSession = {
+      id: "active",
+      piSessionId: "pi-gone",
+      stage: "build",
+      task: "preserve me",
+      risk: "medium",
+      status: "active",
+      branch: "idev/preserve",
+      worktreePath: fixture.root,
+      baseCommit: "a".repeat(40),
+      claims: ["README.md"],
+      createdAt: new Date().toISOString(),
+      heartbeatAt: new Date().toISOString(),
+      leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    };
+    await registry.start(active, "test");
+    const leases = new SimulatorLeaseStore(repository);
+    await leases.acquire([{ udid: "device", name: "iPhone", runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.iOS-26-0", runtimeVersion: "26.0", state: "Shutdown" }], active.id, 60);
+    const released = await releaseActiveSession(repository, active.id, "owning Pi session is gone", "test");
+    assert.equal(released.status, "stale");
+    assert.equal(Object.keys((await leases.load()).leases).length, 0);
+    assert.equal(released.worktreePath, fixture.root);
+    assert.match(released.statusReason!, /manually released/);
   });
 
   it("marks expired sessions stale without deleting worktree metadata", async () => {

@@ -18,7 +18,7 @@ Commands are optional entry points. Typed tools remain authoritative. For an exi
 ## Runtime and recovery
 
 - `idev_runtime` — initialize, inspect, migrate, and manage project runtime state.
-- `idev_doctor` — audit an existing project, show diagnostics, create a metadata-only report, and perform conservative repair.
+- `idev_doctor` — audit/report runtime state; repair partial session tails and expired leases; explicitly release an orphan writer or a confirmed stuck lock without deleting source.
 
 ## Context and lifecycle
 

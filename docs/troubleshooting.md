@@ -43,6 +43,8 @@ idev_doctor status
 idev_doctor repair
 ```
 
+If a Pi session is gone but its lease is still valid, use `idev_doctor release` with its session ID and a reason. This frees claims and its simulator lease while preserving the worktree and branch. `idev_doctor release_lock` is an explicit last resort after confirming the lock owner is gone.
+
 Repair only marks expired sessions stale. It does not delete source. Inspect the preserved sibling worktree and branch before retrying.
 
 ## Verification cannot find a destination

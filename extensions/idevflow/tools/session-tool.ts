@@ -5,6 +5,7 @@ import { loadConfig } from "../config/config.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
+import { releaseSimulatorLease } from "../simulator/service.ts";
 import { finishSession, heartbeatSession, receiptFingerprint, runPostflight } from "../sessions/service.ts";
 
 export function registerSessionTool(pi: ExtensionAPI): void {
@@ -38,6 +39,8 @@ export function registerSessionTool(pi: ExtensionAPI): void {
       } else if (params.action === "heartbeat") {
         session = await heartbeatSession(repository, session, await loadConfig(repository.primaryRoot));
       } else if (params.action === "park") {
+        if (session.status !== "active" && session.status !== "postflight_passed") throw new SafetyKernelError(`Only active or postflight sessions can park; found ${session.status}`);
+        await releaseSimulatorLease(repository, await loadConfig(repository.primaryRoot), session.id);
         const state = await registry.changeStatus(session.id, "parked", params.message?.trim() || "parked by owning Pi session", `pi-session:${session.piSessionId}`);
         session = state.sessions[session.id]!;
       } else if (params.action === "postflight") {

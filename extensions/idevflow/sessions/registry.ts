@@ -146,7 +146,10 @@ export class SessionRegistry {
       "paths_claimed",
       { kind: "paths_claimed", sessionId, claims },
       actor,
-      (state) => assertNoClaimConflicts(claims, Object.values(state.sessions), sessionId),
+      (state) => {
+        this.requireStatus(state, sessionId, "active", "Claim");
+        assertNoClaimConflicts(claims, Object.values(state.sessions), sessionId);
+      },
     );
   }
 
@@ -155,24 +158,54 @@ export class SessionRegistry {
       "session_status_changed",
       { kind: "session_status_changed", sessionId: session.id, status: "active", reason },
       actor,
-      (state) => assertNoClaimConflicts(session.claims, Object.values(state.sessions), session.id),
+      (state) => {
+        const current = state.sessions[session.id]!;
+        if (current.status !== "parked" && current.status !== "stale") throw new SafetyKernelError(`Only parked or stale sessions can resume; found ${current.status}`);
+        assertNoClaimConflicts(current.claims, Object.values(state.sessions), session.id);
+      },
     );
   }
 
   heartbeat(sessionId: string, heartbeatAt: string, leaseExpiresAt: string, actor: string): Promise<SessionRegistryState> {
-    return this.append("heartbeat", { kind: "heartbeat", sessionId, heartbeatAt, leaseExpiresAt }, actor);
+    return this.append("heartbeat", { kind: "heartbeat", sessionId, heartbeatAt, leaseExpiresAt }, actor, (state) => this.requireStatus(state, sessionId, "active", "Heartbeat"));
   }
 
   recordPostflight(sessionId: string, receipt: PostflightReceipt, actor: string): Promise<SessionRegistryState> {
-    return this.append("postflight_passed", { kind: "postflight_passed", sessionId, receipt }, actor);
+    return this.append("postflight_passed", { kind: "postflight_passed", sessionId, receipt }, actor, (state) => this.requireStatus(state, sessionId, "active", "Postflight"));
   }
 
   markReady(sessionId: string, commit: string, actor: string): Promise<SessionRegistryState> {
-    return this.append("session_ready", { kind: "session_ready", sessionId, commit }, actor);
+    return this.append("session_ready", { kind: "session_ready", sessionId, commit }, actor, (state) => this.requireStatus(state, sessionId, "postflight_passed", "Finish"));
   }
 
   changeStatus(sessionId: string, status: WriterStatus, reason: string, actor: string): Promise<SessionRegistryState> {
-    return this.append("session_status_changed", { kind: "session_status_changed", sessionId, status, reason }, actor);
+    return this.append("session_status_changed", { kind: "session_status_changed", sessionId, status, reason }, actor, (state) => {
+      const current = state.sessions[sessionId]!;
+      const allowed = (current.status === "active" && (status === "parked" || status === "stale"))
+        || (current.status === "postflight_passed" && (status === "parked" || status === "stale"))
+        || (current.status === "ready_for_integration" && status === "integrated");
+      if (!allowed) throw new SafetyKernelError(`Cannot change session ${sessionId} from ${current.status} to ${status}`);
+    });
+  }
+
+  async repairPartialTail(): Promise<boolean> {
+    await mkdir(this.directory, { recursive: true, mode: 0o700 });
+    return withFileLock(this.lockPath, async () => {
+      let content: string;
+      try { content = await readFile(this.journalPath, "utf8"); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return false; throw error; }
+      const parsed = parseEvents(content);
+      if (!parsed.partial) return false;
+      await truncate(this.journalPath, parsed.validBytes);
+      const state = reduce(parsed.events);
+      await writeFileAtomically(this.snapshotPath, `${JSON.stringify(state, null, 2)}\n`);
+      return true;
+    });
+  }
+
+  private requireStatus(state: SessionRegistryState, sessionId: string, expected: WriterStatus, operation: string): void {
+    const current = state.sessions[sessionId]!;
+    if (current.status !== expected) throw new SafetyKernelError(`${operation} requires ${expected}, found ${current.status}`);
   }
 
   private async append<K extends SessionEventKind>(

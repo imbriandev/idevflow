@@ -62,14 +62,6 @@ export class PipelineService {
   }
 
   async status(id?: string): Promise<{ pipelines: PipelineState[] }> {
-    const pipelines = id ? [await this.require(id)] : await this.store.list();
-    const config = await loadConfig(this.repository.primaryRoot);
-    const current = await integrationHead(this.repository, config);
-    for (const pipeline of pipelines) {
-      if (pipeline.candidate && pipeline.candidate.commit !== current && pipeline.status === "candidate_ready") {
-        await this.store.mutate(pipeline.id, "candidate_stale", "pipeline:status", (state) => ({ ...state, status: "stale_candidate", statusReason: "integration moved after combined candidate verification" }));
-      }
-    }
     return { pipelines: id ? [await this.require(id)] : await this.store.list() };
   }
 
@@ -107,12 +99,20 @@ export class PipelineService {
   }
 
   async takeover(id: string, piSessionId: string, reason: string): Promise<PipelineState> {
+    return this.takeoverCoordinator(id, piSessionId, reason, false);
+  }
+
+  async forceTakeover(id: string, piSessionId: string, reason: string): Promise<PipelineState> {
+    return this.takeoverCoordinator(id, piSessionId, reason, true);
+  }
+
+  private async takeoverCoordinator(id: string, piSessionId: string, reason: string, force: boolean): Promise<PipelineState> {
     if (!reason.trim()) throw new SafetyKernelError("Coordinator takeover reason is required");
     const config = await loadConfig(this.repository.primaryRoot);
-    return this.store.mutate(id, "coordinator_taken_over", actor(piSessionId), (pipeline) => {
-      if (leaseValid(pipeline) && pipeline.coordinator.ownerPiSessionId !== piSessionId) throw new SafetyKernelError("Coordinator lease is still owned by another Pi session");
+    return this.store.mutate(id, force ? "coordinator_force_taken_over" : "coordinator_taken_over", actor(piSessionId), (pipeline) => {
+      if (!force && leaseValid(pipeline) && pipeline.coordinator.ownerPiSessionId !== piSessionId) throw new SafetyKernelError("Coordinator lease is still owned by another Pi session");
       const now = Date.now();
-      return { ...pipeline, coordinator: { ownerPiSessionId: piSessionId, acquiredAt: new Date(now).toISOString(), heartbeatAt: new Date(now).toISOString(), expiresAt: new Date(now + config.pipeline.coordinatorLeaseSeconds * 1000).toISOString() }, statusReason: reason.trim() };
+      return { ...pipeline, coordinator: { ownerPiSessionId: piSessionId, acquiredAt: new Date(now).toISOString(), heartbeatAt: new Date(now).toISOString(), expiresAt: new Date(now + config.pipeline.coordinatorLeaseSeconds * 1000).toISOString() }, statusReason: `${force ? "force takeover" : "takeover"}: ${reason.trim()}` };
     });
   }
 
@@ -123,14 +123,16 @@ export class PipelineService {
     return this.store.mutate(id, "pipeline_cancelled", actor(piSessionId), (state) => ({ ...state, status: "cancelled", statusReason: reason.trim(), slices: Object.fromEntries(Object.entries(state.slices).map(([key, slice]) => [key, { ...slice, runs: slice.runs.map((run) => run.state === "running" ? { ...run, state: "cancelled" as const, finishedAt: new Date().toISOString() } : run) }])) }));
   }
 
-  async reconcile(id: string, piSessionId?: string): Promise<PipelineState> {
-    let pipeline = await this.require(id);
+  async reconcile(id: string, piSessionId: string): Promise<PipelineState> {
+    let pipeline = await this.assertCoordinator(id, piSessionId);
+    const config = await loadConfig(this.repository.primaryRoot);
     const registry = new SessionRegistry(this.repository);
-    const sessions = (await registry.load()).sessions;
+    const [sessions, currentHead] = [(await registry.load()).sessions, await integrationHead(this.repository, config)];
     const now = Date.now();
-    pipeline = await this.store.mutate(id, "pipeline_reconciled", piSessionId ? actor(piSessionId) : "pipeline:reconcile", (state) => {
+    pipeline = await this.store.mutate(id, "pipeline_reconciled", actor(piSessionId), (state) => {
       const slices: Record<string, PipelineSliceState> = {};
       let blocked = state.status === "blocked";
+      const candidateStale = state.status === "candidate_ready" && state.candidate?.commit !== currentHead;
       for (const [sliceId, slice] of Object.entries(state.slices)) {
         let next = slice;
         const active = [...slice.runs].reverse().find((run) => run.state === "running" || run.state === "reserved");
@@ -142,7 +144,7 @@ export class PipelineService {
         }
         slices[sliceId] = next;
       }
-      return { ...state, status: blocked && state.status !== "cancelled" ? "blocked" : state.status, slices };
+      return { ...state, status: blocked && state.status !== "cancelled" ? "blocked" : candidateStale ? "stale_candidate" : state.status, statusReason: blocked ? state.statusReason : candidateStale ? "integration moved after combined candidate verification" : state.statusReason, slices };
     });
     return pipeline;
   }

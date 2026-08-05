@@ -49,8 +49,12 @@ describe("pipeline worker authority", () => {
       return { ...pipeline, slices: { slice: { ...slice, runs: slice.runs.map((run) => ({ ...run, pid: 999_999, leaseExpiresAt: new Date(0).toISOString() })) } } };
     });
     const service = new PipelineService(repository, "/fake.ts");
-    const reconciled = await service.reconcile("lost-pipeline", "owner");
+    await assert.rejects(service.reconcile("lost-pipeline", "other-session"), /coordinator lease/);
+    const takenOver = await service.forceTakeover("lost-pipeline", "other-session", "owner Pi session is gone");
+    assert.equal(takenOver.coordinator.ownerPiSessionId, "other-session");
+    const reconciled = await service.reconcile("lost-pipeline", "other-session");
     assert.equal(reconciled.slices.slice?.status, "worker_lost");
+    await service.forceTakeover("lost-pipeline", "owner", "return ownership for retry");
     const retried = await service.retrySlice("lost-pipeline", "slice", "owner", "worker crashed during reload");
     assert.equal(retried.slices.slice?.status, "pending");
   });

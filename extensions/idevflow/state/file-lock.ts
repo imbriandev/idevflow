@@ -11,7 +11,7 @@ export interface FileLockOptions {
   readonly signal?: AbortSignal;
 }
 
-interface LockOwner {
+export interface LockOwner {
   readonly token: string;
   readonly pid: number;
   readonly hostname: string;
@@ -56,6 +56,30 @@ async function canReap(lockPath: string, staleMs: number): Promise<boolean> {
 
   const owner = await readOwner(lockPath);
   if (owner?.hostname === hostname() && processIsAlive(owner.pid)) return false;
+  return true;
+}
+
+export async function inspectFileLock(lockPath: string): Promise<{ readonly owner?: LockOwner } | undefined> {
+  try {
+    await stat(lockPath);
+    const owner = await readOwner(lockPath);
+    return owner ? { owner } : {};
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+/** Explicit operator recovery only; callers must confirm no live owner needs this lock. */
+export async function forceReleaseFileLock(lockPath: string): Promise<boolean> {
+  const quarantine = `${lockPath}.manual-${randomUUID()}`;
+  try {
+    await rename(lockPath, quarantine);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+  await rm(quarantine, { recursive: true, force: true });
   return true;
 }
 
