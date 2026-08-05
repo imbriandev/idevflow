@@ -13,19 +13,31 @@ The project must be a Git repository. Read the package source before trusting or
 
 ## 2. Install the project-local package
 
-Install the latest `main` revision:
+For normal use, install the published beta from npm:
 
 ```bash
-pi install -l git:github.com/imbriandev/idevflow@main
+pi install -l npm:idevflow@beta
 ```
 
-The `-l` option writes the package entry to `.pi/settings.json` in the app repository. Repeat the command to update the project-local installation.
+The `-l` option writes the package entry to `.pi/settings.json` in the app repository. An npm project-local package is stored under:
 
-For reproducible work, pin a release tag instead:
+```text
+.pi/npm/idevflow/
+```
+
+For development or source-pinned testing, install from Git instead:
 
 ```bash
 pi install -l git:github.com/imbriandev/idevflow@v0.3.0-beta.2
 ```
+
+Git project-local packages are stored under:
+
+```text
+.pi/git/github.com/imbriandev/idevflow/
+```
+
+Use the npm installation for end-user dogfooding and the Git installation only when you intentionally need a repository revision.
 
 ## 3. Trust and load the extension
 
@@ -74,7 +86,13 @@ Confirm that iDevFlow appears as a project-local package. After runtime initiali
 
 ## Update
 
-After a new revision is pushed to `main`, update the project-local package:
+To update the npm beta installation:
+
+```bash
+pi install -l npm:idevflow@beta
+```
+
+For a Git development installation, update the configured ref explicitly:
 
 ```bash
 pi install -l git:github.com/imbriandev/idevflow@main
