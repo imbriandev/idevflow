@@ -4,7 +4,7 @@
 
 The package imports Pi core libraries as peer dependencies and does not bundle them for distribution. Development currently pins Pi `0.82.1` for type checking and extension-load tests.
 
-As of 2026-08-05, `npm audit` reports `brace-expansion@5.0.7` (`GHSA-mh99-v99m-4gvg`, `GHSA-rgw5-rvv9-x895`) and `undici@8.8.0` (`GHSA-8xcm-r25x-g524`, `GHSA-4cwx-7wf7-3272`, `GHSA-m8rv-5g2x-5cg5`, `GHSA-jr45-8vmc-qm54`, `GHSA-v3r7-h72x-cjcm`) nested under the development copy of `@earendil-works/pi-coding-agent@0.82.1`. iDevFlow neither imports them directly nor bundles peer dependencies; a root override cannot replace Pi's nested copies. Track and remove this note when the pinned Pi release resolves them.
+As of 2026-08-05, `npm audit` reports 3 advisories (1 moderate, 2 high): `brace-expansion@5.0.7` (`GHSA-mh99-v99m-4gvg`, `GHSA-rgw5-rvv9-x895`) and `undici@8.5.0` (`GHSA-8xcm-r25x-g524`, `GHSA-4cwx-7wf7-3272`, `GHSA-m8rv-5g2x-5cg5`, `GHSA-jr45-8vmc-qm54`, `GHSA-v3r7-h72x-cjcm`) under the development-only `@earendil-works/pi-coding-agent@0.82.1`. iDevFlow neither imports them directly nor bundles peer dependencies; a root override cannot replace Pi's nested copies. Track and remove this note when the pinned Pi release resolves them.
 
 ## Update check
 

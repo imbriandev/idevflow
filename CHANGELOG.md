@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.8 — 2026-08-05
+
+- Deepen existing-project audit and persist an exact-HEAD adoption snapshot.
+- Route existing projects through one founder continuation decision; diagnose dirty baselines before repair.
+- Record durable external validation blockers and require their evidence before candidate creation.
+- Distinguish completed sessions awaiting founder integration from active writers.
+- Create candidate-bound signed-archive receipts and document Apple release authority boundaries.
+
 ## 0.3.0-beta.7 — 2026-08-05
 
 - Keep define, plan, and learn verification documentation-only even when their risk is high or critical.
