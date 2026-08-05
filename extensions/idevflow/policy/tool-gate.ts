@@ -30,7 +30,7 @@ export function registerToolGate(pi: ExtensionAPI, readState: () => SessionState
     if (!stage) return;
     const contract = STAGE_CONTRACTS[stage];
 
-    if (workerMode && ["idev_runtime", "idev_lifecycle", "idev_release", "idev_apple", "idev_pipeline", "idev_doctor", "idev_simulator", "idev_proof"].includes(event.toolName)) {
+    if (workerMode && ["idev_runtime", "idev_lifecycle", "idev_release", "idev_apple", "idev_pipeline", "idev_doctor", "idev_blocker", "idev_simulator", "idev_proof"].includes(event.toolName)) {
       return { block: true, reason: `Pipeline workers have no authority to call ${event.toolName}.` };
     }
 

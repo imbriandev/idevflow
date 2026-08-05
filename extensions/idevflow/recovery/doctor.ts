@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { BlockerStore } from "../blockers/store.ts";
 import { PipelineStore } from "../pipeline/store.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
@@ -96,6 +97,16 @@ export async function diagnoseLocks(repository: RepositoryDescriptor): Promise<S
 
 export async function releaseLock(repository: RepositoryDescriptor, target: DoctorLockTarget): Promise<boolean> {
   return forceReleaseFileLock(lockPath(repository, target));
+}
+
+export async function diagnoseBlockers(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {
+  const blockers = await new BlockerStore(repository).list();
+  return blockers.filter((blocker) => blocker.status === "open").map((blocker) => ({
+    sessionId: `blocker:${blocker.id}`,
+    severity: "warning" as const,
+    message: `[${blocker.kind}] ${blocker.title}`,
+    recommendation: blocker.nextAction,
+  }));
 }
 
 export async function diagnosePipelines(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {

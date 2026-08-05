@@ -1,7 +1,7 @@
 import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { diagnoseLocks, diagnosePipelines, diagnoseSessions, diagnoseSimulatorLeases, releaseActiveSession, releaseLock, repairExpiredSessions, type DoctorLockTarget } from "../recovery/doctor.ts";
+import { diagnoseBlockers, diagnoseLocks, diagnosePipelines, diagnoseSessions, diagnoseSimulatorLeases, releaseActiveSession, releaseLock, repairExpiredSessions, type DoctorLockTarget } from "../recovery/doctor.ts";
 import { createDiagnosticReport } from "../recovery/report.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { inspectExistingProject } from "../recovery/existing-project.ts";
@@ -53,7 +53,7 @@ export function registerDoctorTool(pi: ExtensionAPI): void {
         const released = await releaseLock(repository, params.lockTarget as DoctorLockTarget);
         return { content: [{ type: "text", text: released ? `Doctor released the ${params.lockTarget} lock.` : `No ${params.lockTarget} lock was present.` }], details: { released } };
       }
-      const diagnostics = [...await diagnoseSessions(repository), ...await diagnoseSimulatorLeases(repository), ...await diagnosePipelines(repository), ...await diagnoseLocks(repository)];
+      const diagnostics = [...await diagnoseSessions(repository), ...await diagnoseSimulatorLeases(repository), ...await diagnosePipelines(repository), ...await diagnoseBlockers(repository), ...await diagnoseLocks(repository)];
       return {
         content: [{ type: "text", text: diagnostics.length ? diagnostics.map((item) => `${item.severity}: ${item.sessionId} — ${item.message}. ${item.recommendation}`).join("\n") : "No iDevFlow writer sessions." }],
         details: { diagnostics },

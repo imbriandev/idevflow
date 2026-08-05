@@ -11,6 +11,7 @@ import { SessionRegistry } from "./sessions/registry.ts";
 import { heartbeatSession } from "./sessions/service.ts";
 import { emptySessionState, restoreSessionState, type SessionState } from "./state/session-state.ts";
 import { registerContextTool } from "./tools/context-tool.ts";
+import { registerBlockerTool } from "./tools/blocker-tool.ts";
 import { registerAppleTool } from "./tools/apple-tool.ts";
 import { registerDoctorTool } from "./tools/doctor-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
@@ -44,6 +45,7 @@ export default function piIosExtension(pi: ExtensionAPI): void {
 
   registerRuntimeTool(pi);
   registerContextTool(pi);
+  registerBlockerTool(pi);
   registerAppleTool(pi);
   registerPipelineTool(pi, fileURLToPath(import.meta.url));
   registerPipelineWorkerTool(pi);

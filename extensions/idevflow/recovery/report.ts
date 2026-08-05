@@ -4,7 +4,7 @@ import { loadCandidate } from "../release/service.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
-import { diagnoseLocks, diagnosePipelines, diagnoseSessions, diagnoseSimulatorLeases, type SessionDiagnostic } from "./doctor.ts";
+import { diagnoseBlockers, diagnoseLocks, diagnosePipelines, diagnoseSessions, diagnoseSimulatorLeases, type SessionDiagnostic } from "./doctor.ts";
 
 export const DIAGNOSTIC_REPORT_SCHEMA_VERSION = 1 as const;
 
@@ -23,7 +23,7 @@ export interface DiagnosticReport {
 
 /** Metadata-only support report. It intentionally excludes task text, source, packets, logs, tokens, and receipts. */
 export async function createDiagnosticReport(repository: RepositoryDescriptor): Promise<DiagnosticReport> {
-  const [runtime, migration, registry, pipelines, candidate, sessionDiagnostics, simulatorDiagnostics, pipelineDiagnostics, lockDiagnostics] = await Promise.all([
+  const [runtime, migration, registry, pipelines, candidate, sessionDiagnostics, simulatorDiagnostics, pipelineDiagnostics, blockerDiagnostics, lockDiagnostics] = await Promise.all([
     new RuntimeStore(repository).status(),
     discoverConfigMigration(repository.primaryRoot),
     new SessionRegistry(repository).load(),
@@ -32,10 +32,11 @@ export async function createDiagnosticReport(repository: RepositoryDescriptor): 
     diagnoseSessions(repository),
     diagnoseSimulatorLeases(repository),
     diagnosePipelines(repository),
+    diagnoseBlockers(repository),
     diagnoseLocks(repository),
   ]);
   const sessions = Object.values(registry.sessions);
-  const diagnostics = [...sessionDiagnostics, ...simulatorDiagnostics, ...pipelineDiagnostics, ...lockDiagnostics];
+  const diagnostics = [...sessionDiagnostics, ...simulatorDiagnostics, ...pipelineDiagnostics, ...blockerDiagnostics, ...lockDiagnostics];
   const blocked = pipelines.filter((pipeline) => pipeline.status === "blocked" || pipeline.status === "cancelled").length;
   const staleCandidate = pipelines.filter((pipeline) => pipeline.status === "stale_candidate").length;
   return {
