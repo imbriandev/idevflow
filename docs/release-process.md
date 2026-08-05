@@ -12,7 +12,23 @@ A package release publishes iDevFlow tooling. It is distinct from an iOS app rel
 4. Run `npx pi -e . --list-models`, `npm pack --dry-run --json`, and `git diff --check`.
 5. Review `npm audit`; document any unavoidable transitive advisory in `docs/security.md`.
 6. Verify config migrations from every previously supported schema and verify `idev_doctor report` contains no source/task/credential data.
-7. Update the package version and changelog/release notes, commit, tag, and publish through the approved registry process.
+7. Update the package version and changelog/release notes, then commit and push the release preparation change.
+8. Wait for required CI checks to pass. Inspect `npm pack --dry-run --json` and confirm the tarball contains only intended package files.
+9. Create the matching annotated Git tag and publish the exact version:
+
+   ```bash
+   npm publish --tag beta --access public
+   ```
+
+   Complete npm's required interactive 2FA flow; never disable 2FA to simplify a release.
+10. Verify the registry result and install smoke test:
+
+    ```bash
+    npm view idevflow@beta version dist-tags --json
+    pi -e npm:idevflow@beta --list-models
+    ```
+
+11. Create or publish the matching prerelease on GitHub only after the registry verification passes.
 
 ## App handoff reminder
 

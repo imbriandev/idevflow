@@ -102,8 +102,16 @@ Then run `/reload` or restart Pi. Pin a tag or commit for CI, a beta release, or
 
 ## Remove from one project
 
+For an npm installation:
+
+```bash
+pi remove -l npm:idevflow
+```
+
+For a Git installation:
+
 ```bash
 pi remove -l git:github.com/imbriandev/idevflow
 ```
 
-This removes only the project-local package entry. It does not remove app source or `.idevflow/` runtime history.
+These commands remove only the project-local package entry. They do not remove app source or `.idevflow/` runtime history.

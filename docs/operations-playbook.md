@@ -35,7 +35,7 @@ Example:
 
 > I want an app that helps freelance designers capture work time faster. Define the Simple Lovable Complete scope for the first beta.
 
-The output includes the target user, problem, promise, primary flow, empty/loading/failure/accessibility/privacy/trust expectations, non-goals, and a TestFlight learning question. Material claims are explicitly labeled as founder evidence, observed feedback, assumptions, or unknowns; evidence/feedback must retain a founder-provided source. Unresolved high-impact assumptions require an interactive founder acceptance before definition integration. iDevFlow writes schema-version-2 product documents at `docs/idevflow/product-memory.json` and `docs/idevflow/slc.json`.
+The output includes the target user, problem, promise, primary flow, empty/loading/failure/accessibility/privacy/trust expectations, non-goals, and a TestFlight learning question. Material claims are explicitly labeled as founder evidence, observed feedback, assumptions, or unknowns; evidence/feedback must retain a founder-provided source. Unresolved high-impact assumptions require an interactive founder acceptance before definition integration. iDevFlow writes a schema-version-3 product-memory document and a schema-version-2 SLC document at `docs/idevflow/product-memory.json` and `docs/idevflow/slc.json`.
 
 The founder must make an explicit decision before changing the target user, monetization, or product promise.
 
@@ -87,7 +87,7 @@ Review does not edit source. It produces an evidence-linked verdict with blocker
 
 ## 7. Ship — create a verified handoff, not an external release
 
-Ask the coordinator to prepare the beta when the exact candidate has passed review.
+Ask the coordinator to prepare the iOS beta or macOS distribution handoff when the exact candidate has passed review.
 
 iDevFlow requires fresh release verification, critical ship context, privacy/release metadata, screenshot variants, and XCTest quality evidence. Accessibility proof must use `XCUIApplication.performAccessibilityAudit`; performance proof must use a named XCTest metric and a project-owned budget.
 
@@ -95,7 +95,7 @@ When StoreKit or RevenueCat is present, the monetization manifest and restore/en
 
 After all gates pass, iDevFlow creates a candidate. The founder approves an exact candidate using an expiring token; `promote` changes only the local base branch. `handoff` creates a package containing evidence, known issues, and the remaining external steps.
 
-iDevFlow does not push Git, archive or export an IPA, sign in to App Store Connect, upload builds, or distribute to testers.
+iDevFlow does not push Git, archive or export an app, sign, notarize, upload to App Store Connect, upload to a distribution service, or distribute to testers.
 
 ## 8. Learn — decide the next iteration from feedback
 

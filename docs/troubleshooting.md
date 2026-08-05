@@ -11,9 +11,18 @@ npm run check
 
 For a registry installation, reinstall the package and restart Pi:
 
+For a global installation:
+
 ```bash
 pi remove npm:idevflow
 pi install npm:idevflow@beta
+```
+
+For a project-local installation, include `-l`:
+
+```bash
+pi remove -l npm:idevflow
+pi install -l npm:idevflow@beta
 ```
 
 ## Runtime directory conflict
