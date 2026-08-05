@@ -15,7 +15,7 @@ export function coordinatorBrief(snapshot: CoordinatorSnapshot): string {
   const skill = SKILL_BY_ROUTE[snapshot.route];
   const worker = snapshot.workerRecommendation;
   const action = snapshot.route === "existing_audit"
-    ? "Perform a read-only audit of the existing Apple-platform project. Do not write files, advance lifecycle state, or claim tests/review/release evidence. Report findings and ask whether the founder wants to adopt the current product into iDevFlow."
+    ? "Call idev_doctor with action=audit for a read-only audit of the existing Apple-platform project. Do not write files, advance lifecycle state, or claim tests/review/release evidence. Report findings, then ask whether the founder wants to acknowledge adoption with idev_runtime action=adopt_existing."
     : skill
       ? `Read and follow the available ${skill} skill for the founder request.`
       : "Explain the required founder decision or recovery action; do not simulate completion.";

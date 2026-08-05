@@ -6,6 +6,7 @@ import { applyConfigMigration, discoverConfigMigration, initializeConfig, loadCo
 import { inspectBaseline } from "../git/baseline.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
+import { adoptExistingProject, hasExistingAppleProject } from "../recovery/existing-project.ts";
 
 export function registerRuntimeTool(pi: ExtensionAPI): void {
   pi.registerTool({
@@ -18,13 +19,20 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
       "Use idev_runtime initialize only in a trusted Git project and before future write-capable kernel operations.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["status", "initialize", "migrate"] as const),
+      action: StringEnum(["status", "initialize", "migrate", "adopt_existing"] as const),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const repository = await discoverRepository(ctx.cwd);
       const store = new RuntimeStore(repository);
       if (params.action !== "status" && !ctx.isProjectTrusted()) {
         throw new Error(`Refusing to ${params.action} iDevFlow state in an untrusted project`);
+      }
+      if (params.action === "adopt_existing") {
+        if (!ctx.hasUI) throw new Error("Existing-project adoption fails closed without interactive approval");
+        if (!await hasExistingAppleProject(repository.primaryRoot)) throw new Error("No existing Apple-platform project was detected for adoption");
+        const approved = await ctx.ui.confirm("Adopt existing project?", "This acknowledges that existing code is not iDevFlow verification or release evidence. It does not modify source or advance the lifecycle.");
+        if (!approved) return { content: [{ type: "text", text: "Existing-project adoption cancelled." }], details: { adopted: false } };
+        await adoptExistingProject(repository.primaryRoot, `pi-session:${ctx.sessionManager.getSessionId()}`);
       }
       if (params.action === "migrate") {
         if (!ctx.hasUI) throw new Error("Config migration fails closed without interactive approval");
@@ -41,9 +49,11 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
           ? await applyConfigMigration(repository.primaryRoot)
           : migration.config ?? await loadConfig(repository.primaryRoot);
       const baseline = await inspectBaseline(repository, config);
-      const text = state
-        ? `iDevFlow runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}; baseline ${baseline.ready ? "ready" : "blocked"}.`
-        : "iDevFlow runtime is not initialized for this repository.";
+      const text = params.action === "adopt_existing"
+        ? "Existing project adopted for iDevFlow onboarding. Define the current product before planning the next change."
+        : state
+          ? `iDevFlow runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}; baseline ${baseline.ready ? "ready" : "blocked"}.`
+          : "iDevFlow runtime is not initialized for this repository.";
       return {
         content: [{ type: "text", text }],
         details: {

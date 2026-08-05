@@ -10,7 +10,7 @@ import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { loadLatestPlatformMatrix } from "../verification/matrix.ts";
-import { readdir } from "node:fs/promises";
+import { hasExistingAppleProject, isExistingProjectAdopted } from "../recovery/existing-project.ts";
 
 export type CoordinatorRoute =
   | "initialize"
@@ -61,13 +61,6 @@ export function recommendWorkerDelegation(slices: readonly WorkSlice[]): WorkerR
     return { mode: "pipeline_blocked_by_risk", reason: `High-risk approval is required for: ${highRisk.map((slice) => slice.id).join(", ")}.`, eligibleSliceIds: ready.filter((slice) => !HIGH_RISK.has(slice.risk)).map((slice) => slice.id) };
   }
   return { mode: "pipeline_eligible", reason: "Multiple independent low/medium-risk slices are ready; pipeline dispatch may be proposed when the founder asks to build or parallelize.", eligibleSliceIds: ready.map((slice) => slice.id) };
-}
-
-async function hasExistingAppleProject(root: string): Promise<boolean> {
-  const entries = await readdir(root, { withFileTypes: true });
-  return entries.some((entry) => entry.isDirectory()
-    ? entry.name.endsWith(".xcodeproj") || entry.name.endsWith(".xcworkspace") || entry.name === "Sources" || entry.name === "Tests"
-    : entry.name === "Package.swift");
 }
 
 function unavailableRecommendation(reason: string): WorkerRecommendation {
@@ -126,7 +119,7 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
   }
 
   const route = lifecycleRoute(runtime.lifecycle);
-  if (runtime.lifecycle === "idea" && await hasExistingAppleProject(repository.primaryRoot)) {
+  if (runtime.lifecycle === "idea" && await hasExistingAppleProject(repository.primaryRoot) && !await isExistingProjectAdopted(repository.primaryRoot)) {
     return {
       initialized: true,
       lifecycle: runtime.lifecycle,

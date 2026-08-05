@@ -24,6 +24,7 @@ import { registerSessionTool } from "./tools/session-tool.ts";
 import { registerSimulatorTool } from "./tools/simulator-tool.ts";
 import { registerVerificationTool } from "./tools/verification-tool.ts";
 import { formatCoordinatorDashboard, updateCoordinatorStatus, updateStatus } from "./ui/status.ts";
+import { checkForUpdate } from "./ui/update.ts";
 import { heartbeatPipelineWorker } from "./workers/service.ts";
 
 export default function piIosExtension(pi: ExtensionAPI): void {
@@ -77,6 +78,8 @@ export default function piIosExtension(pi: ExtensionAPI): void {
       const repository = await discoverRepository(ctx.cwd);
       const snapshot = await inspectCoordinator(repository, ctx.sessionManager.getSessionId());
       if (snapshot.initialized) updateCoordinatorStatus(ctx, snapshot);
+      const update = await checkForUpdate();
+      if (update.available) ctx.ui.notify(`iDevFlow ${update.available} is available (installed: ${update.current}). Run pi install -l npm:idevflow@beta, then /reload.`, "info");
     } catch {
       // Pi remains available outside a trusted or initialized project.
     }

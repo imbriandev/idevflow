@@ -11,6 +11,7 @@ import { discoverRepository } from "../extensions/idevflow/repository/discovery.
 import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
+import { adoptExistingProject } from "../extensions/idevflow/recovery/existing-project.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -51,7 +52,9 @@ describe("conversational coordinator", () => {
     const snapshot = await inspectCoordinator(repository, "coordinator");
     assert.equal(snapshot.route, "existing_audit");
     assert.match(snapshot.reason, /read-only/);
-    assert.match(coordinatorBrief(snapshot), /Do not write files/);
+    assert.match(coordinatorBrief(snapshot), /idev_doctor with action=audit/);
+    await adoptExistingProject(repository.primaryRoot, "test");
+    assert.equal((await inspectCoordinator(repository, "coordinator")).route, "define");
   });
 
   it("prefers existing writer ownership and never exposes its task", async () => {

@@ -4,15 +4,20 @@ import { Type } from "typebox";
 import { diagnosePipelines, diagnoseSessions, repairExpiredSessions } from "../recovery/doctor.ts";
 import { createDiagnosticReport } from "../recovery/report.ts";
 import { discoverRepository } from "../repository/discovery.ts";
+import { inspectExistingProject } from "../recovery/existing-project.ts";
 
 export function registerDoctorTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "idev_doctor",
     label: "iDevFlow Doctor",
-    description: "Diagnose runtime, workers, pipelines, and candidate state; optionally mark only expired writer sessions stale without deleting source.",
-    parameters: Type.Object({ action: StringEnum(["status", "report", "repair"] as const) }),
+    description: "Diagnose an existing project, runtime, workers, pipelines, and candidate state; optionally mark only expired writer sessions stale without deleting source.",
+    parameters: Type.Object({ action: StringEnum(["audit", "status", "report", "repair"] as const) }),
     async execute(_id, params, _signal, _update, ctx) {
       const repository = await discoverRepository(ctx.cwd);
+      if (params.action === "audit") {
+        const audit = await inspectExistingProject(repository);
+        return { content: [{ type: "text", text: `Existing-project audit: ${audit.signals.join(", ") || "no Apple-project markers"}; Git baseline is ${audit.repository.clean ? "clean" : "dirty"}. No source or lifecycle state changed.` }], details: { audit } };
+      }
       if (params.action === "report") {
         const report = await createDiagnosticReport(repository);
         return { content: [{ type: "text", text: `iDevFlow diagnostic report: ${report.health}; ${report.sessions.total} writer session(s), ${report.pipelines.total} pipeline(s), ${report.diagnostics.length} diagnostic(s).` }], details: { report } };

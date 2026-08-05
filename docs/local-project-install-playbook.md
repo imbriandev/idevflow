@@ -98,7 +98,7 @@ For a Git development installation, update the configured ref explicitly:
 pi install -l git:github.com/imbriandev/idevflow@main
 ```
 
-Then run `/reload` or restart Pi. Pin a tag or commit for CI, a beta release, or any reproducible environment.
+Then run `/reload` or restart Pi. At project startup, iDevFlow checks only its public npm beta tag and notifies you when it differs from the installed version; it sends no project data. Set `IDEVFLOW_DISABLE_UPDATE_CHECK=1` to disable that lookup. Pin a tag or commit for CI, a beta release, or any reproducible environment.
 
 ## Remove from one project
 
