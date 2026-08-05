@@ -95,7 +95,9 @@ When StoreKit or RevenueCat is present, the monetization manifest and restore/en
 
 After all gates pass, iDevFlow creates a candidate. The founder approves an exact candidate using an expiring token; `promote` changes only the local base branch. `handoff` creates a package containing evidence, known issues, and the remaining external steps.
 
-iDevFlow does not push Git, archive or export an app, sign, notarize, upload to App Store Connect, upload to a distribution service, or distribute to testers.
+Use `idev_apple audit` first when signing, profiles, device registration, App Groups, or archive configuration block a beta. It reports Xcode Release signing settings and locally installed signing identities without reading credentials. `idev_apple provision_device` can run Xcode automatic development provisioning for one specified UDID only after an interactive founder confirmation. After a promoted exact candidate, `idev_apple archive` can create a local signed archive after another confirmation.
+
+`idev_apple` never receives App Store Connect credentials and never uploads or distributes. Push, App Store Connect upload, and tester distribution remain separate explicit founder boundaries.
 
 ## 8. Learn — decide the next iteration from feedback
 
@@ -126,7 +128,8 @@ Recovery never deletes unintegrated source, branches, worktrees, packets, or log
 3. High-risk work: decide architecture, privacy, payment, signing, and destructive-data scope.
 4. Review: accept the verdict or route findings to repair.
 5. Ship: approve the exact candidate and distribution target.
-6. External release: deliberately push, upload, and distribute after the handoff.
+6. Apple setup: approve each named device registration or archive action after reviewing `idev_apple audit`.
+7. External release: deliberately push, upload, and distribute after the handoff.
 
 ## Short rules
 

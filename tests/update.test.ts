@@ -7,9 +7,9 @@ describe("update notification", () => {
     let url = "";
     const status = await checkForUpdate(async (input) => {
       url = input;
-      return { ok: true, json: async () => ({ "dist-tags": { beta: "0.3.0-beta.5" } }) };
+      return { ok: true, json: async () => ({ "dist-tags": { beta: "0.3.0-beta.999" } }) };
     });
     assert.equal(url, "https://registry.npmjs.org/idevflow");
-    assert.equal(status.available, "0.3.0-beta.5");
+    assert.equal(status.available, "0.3.0-beta.999");
   });
 });

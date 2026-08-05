@@ -38,6 +38,7 @@ The seven lifecycle commands remain optional manual escape hatches:
 - `idev_context` — select bounded specialist iOS references and record required session-bound context receipts.
 - `idev_lifecycle` — integrate stages, approve frozen plans, and record source-bound reviews.
 - `idev_release` — create, approve, locally promote, and hand off exact TestFlight candidates.
+- `idev_apple` — audit iOS signing, provision one founder-approved device, or create a founder-approved local archive; it never uploads or distributes.
 - `idev_pipeline` — create, schedule, reconcile, observe, and integrate frozen multi-agent work graphs.
 - `idev_pipeline_worker` — capability-bound worker repair and source-bound submission.
 - `idev_preflight` / `idev_session` — authorize writer worktrees, claims, postflight, and completion.
@@ -45,7 +46,7 @@ The seven lifecycle commands remain optional manual escape hatches:
 - `idev_simulator` / `idev_proof` — capture simulator and XCTest-backed quality evidence.
 - `idev_doctor` — diagnose and conservatively repair local runtime state.
 
-Push, App Store Connect upload, and tester distribution remain explicit manual boundaries.
+Push, App Store Connect upload, and tester distribution remain explicit founder boundaries. `idev_apple` can diagnose signing and perform separately confirmed local provisioning/archive actions, but never receives App Store Connect credentials.
 
 ## Installation
 
