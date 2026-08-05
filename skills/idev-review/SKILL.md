@@ -4,7 +4,7 @@ description: Review a recent Apple-platform change or beta candidate for product
 compatibility: iDevFlow; iOS/macOS 26+, Swift 6.2+
 ---
 
-# iOS Review
+# Apple-platform Review
 
 Produce a bounded, evidence-linked verdict for the current source commit.
 
@@ -12,7 +12,7 @@ Produce a bounded, evidence-linked verdict for the current source commit.
 
 1. Identify the exact commit, diff, acceptance criteria, and requested review surfaces.
 2. Inspect code and validate the current verification receipt and artifact hashes without silently expanding to a repository-wide audit.
-3. Prioritize correctness, data loss, privacy, accessibility, and primary-flow failures before polish.
+3. Prioritize correctness, data loss, privacy, accessibility, and primary-flow failures before polish. For a primary-flow slice, inspect its quality contract and record which required states have source-bound visual evidence; name every unaudited device-only or remote-service gap.
 4. Cite actionable findings with file and line, impact, evidence, and smallest responsible route.
 5. Separate blockers, important findings, polish, and non-findings.
 6. Run or reuse valid integration-or-stronger verification for the exact integrated commit. Produce verdict JSON with `verdict`, `summary`, `findings`, and `residualRisk`, then submit it through `idev_lifecycle review`.

@@ -9,6 +9,9 @@ export interface ExistingProjectAudit {
   readonly repository: { readonly branch: string | null; readonly head: string | null; readonly clean: boolean };
   readonly signals: readonly string[];
   readonly topLevelDirectories: readonly string[];
+  readonly testDirectories: readonly string[];
+  readonly automation: readonly string[];
+  readonly releaseInputs: readonly string[];
   readonly recommendations: readonly string[];
 }
 
@@ -30,11 +33,16 @@ export async function hasExistingAppleProject(root: string): Promise<boolean> {
 export async function inspectExistingProject(repository: RepositoryDescriptor): Promise<ExistingProjectAudit> {
   const entries = await readdir(repository.primaryRoot, { withFileTypes: true });
   const detected = signals(entries);
+  const names = new Set(entries.map((entry) => entry.name));
+  const githubWorkflows = await readdir(join(repository.primaryRoot, ".github", "workflows")).then((items) => items.filter((item) => /\.ya?ml$/i.test(item)).map((item) => `.github/workflows/${item}`)).catch(() => []);
   return {
     kind: "existing_project_audit",
     repository: { branch: repository.branch, head: repository.head, clean: repository.clean },
     signals: detected,
     topLevelDirectories: entries.filter((entry) => entry.isDirectory() && !entry.name.startsWith(".")).map((entry) => entry.name).sort(),
+    testDirectories: entries.filter((entry) => entry.isDirectory() && (entry.name === "Tests" || entry.name.endsWith("Tests"))).map((entry) => entry.name).sort(),
+    automation: [...githubWorkflows, ...(names.has(".gitlab-ci.yml") ? [".gitlab-ci.yml"] : []), ...(names.has("fastlane") ? ["fastlane"] : [])],
+    releaseInputs: [...(names.has("PrivacyInfo.xcprivacy") ? ["PrivacyInfo.xcprivacy"] : []), ...(names.has("StoreKit") ? ["StoreKit"] : []), ...(names.has("fastlane") ? ["fastlane"] : [])],
     recommendations: [
       "Review the current product, architecture, tests, CI, and release risks without changing source.",
       "Do not treat existing code as iDevFlow verification, review, or release evidence.",

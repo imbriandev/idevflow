@@ -4,7 +4,7 @@ description: Implement one approved indie Apple-platform vertical slice with Swi
 compatibility: iDevFlow; iOS/macOS 26+, Swift 6.2+
 ---
 
-# iOS Build
+# Apple-platform Build
 
 Implement one approved slice and produce commit-bound evidence.
 
@@ -20,7 +20,7 @@ Implement one approved slice and produce commit-bound evidence.
 
 ## Specialist context
 
-Before implementing a non-trivial surface, call `idev_context` with `stage=build`, slice risk, task, and touched surfaces. Read returned references before editing: SwiftUI/layout/accessibility uses `swiftui-experience.md`; persistence/concurrency uses `swift-state.md`; user-facing language uses `product-interface.md`; paid behavior uses `monetization.md`; permissions/data use `privacy-security.md`. Convert applicable checks into code, tests, or evidence—never merely a prose claim.
+Before implementing a non-trivial surface, call `idev_context` with `stage=build`, slice risk, task, and touched surfaces. Read returned references before editing: SwiftUI/layout/accessibility uses `swiftui-experience.md`; persistence/concurrency uses `swift-state.md`; user-facing language uses `product-interface.md`; paid behavior uses `monetization.md`; permissions/data use `privacy-security.md`. Convert applicable checks into code, tests, or evidence—never merely a prose claim. For macOS surfaces, also read `macos-experience.md` and verify keyboard, menu, window, sandbox, or file-access behavior that the slice changes.
 
 ## Guardrails
 

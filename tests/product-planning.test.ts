@@ -79,6 +79,14 @@ describe("product memory and work graph", () => {
     assert.throws(() => validateLearningUpdate(previous, previous), /at least one existing claim status/);
   });
 
+  it("requires named, measured evidence for metric learning conclusions", () => {
+    const next = clone(memory) as any;
+    next.ideaValidation.learningEvidence = [{ id: "metric-1", kind: "metric", source: "TestFlight dashboard", finding: "Activation increased" }];
+    assert.throws(() => validateProductMemory(next), /requires metric details/);
+    next.ideaValidation.learningEvidence[0].metric = { name: "activation_rate", value: 42, unit: "percent", target: ">= 35" };
+    assert.equal((validateProductMemory(next) as any).ideaValidation.learningEvidence[0]!.metric?.name, "activation_rate");
+  });
+
   it("keeps legacy documents readable but rejects them for new definition quality gates", () => {
     const legacyMemory = { schemaVersion: 1, product: memory.product, principles: memory.principles, decisions: [] };
     const legacySlc = { schemaVersion: 1, title: slc.title, simple: slc.simple, lovable: slc.lovable, complete: slc.complete, nonGoals: slc.nonGoals, successSignals: slc.successSignals, risks: slc.risks };
@@ -90,6 +98,13 @@ describe("product memory and work graph", () => {
     const graph = validateWorkGraph({ schemaVersion: 2, title: "Universal", sourceSpecFingerprint: "spec", architecture: [{ id: "ADR-1", title: "Shared", decision: "Use one SwiftUI target", rationale: "Shared source", status: "accepted" }], slices: [{ id: "shared", title: "Shared", goal: "Build both", paths: ["Sources"], risk: "medium", dependsOn: [], acceptance: ["Works"], verificationProfile: "integration", platforms: ["ios", "macos"] }] }, "/tmp/project", "spec");
     assert.deepEqual(graph.slices[0]!.platforms, ["ios", "macos"]);
     assert.throws(() => validateWorkGraph({ ...graph, slices: [{ ...graph.slices[0], platforms: ["watchos"] }] }, "/tmp/project", "spec"), /invalid platform/);
+  });
+
+  it("requires a complete quality contract for schema-3 primary flows", () => {
+    const base = { schemaVersion: 3, title: "Primary", sourceSpecFingerprint: "spec", architecture: [{ id: "ADR-1", title: "A", decision: "D", rationale: "R", status: "accepted" }], slices: [{ id: "flow", title: "Flow", goal: "Complete flow", paths: ["Sources"], risk: "medium", dependsOn: [], acceptance: ["Works"], verificationProfile: "integration", platforms: ["ios"], quality: { primaryFlow: true, states: ["first-run"], visualReview: false } }] };
+    assert.throws(() => validateWorkGraph(base, "/tmp/project", "spec"), /quality.states/);
+    base.slices[0]!.quality = { primaryFlow: true, states: ["first-run", "empty", "loading", "failure", "permission", "cancellation", "recovery"], visualReview: true };
+    assert.equal(validateWorkGraph(base, "/tmp/project", "spec").slices[0]!.quality?.visualReview, true);
   });
 
   it("rejects stale, cyclic, and independently overlapping work graphs", () => {

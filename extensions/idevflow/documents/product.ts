@@ -40,12 +40,20 @@ export interface IdeaClaim {
   readonly learningEvidenceIds: readonly string[];
 }
 
+interface LearningEvidence {
+  readonly id: string;
+  readonly kind: LearningEvidenceKind;
+  readonly source: string;
+  readonly finding: string;
+  readonly metric?: { readonly name: string; readonly value: number; readonly unit: string; readonly target: string };
+}
+
 interface IdeaValidationCore {
   readonly learningQuestion: string;
   readonly primaryAssumptionId: string;
   readonly claims: readonly IdeaClaim[];
   readonly skepticalCritique: { readonly alternative: string; readonly adoptionRisk: string; readonly invalidatingSignal: string; readonly unresolvedClaimIds: readonly string[] };
-  readonly learningEvidence: readonly { readonly id: string; readonly kind: LearningEvidenceKind; readonly source: string; readonly finding: string }[];
+  readonly learningEvidence: readonly LearningEvidence[];
 }
 
 export interface LegacyIdeaQualityProductMemory extends ProductCore {
@@ -193,7 +201,11 @@ export function validateProductMemory(value: unknown): ProductMemoryDocument {
   if (unresolvedClaimIds.some((id) => !knownClaimIds.has(id))) throw new SafetyKernelError("skepticalCritique references an unknown claim");
   const learningEvidence = Array.isArray(validation.learningEvidence) ? validation.learningEvidence.map((item, index) => {
     const evidence = object(item, `ideaValidation.learningEvidence[${index}]`);
-    return { id: text(evidence.id, `ideaValidation.learningEvidence[${index}].id`), kind: enumValue(evidence.kind, ["founder_feedback", "tester_feedback", "metric", "incident"] as const, `ideaValidation.learningEvidence[${index}].kind`), source: text(evidence.source, `ideaValidation.learningEvidence[${index}].source`), finding: text(evidence.finding, `ideaValidation.learningEvidence[${index}].finding`) };
+    const kind = enumValue(evidence.kind, ["founder_feedback", "tester_feedback", "metric", "incident"] as const, `ideaValidation.learningEvidence[${index}].kind`);
+    const metric = evidence.metric === undefined ? undefined : object(evidence.metric, `ideaValidation.learningEvidence[${index}].metric`);
+    if (kind === "metric" && !metric) throw new SafetyKernelError(`Metric learning evidence ${index} requires metric details`);
+    if (metric && (typeof metric.value !== "number" || !Number.isFinite(metric.value))) throw new SafetyKernelError(`Metric learning evidence ${index}.metric.value must be finite`);
+    return { id: text(evidence.id, `ideaValidation.learningEvidence[${index}].id`), kind, source: text(evidence.source, `ideaValidation.learningEvidence[${index}].source`), finding: text(evidence.finding, `ideaValidation.learningEvidence[${index}].finding`), ...(metric ? { metric: { name: text(metric.name, `ideaValidation.learningEvidence[${index}].metric.name`), value: metric.value as number, unit: text(metric.unit, `ideaValidation.learningEvidence[${index}].metric.unit`), target: text(metric.target, `ideaValidation.learningEvidence[${index}].metric.target`) } } : {}) };
   }) : [];
   if (new Set(learningEvidence.map((item) => item.id)).size !== learningEvidence.length) throw new SafetyKernelError("Learning evidence ids must be unique");
   const learningIds = new Set(learningEvidence.map((item) => item.id));

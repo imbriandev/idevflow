@@ -10,6 +10,7 @@ import { VERIFICATION_PROFILES, type VerificationProfile } from "../verification
 
 export const LEGACY_WORK_GRAPH_SCHEMA_VERSION = 1 as const;
 export const WORK_GRAPH_SCHEMA_VERSION = 2 as const;
+export const QUALITY_WORK_GRAPH_SCHEMA_VERSION = 3 as const;
 
 export interface ArchitectureDecision {
   readonly id: string;
@@ -17,6 +18,12 @@ export interface ArchitectureDecision {
   readonly decision: string;
   readonly rationale: string;
   readonly status: "accepted" | "proposed";
+}
+
+export interface PrimaryFlowQualityContract {
+  readonly primaryFlow: boolean;
+  readonly states: readonly string[];
+  readonly visualReview: boolean;
 }
 
 export interface WorkSlice {
@@ -29,10 +36,11 @@ export interface WorkSlice {
   readonly acceptance: readonly string[];
   readonly verificationProfile: VerificationProfile;
   readonly platforms?: readonly ApplePlatform[];
+  readonly quality?: PrimaryFlowQualityContract;
 }
 
 export interface WorkGraph {
-  readonly schemaVersion: typeof LEGACY_WORK_GRAPH_SCHEMA_VERSION | typeof WORK_GRAPH_SCHEMA_VERSION;
+  readonly schemaVersion: typeof LEGACY_WORK_GRAPH_SCHEMA_VERSION | typeof WORK_GRAPH_SCHEMA_VERSION | typeof QUALITY_WORK_GRAPH_SCHEMA_VERSION;
   readonly title: string;
   readonly sourceSpecFingerprint: string;
   readonly architecture: readonly ArchitectureDecision[];
@@ -74,7 +82,7 @@ function transitiveDependencies(id: string, slices: ReadonlyMap<string, WorkSlic
 
 export function validateWorkGraph(value: unknown, root: string, expectedSpecFingerprint: string): WorkGraph {
   const raw = object(value, "work graph");
-  if (raw.schemaVersion !== LEGACY_WORK_GRAPH_SCHEMA_VERSION && raw.schemaVersion !== WORK_GRAPH_SCHEMA_VERSION) throw new SafetyKernelError("Unsupported work graph schema");
+  if (raw.schemaVersion !== LEGACY_WORK_GRAPH_SCHEMA_VERSION && raw.schemaVersion !== WORK_GRAPH_SCHEMA_VERSION && raw.schemaVersion !== QUALITY_WORK_GRAPH_SCHEMA_VERSION) throw new SafetyKernelError("Unsupported work graph schema");
   const sourceSpecFingerprint = text(raw.sourceSpecFingerprint, "sourceSpecFingerprint");
   if (sourceSpecFingerprint !== expectedSpecFingerprint) throw new SafetyKernelError("Work graph is stale relative to the current product/SLC specification");
   if (!Array.isArray(raw.architecture) || raw.architecture.length === 0) throw new SafetyKernelError("Work graph requires architecture decisions");
@@ -94,9 +102,16 @@ export function validateWorkGraph(value: unknown, root: string, expectedSpecFing
     if (!(RISKS as readonly string[]).includes(risk)) throw new SafetyKernelError(`Slice ${index} has invalid risk ${risk}`);
     if (!(VERIFICATION_PROFILES as readonly string[]).includes(verificationProfile)) throw new SafetyKernelError(`Slice ${index} has invalid verification profile ${verificationProfile}`);
     const paths = texts(slice.paths, `slices[${index}].paths`, 1).map((path) => normalizeClaim(path, root));
-    const platforms = raw.schemaVersion === WORK_GRAPH_SCHEMA_VERSION ? texts(slice.platforms, `slices[${index}].platforms`, 1) : ["ios"];
+    const platforms = raw.schemaVersion === LEGACY_WORK_GRAPH_SCHEMA_VERSION ? ["ios"] : texts(slice.platforms, `slices[${index}].platforms`, 1);
     if (platforms.some((platform) => platform !== "ios" && platform !== "macos")) throw new SafetyKernelError(`Slice ${index} has an invalid platform`);
-    return { id: text(slice.id, `slices[${index}].id`), title: text(slice.title, `slices[${index}].title`), goal: text(slice.goal, `slices[${index}].goal`), paths, risk, dependsOn: texts(slice.dependsOn, `slices[${index}].dependsOn`), acceptance: texts(slice.acceptance, `slices[${index}].acceptance`, 1), verificationProfile, platforms: platforms as ApplePlatform[] };
+    const quality = raw.schemaVersion === QUALITY_WORK_GRAPH_SCHEMA_VERSION ? object(slice.quality, `slices[${index}].quality`) : undefined;
+    const primaryFlow = quality ? quality.primaryFlow : undefined;
+    if (quality && typeof primaryFlow !== "boolean") throw new SafetyKernelError(`Slice ${index} quality.primaryFlow must be boolean`);
+    const isPrimaryFlow = primaryFlow as boolean;
+    const states = quality ? texts(quality.states, `slices[${index}].quality.states`, isPrimaryFlow ? 7 : 0) : [];
+    if (quality && typeof quality.visualReview !== "boolean") throw new SafetyKernelError(`Slice ${index} quality.visualReview must be boolean`);
+    if (isPrimaryFlow && (!quality!.visualReview || !["first-run", "empty", "loading", "failure", "permission", "cancellation", "recovery"].every((state) => states.includes(state)))) throw new SafetyKernelError(`Primary-flow slice ${index} must cover first-run, empty, loading, failure, permission, cancellation, and recovery with visual review`);
+    return { id: text(slice.id, `slices[${index}].id`), title: text(slice.title, `slices[${index}].title`), goal: text(slice.goal, `slices[${index}].goal`), paths, risk, dependsOn: texts(slice.dependsOn, `slices[${index}].dependsOn`), acceptance: texts(slice.acceptance, `slices[${index}].acceptance`, 1), verificationProfile, platforms: platforms as ApplePlatform[], ...(quality ? { quality: { primaryFlow: isPrimaryFlow, states, visualReview: quality.visualReview as boolean } } : {}) };
   });
   const byId = new Map(slices.map((slice) => [slice.id, slice]));
   if (byId.size !== slices.length) throw new SafetyKernelError("Work slice ids must be unique");

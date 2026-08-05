@@ -16,7 +16,7 @@ export function registerDoctorTool(pi: ExtensionAPI): void {
       const repository = await discoverRepository(ctx.cwd);
       if (params.action === "audit") {
         const audit = await inspectExistingProject(repository);
-        return { content: [{ type: "text", text: `Existing-project audit: ${audit.signals.join(", ") || "no Apple-project markers"}; Git baseline is ${audit.repository.clean ? "clean" : "dirty"}. No source or lifecycle state changed.` }], details: { audit } };
+        return { content: [{ type: "text", text: `Existing-project audit: ${audit.signals.join(", ") || "no Apple-project markers"}; tests: ${audit.testDirectories.join(", ") || "not found"}; automation: ${audit.automation.join(", ") || "not found"}; Git baseline is ${audit.repository.clean ? "clean" : "dirty"}. No source or lifecycle state changed.` }], details: { audit } };
       }
       if (params.action === "report") {
         const report = await createDiagnosticReport(repository);

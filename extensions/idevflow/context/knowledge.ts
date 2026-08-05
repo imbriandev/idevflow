@@ -4,7 +4,7 @@ import type { Risk, Stage } from "../lifecycle/contracts.ts";
 
 const PACKAGE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 
-export const KNOWLEDGE_SURFACES = ["product", "copy", "swiftui", "swiftdata", "concurrency", "testing", "accessibility", "performance", "privacy", "monetization", "release", "widgetkit", "app-intents", "audit"] as const;
+export const KNOWLEDGE_SURFACES = ["product", "copy", "macos", "swiftui", "swiftdata", "concurrency", "testing", "accessibility", "performance", "privacy", "monetization", "release", "widgetkit", "app-intents", "audit"] as const;
 export type KnowledgeSurface = (typeof KNOWLEDGE_SURFACES)[number];
 
 export interface KnowledgeReference {
@@ -26,13 +26,15 @@ export const KNOWLEDGE_REFERENCES: readonly KnowledgeReference[] = [
   { id: "monetization", path: "references/monetization.md", title: "StoreKit and Monetization", stages: ["define", "plan", "build", "test", "review", "ship", "learn"], surfaces: ["monetization", "privacy", "release"], estimatedTokens: 700 },
   { id: "review-audit", path: "references/review-audit.md", title: "Review and Audit", stages: ["review", "ship", "build"], surfaces: ["audit", "swiftui", "swiftdata", "concurrency", "privacy", "accessibility", "performance"], estimatedTokens: 800 },
   { id: "release-testflight", path: "references/release-testflight.md", title: "Release and TestFlight", stages: ["ship", "learn"], surfaces: ["release", "privacy", "monetization", "accessibility", "performance"], estimatedTokens: 750 },
-  { id: "macos-release", path: "references/macos-release.md", title: "macOS Release and Distribution", stages: ["ship", "review", "build", "test"], surfaces: ["release", "privacy"], estimatedTokens: 500 },
+  { id: "macos-experience", path: "references/macos-experience.md", title: "macOS Product Experience", stages: ["plan", "build", "test", "review", "ship"], surfaces: ["macos", "swiftui", "accessibility"], estimatedTokens: 550 },
+  { id: "macos-release", path: "references/macos-release.md", title: "macOS Release and Distribution", stages: ["ship", "review", "build", "test"], surfaces: ["macos", "release", "privacy"], estimatedTokens: 500 },
   { id: "native-integrations", path: "references/native-integrations.md", title: "App Intents, WidgetKit, and Existing Platforms", stages: ["plan", "build", "test", "review"], surfaces: ["app-intents", "widgetkit", "swiftui"], estimatedTokens: 550 },
 ];
 
 const TERMS: Readonly<Record<KnowledgeSurface, readonly RegExp[]>> = {
   product: [/\bidea\b/i, /target user/i, /slc\b/i, /onboarding/i, /first.?run/i, /scope/i],
   copy: [/\bcopy\b/i, /wording/i, /text|label|alert|empty state|error message/i, /locali[sz]/i],
+  macos: [/\bmacos\b|\bmac app\b|window|menu|keyboard shortcut|notari[sz]|sandbox/i],
   swiftui: [/swiftui/i, /\bview\b/i, /navigation|sheet|toolbar|tab/i, /dynamic type/i],
   swiftdata: [/swiftdata/i, /\bmodelcontext\b/i, /persistence|migration|cloudkit|relationship/i],
   concurrency: [/concurrency/i, /\basync\b|\bawait\b|actor|sendable|task\b|stream/i],
