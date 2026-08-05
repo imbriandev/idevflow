@@ -20,7 +20,7 @@ export function formatDashboard(state: SessionState): string {
 }
 
 export function formatCoordinatorDashboard(snapshot: CoordinatorSnapshot): string {
-  const next = snapshot.route === "existing_audit" ? "Audit existing project (read-only)" : snapshot.route.replaceAll("_", " ");
+  const next = snapshot.route === "existing_audit" ? "Audit existing project (read-only)" : snapshot.route === "maintenance" ? "Record learning or start maintenance" : snapshot.route.replaceAll("_", " ");
   return [
     ...(snapshot.route === "existing_audit" ? ["Existing project detected · not yet adopted"] : []),
     `Lifecycle: ${snapshot.lifecycle ?? "not initialized"}${snapshot.revision ? ` · r${snapshot.revision}` : ""}`,
@@ -32,6 +32,7 @@ export function formatCoordinatorDashboard(snapshot: CoordinatorSnapshot): strin
     `Platforms: ${snapshot.requiredPlatforms?.map((platform) => `${platform}=${snapshot.platformStatus?.[platform] ?? "missing"}`).join(", ") ?? "not configured"}`,
     `Worker policy: ${snapshot.workerRecommendation.mode}`,
     ...(snapshot.route === "existing_audit" ? ["Run: idev_doctor audit · then confirm: idev_runtime adopt_existing"] : []),
+    ...(snapshot.route === "maintenance" ? ["For a bug/change: idev_lifecycle start_maintenance with its user-visible impact"] : []),
     ...(snapshot.candidateStatus ? [`Candidate: ${snapshot.candidateStatus}`] : []),
   ].join("\n");
 }

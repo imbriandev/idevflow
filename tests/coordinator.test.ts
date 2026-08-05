@@ -12,6 +12,7 @@ import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
 import { adoptExistingProject } from "../extensions/idevflow/recovery/existing-project.ts";
+import { startMaintenance } from "../extensions/idevflow/lifecycle/service.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -55,6 +56,18 @@ describe("conversational coordinator", () => {
     assert.match(coordinatorBrief(snapshot), /idev_doctor with action=audit/);
     await adoptExistingProject(repository.primaryRoot, "test");
     assert.equal((await inspectCoordinator(repository, "coordinator")).route, "define");
+  });
+
+  it("routes a shipped product to explicit maintenance and requires a reason", async () => {
+    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
+    const repository = await discoverRepository(fixture.root);
+    const store = new RuntimeStore(repository);
+    let state = await store.initialize("test");
+    for (const lifecycle of ["defined", "planned", "plan_approved", "building", "built", "testing", "tested", "reviewing", "review_passed", "candidate_verified", "ready_for_ship_approval", "promoted", "testflight_handoff"] as const) state = await store.transition(lifecycle, lifecycle, "test", state.revision);
+    assert.equal((await inspectCoordinator(repository, "coordinator")).route, "maintenance");
+    await assert.rejects(() => startMaintenance(repository, "test", ""));
+    await startMaintenance(repository, "test", "Crash on launch after updating");
+    assert.equal((await new RuntimeStore(repository).status())?.lifecycle, "defined");
   });
 
   it("prefers existing writer ownership and never exposes its task", async () => {

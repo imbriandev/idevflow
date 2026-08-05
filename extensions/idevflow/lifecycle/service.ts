@@ -98,6 +98,13 @@ async function readApproval(repository: RepositoryDescriptor): Promise<PlanAppro
   catch (error) { throw new SafetyKernelError("The current work graph has not been approved", { cause: error }); }
 }
 
+export async function startMaintenance(repository: RepositoryDescriptor, piSessionId: string, reason: string): Promise<void> {
+  if (!reason.trim()) throw new SafetyKernelError("Maintenance requires a user-visible issue or change reason");
+  const state = await new RuntimeStore(repository).status();
+  if (state?.lifecycle !== "testflight_handoff") throw new SafetyKernelError(`Maintenance requires testflight_handoff lifecycle, found ${state?.lifecycle ?? "uninitialized"}`);
+  await transition(repository, "defined", `maintenance: ${reason.trim()}`, actor(piSessionId));
+}
+
 export async function approvePlan(repository: RepositoryDescriptor, approvedBy: string): Promise<PlanApproval> {
   const config = await loadConfig(repository.primaryRoot);
   const state = await new RuntimeStore(repository).status();

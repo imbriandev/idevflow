@@ -23,7 +23,7 @@ Commands are optional entry points. Typed tools remain authoritative. For an exi
 ## Context and lifecycle
 
 - `idev_context` — select bounded package-owned specialist guidance and record context receipts.
-- `idev_lifecycle` — apply lifecycle operations, integrate work, approve plans, and record reviews.
+- `idev_lifecycle` — start post-handoff maintenance, integrate work, approve plans, and record reviews.
 - `idev_preflight` — authorize a writer worktree and path claims.
 - `idev_session` — perform writer postflight and finish a session.
 

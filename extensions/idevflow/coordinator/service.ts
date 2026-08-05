@@ -24,6 +24,7 @@ export type CoordinatorRoute =
   | "review"
   | "ship"
   | "founder_ship_approval"
+  | "maintenance"
   | "learn"
   | "resume_writer"
   | "observe_pipeline"
@@ -82,7 +83,7 @@ function lifecycleRoute(lifecycle: string): { route: CoordinatorRoute; reason: s
     case "candidate_verified": return { route: "ship", reason: "The reviewed candidate can proceed through fresh release verification." };
     case "ready_for_ship_approval": return { route: "founder_ship_approval", reason: "The exact candidate requires founder promotion approval." };
     case "promoted": return { route: "ship", reason: "Create the explicit manual TestFlight handoff package." };
-    case "testflight_handoff": return { route: "learn", reason: "Use delivery evidence and feedback to choose the next bet." };
+    case "testflight_handoff": return { route: "maintenance", reason: "The product is shipped. Record learning, or explicitly start a narrow maintenance loop for a bug or change." };
     default: return { route: "repair", reason: "Lifecycle is interrupted or requires a bounded repair decision." };
   }
 }

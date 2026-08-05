@@ -26,9 +26,17 @@ Run `/idev:review` after verification. Review covers the current integration com
 
 Run `/idev:ship` to create and approve a candidate. The candidate must have fresh release verification and all configured release gates. Promotion changes only the local base branch. The handoff explicitly lists external actions still required.
 
-## 7. Learn
+## 7. Learn and maintain
 
 Run `/idev:learn` after user, tester, or distribution feedback. Record the evidence, decision, and next smallest experiment. Learning does not silently reopen or mutate an earlier approved plan.
+
+For a post-handoff bug or change, do not treat the shipped candidate as currently verified. State the user-visible impact, then start a maintenance loop:
+
+```text
+idev_lifecycle start_maintenance
+```
+
+This returns the lifecycle to `defined` using the existing product definition. Plan and approve the narrowest change before implementation; maintenance never bypasses review or release verification.
 
 ## Conversational mode
 
