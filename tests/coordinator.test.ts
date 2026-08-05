@@ -11,7 +11,7 @@ import { discoverRepository } from "../extensions/idevflow/repository/discovery.
 import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
-import { adoptExistingProject, chooseExistingProjectContinuation } from "../extensions/idevflow/recovery/existing-project.ts";
+import { adoptExistingProject, chooseExistingProjectContinuation, inspectExistingProject } from "../extensions/idevflow/recovery/existing-project.ts";
 import { startMaintenance } from "../extensions/idevflow/lifecycle/service.ts";
 import { createGitFixture } from "./helpers.ts";
 
@@ -60,6 +60,22 @@ describe("conversational coordinator", () => {
     const continuation = await inspectCoordinator(repository, "coordinator");
     assert.equal(continuation.route, "define");
     assert.match(continuation.reason, /subscription purchase failure/);
+  });
+
+  it("audits a dirty existing app with failing-test markers before baseline repair", async () => {
+    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
+    await mkdir(`${fixture.root}/Sources`); await mkdir(`${fixture.root}/AppTests`);
+    await writeFile(`${fixture.root}/Sources/App.swift`, "struct App {}\n");
+    await writeFile(`${fixture.root}/AppTests/AppTests.swift`, "// known failing test: purchase lifecycle\n");
+    const repository = await discoverRepository(fixture.root);
+    await new RuntimeStore(repository).initialize("test");
+    const snapshot = await inspectCoordinator(repository, "coordinator");
+    assert.equal(snapshot.route, "existing_audit");
+    assert.equal(snapshot.baselineReady, false);
+    const audit = await inspectExistingProject(repository);
+    assert.equal(audit.repository.baseline.clean, false);
+    assert.deepEqual(audit.testDirectories, ["AppTests"]);
+    assert.doesNotMatch(JSON.stringify(audit), /passed|verified/i);
   });
 
   it("routes a shipped product to explicit maintenance and requires a reason", async () => {

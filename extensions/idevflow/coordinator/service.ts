@@ -113,6 +113,14 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
   const matrix = await loadLatestPlatformMatrix(repository);
   const platformStatus = Object.fromEntries(config.xcode.requiredPlatforms.map((platform) => [platform, matrix?.platforms[platform]?.success ? "passed" : matrix?.platforms[platform] ? "failed" : "missing"]));
 
+  if (runtime.lifecycle === "idea" && !activeWriter && !integrationReady && !activePipeline && await hasExistingAppleProject(repository.primaryRoot) && !await isExistingProjectAdopted(repository)) {
+    return {
+      initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "existing_audit",
+      reason: "An existing Apple-platform project was detected. Audit it read-only before defining or changing iDevFlow lifecycle state.",
+      baselineReady: baseline.ready, activeWriter, activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus,
+      workerRecommendation: unavailableRecommendation("Existing-project audit is read-only and may diagnose a dirty baseline before lifecycle planning or worker dispatch."),
+    };
+  }
   if (!baseline.ready) {
     return { initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "baseline_blocked", reason: baseline.problems.join("; "), baselineReady: false, activeWriter, activePipeline, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus, workerRecommendation: unavailableRecommendation("Restore a clean, valid Git baseline before coordinator work.") };
   }
@@ -129,14 +137,6 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
   const route = lifecycleRoute(runtime.lifecycle);
   if (runtime.lifecycle === "idea" && await hasExistingAppleProject(repository.primaryRoot)) {
     const adoption = await loadExistingProjectAdoption(repository.primaryRoot);
-    if (!await isExistingProjectAdopted(repository)) {
-      return {
-        initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "existing_audit",
-        reason: "An existing Apple-platform project was detected. Audit it read-only before defining or changing iDevFlow lifecycle state.",
-        baselineReady: true, activeWriter: false, activePipeline: false, candidateStatus: candidate?.status, requiredPlatforms: config.xcode.requiredPlatforms, platformStatus,
-        workerRecommendation: unavailableRecommendation("Existing-project audit must finish before lifecycle planning or worker dispatch."),
-      };
-    }
     if (!adoption?.continuation) {
       return {
         initialized: true, lifecycle: runtime.lifecycle, revision: runtime.revision, route: "existing_continuation",
