@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0-beta.6 — 2026-08-05
+
+- Add `idev_apple` signing audits, founder-confirmed device provisioning, and exact-candidate local archives.
+- Keep Apple Developer operations coordinator-only; workers receive no signing, provisioning, upload, or distribution authority.
+- Require a clean primary worktree at the promoted candidate commit before archiving.
+
+## 0.3.0-beta.5 — 2026-08-05
+
+- Harden recovery for orphan writer sessions, stuck locks, partial registry tails, simulator leases, and explicit pipeline coordinator takeover.
+
 ## 0.3.0-beta.4 — 2026-08-05
 
 - Add a read-only existing-project audit and explicit adoption acknowledgement before lifecycle definition.
