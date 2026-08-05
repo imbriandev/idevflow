@@ -4,6 +4,7 @@ import { mkdir, readFile, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
 import { validateArtifact } from "../artifacts/manifest.ts";
+import { BlockerStore } from "../blockers/store.ts";
 import { loadConfig, type iDevFlowConfig } from "../config/config.ts";
 import { integrationHead } from "../git/integration.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
@@ -94,6 +95,8 @@ async function createCandidateLocked(
   const state = await new RuntimeStore(repository).status();
   if (state?.lifecycle !== "review_passed" && state?.lifecycle !== "stale_candidate") throw new SafetyKernelError(`Candidate creation requires review_passed or stale_candidate lifecycle, found ${state?.lifecycle ?? "uninitialized"}`);
   if (session.status !== "integrated" && session.status !== "ready_for_integration") throw new SafetyKernelError("Candidate creation requires a finished source-bound writer session");
+  const shipBlockers = await new BlockerStore(repository).openShipBlockers();
+  if (shipBlockers.length) throw new SafetyKernelError(`Candidate is blocked by external validation: ${shipBlockers.map((blocker) => `${blocker.title} (owner: ${blocker.external!.owner}; evidence: ${blocker.external!.evidenceRequired})`).join("; ")}`);
   const config = await loadConfig(repository.primaryRoot);
   assertVerificationProfileSupported("release", config.xcode.platform);
   if (!config.xcode.requiredPlatforms.includes("ios")) throw new SafetyKernelError("TestFlight candidate requires iOS in xcode.requiredPlatforms");

@@ -6,6 +6,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { hashArtifact } from "../extensions/idevflow/artifacts/manifest.ts";
+import { BlockerStore } from "../extensions/idevflow/blockers/store.ts";
 import { initializeConfig } from "../extensions/idevflow/config/config.ts";
 import { loadDefinedProduct } from "../extensions/idevflow/documents/product.ts";
 import { approvePlan, integrateCurrentStage, recordReview } from "../extensions/idevflow/lifecycle/service.ts";
@@ -131,6 +132,10 @@ describe("single-agent full lifecycle", () => {
     assert.equal((await new RuntimeStore(repository).status())?.lifecycle, "review_passed");
 
     const releaseVerification = await fakeVerification(repository, tested, "release", true);
+    const blockers = new BlockerStore(repository);
+    const external = await blockers.open({ kind: "external_validation", title: "StoreKit physical-device lifecycle evidence", nextAction: "Repeat sandbox purchase after fixing the device setup", actor: "founder", external: { owner: "founder", evidenceRequired: "Sandbox-device purchase and restore receipt" } });
+    await assert.rejects(() => createCandidate(repository, tested, releaseVerification, "testflight-internal"), /external validation/);
+    await blockers.resolve(external.id, "Sandbox-device purchase and restore receipt recorded.", "founder");
     const candidate = await createCandidate(repository, tested, releaseVerification, "testflight-internal");
     assert.equal(candidate.status, "ready");
     assert.equal(candidate.monetization.status, "not_required");

@@ -1,7 +1,7 @@
 import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { BLOCKER_KINDS, BlockerStore } from "../blockers/store.ts";
+import { BLOCKER_KINDS, EXTERNAL_BLOCKER_OWNERS, BlockerStore } from "../blockers/store.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
@@ -19,6 +19,8 @@ export function registerBlockerTool(pi: ExtensionAPI): void {
       blockerId: Type.Optional(Type.String()),
       resolution: Type.Optional(Type.String()),
       sourceCommit: Type.Optional(Type.String()),
+      owner: Type.Optional(StringEnum(EXTERNAL_BLOCKER_OWNERS)),
+      evidenceRequired: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _update, ctx) {
       const repository = await discoverRepository(ctx.cwd);
@@ -32,7 +34,10 @@ export function registerBlockerTool(pi: ExtensionAPI): void {
       if (!await new RuntimeStore(repository).status()) throw new SafetyKernelError("Initialize iDevFlow runtime before recording blockers");
       if (params.action === "open") {
         if (!params.kind || !params.title || !params.nextAction) throw new SafetyKernelError("Opening a blocker requires kind, title, and nextAction");
-        const blocker = await store.open({ kind: params.kind, title: params.title, nextAction: params.nextAction, ...(params.sourceCommit ? { sourceCommit: params.sourceCommit } : {}), actor: `pi-session:${ctx.sessionManager.getSessionId()}` });
+        const external = ["apple_developer", "external_validation", "release"].includes(params.kind)
+          ? !params.owner || !params.evidenceRequired ? undefined : { owner: params.owner, evidenceRequired: params.evidenceRequired }
+          : undefined;
+        const blocker = await store.open({ kind: params.kind, title: params.title, nextAction: params.nextAction, ...(params.sourceCommit ? { sourceCommit: params.sourceCommit } : {}), ...(external ? { external } : {}), actor: `pi-session:${ctx.sessionManager.getSessionId()}` });
         return { content: [{ type: "text", text: `Opened ${blocker.kind} blocker ${blocker.id}: ${blocker.title}` }], details: { blocker } };
       }
       if (!ctx.hasUI) throw new SafetyKernelError("Resolving a blocker fails closed without interactive founder confirmation");

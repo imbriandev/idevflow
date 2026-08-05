@@ -10,6 +10,14 @@ export const BLOCKER_LEDGER_SCHEMA_VERSION = 1 as const;
 export const BLOCKER_KINDS = ["code", "verification", "apple_developer", "external_validation", "release"] as const;
 export type BlockerKind = (typeof BLOCKER_KINDS)[number];
 export type BlockerStatus = "open" | "resolved";
+export const EXTERNAL_BLOCKER_OWNERS = ["founder", "coordinator"] as const;
+export type ExternalBlockerOwner = (typeof EXTERNAL_BLOCKER_OWNERS)[number];
+
+export interface ExternalBlocker {
+  readonly owner: ExternalBlockerOwner;
+  readonly evidenceRequired: string;
+  readonly requiredBefore: "ship";
+}
 
 export interface Blocker {
   readonly id: string;
@@ -19,6 +27,7 @@ export interface Blocker {
   readonly openedAt: string;
   readonly openedBy: string;
   readonly sourceCommit?: string;
+  readonly external?: ExternalBlocker;
   readonly status: BlockerStatus;
   readonly resolvedAt?: string;
   readonly resolvedBy?: string;
@@ -63,13 +72,15 @@ export class BlockerStore {
     }
   }
 
-  async open(input: { kind: BlockerKind; title: string; nextAction: string; actor: string; sourceCommit?: string }): Promise<Blocker> {
+  async open(input: { kind: BlockerKind; title: string; nextAction: string; actor: string; sourceCommit?: string; external?: { owner: ExternalBlockerOwner; evidenceRequired: string } }): Promise<Blocker> {
     const title = validText(input.title, "Blocker title", 240);
     const nextAction = validText(input.nextAction, "Blocker next action", 500);
     const actor = validText(input.actor, "Blocker actor", 120);
+    const external = input.external ? { owner: input.external.owner, evidenceRequired: validText(input.external.evidenceRequired, "External evidence requirement", 500), requiredBefore: "ship" as const } : undefined;
+    if (["apple_developer", "external_validation", "release"].includes(input.kind) && !external) throw new Error(`${input.kind} blockers require owner and evidenceRequired`);
     if (input.sourceCommit && !/^[0-9a-f]{40}$/i.test(input.sourceCommit)) throw new Error("Blocker sourceCommit must be an exact Git commit");
     return this.mutate((ledger) => {
-      const blocker: Blocker = { id: randomUUID(), kind: input.kind, title, nextAction, openedAt: new Date().toISOString(), openedBy: actor, ...(input.sourceCommit ? { sourceCommit: input.sourceCommit } : {}), status: "open" };
+      const blocker: Blocker = { id: randomUUID(), kind: input.kind, title, nextAction, openedAt: new Date().toISOString(), openedBy: actor, ...(input.sourceCommit ? { sourceCommit: input.sourceCommit } : {}), ...(external ? { external } : {}), status: "open" };
       return { ledger: { ...ledger, blockers: [...ledger.blockers, blocker] }, result: blocker };
     });
   }
@@ -84,6 +95,10 @@ export class BlockerStore {
       const result: Blocker = { ...existing, status: "resolved", resolvedAt: new Date().toISOString(), resolvedBy, resolution: explanation };
       return { ledger: { ...ledger, blockers: ledger.blockers.map((blocker) => blocker.id === id ? result : blocker) }, result };
     });
+  }
+
+  async openShipBlockers(): Promise<readonly Blocker[]> {
+    return (await this.list()).filter((blocker) => blocker.status === "open" && blocker.external?.requiredBefore === "ship");
   }
 
   private async load(): Promise<BlockerLedger> { return validate(JSON.parse(await readFile(this.path, "utf8"))); }
