@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0-beta.9 — 2026-08-05
+
+- Allow a coordinator to integrate the one completed writer session awaiting integration even when it was created by an earlier Pi chat.
+
 ## 0.3.0-beta.8 — 2026-08-05
 
 - Deepen existing-project audit and persist an exact-HEAD adoption snapshot.
