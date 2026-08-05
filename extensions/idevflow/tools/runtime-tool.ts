@@ -32,7 +32,8 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
         if (!await hasExistingAppleProject(repository.primaryRoot)) throw new Error("No existing Apple-platform project was detected for adoption");
         const approved = await ctx.ui.confirm("Adopt existing project?", "This acknowledges that existing code is not iDevFlow verification or release evidence. It does not modify source or advance the lifecycle.");
         if (!approved) return { content: [{ type: "text", text: "Existing-project adoption cancelled." }], details: { adopted: false } };
-        await adoptExistingProject(repository.primaryRoot, `pi-session:${ctx.sessionManager.getSessionId()}`);
+        const adoption = await adoptExistingProject(repository, `pi-session:${ctx.sessionManager.getSessionId()}`);
+        return { content: [{ type: "text", text: `Existing project adopted with an audit snapshot at ${adoption.repository.head ?? "uncommitted baseline"}. Define the current product before planning the next change.` }], details: { adopted: true, adoption } };
       }
       if (params.action === "migrate") {
         if (!ctx.hasUI) throw new Error("Config migration fails closed without interactive approval");
@@ -49,11 +50,9 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
           ? await applyConfigMigration(repository.primaryRoot)
           : migration.config ?? await loadConfig(repository.primaryRoot);
       const baseline = await inspectBaseline(repository, config);
-      const text = params.action === "adopt_existing"
-        ? "Existing project adopted for iDevFlow onboarding. Define the current product before planning the next change."
-        : state
-          ? `iDevFlow runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}; baseline ${baseline.ready ? "ready" : "blocked"}.`
-          : "iDevFlow runtime is not initialized for this repository.";
+      const text = state
+        ? `iDevFlow runtime: revision ${state.revision}, lifecycle ${state.lifecycle}, repository ${state.repositoryId}; baseline ${baseline.ready ? "ready" : "blocked"}.`
+        : "iDevFlow runtime is not initialized for this repository.";
       return {
         content: [{ type: "text", text }],
         details: {

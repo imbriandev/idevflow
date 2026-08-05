@@ -54,7 +54,7 @@ describe("conversational coordinator", () => {
     assert.equal(snapshot.route, "existing_audit");
     assert.match(snapshot.reason, /read-only/);
     assert.match(coordinatorBrief(snapshot), /idev_doctor with action=audit/);
-    await adoptExistingProject(repository.primaryRoot, "test");
+    await adoptExistingProject(repository, "test");
     assert.equal((await inspectCoordinator(repository, "coordinator")).route, "define");
   });
 

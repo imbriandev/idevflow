@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { mkdir, writeFile } from "node:fs/promises";
-import { inspectExistingProject } from "../extensions/idevflow/recovery/existing-project.ts";
+import { adoptExistingProject, inspectExistingProject, isExistingProjectAdopted, loadExistingProjectAdoption } from "../extensions/idevflow/recovery/existing-project.ts";
 import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
 import { createGitFixture } from "./helpers.ts";
 
@@ -20,5 +20,10 @@ describe("existing-project audit", () => {
     assert.match(audit.repository.baseline.problems.join("\n"), /uncommitted/);
     assert.deepEqual(audit.releaseInputs, ["PrivacyInfo.xcprivacy", "Products.storekit"]);
     assert.deepEqual(audit.testDirectories, ["AppTests"]);
+    const repository = await discoverRepository(fixture.root);
+    const adoption = await adoptExistingProject(repository, "test");
+    assert.deepEqual(adoption.audit.releaseInputs, audit.releaseInputs);
+    assert.equal(await isExistingProjectAdopted(repository), true);
+    assert.equal((await loadExistingProjectAdoption(fixture.root))?.repository.head, repository.head);
   });
 });

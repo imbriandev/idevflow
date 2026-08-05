@@ -1,12 +1,23 @@
-import { access, mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { loadConfig } from "../config/config.ts";
 import { inspectBaseline, type BaselineReport } from "../git/baseline.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
+import { writeFileAtomically } from "../state/atomic-file.ts";
 import { discoverXcodeProject } from "../xcode/discovery.ts";
 
 const ADOPTION_FILE = "existing-project-adoption.json";
 const IGNORED_DIRECTORIES = new Set([".git", ".idevflow", "DerivedData", ".build", "Pods", "Carthage", "node_modules"]);
+
+export const EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION = 1 as const;
+
+export interface ExistingProjectAdoption {
+  readonly schemaVersion: typeof EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION;
+  readonly adoptedAt: string;
+  readonly actor: string;
+  readonly repository: { readonly fingerprint: string; readonly head: string | null };
+  readonly audit: ExistingProjectAudit;
+}
 
 export interface ExistingProjectAudit {
   readonly kind: "existing_project_audit";
@@ -83,19 +94,28 @@ export async function inspectExistingProject(repository: RepositoryDescriptor): 
 
 function adoptionPath(root: string): string { return join(root, ".idevflow", ADOPTION_FILE); }
 
-export async function isExistingProjectAdopted(root: string): Promise<boolean> {
+export async function loadExistingProjectAdoption(root: string): Promise<ExistingProjectAdoption | undefined> {
   try {
-    const value = JSON.parse(await readFile(adoptionPath(root), "utf8")) as { adopted?: boolean };
-    return value.adopted === true;
-  } catch { return false; }
+    const value = JSON.parse(await readFile(adoptionPath(root), "utf8")) as ExistingProjectAdoption;
+    if (value.schemaVersion !== EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION || !value.actor || !value.adoptedAt || !value.repository?.fingerprint || !value.audit) return undefined;
+    return value;
+  } catch { return undefined; }
 }
 
-export async function adoptExistingProject(root: string, actor: string): Promise<void> {
-  const directory = join(root, ".idevflow");
-  await mkdir(directory, { recursive: true, mode: 0o700 });
-  const path = adoptionPath(root);
-  const temporary = `${path}.${process.pid}.tmp`;
-  await writeFile(temporary, JSON.stringify({ adopted: true, adoptedAt: new Date().toISOString(), actor }), { mode: 0o600 });
-  await rename(temporary, path);
-  await access(path);
+export async function isExistingProjectAdopted(repository: RepositoryDescriptor): Promise<boolean> {
+  const adoption = await loadExistingProjectAdoption(repository.primaryRoot);
+  return adoption?.repository.fingerprint === repository.fingerprint && adoption.repository.head === repository.head;
+}
+
+export async function adoptExistingProject(repository: RepositoryDescriptor, actor: string): Promise<ExistingProjectAdoption> {
+  await mkdir(join(repository.primaryRoot, ".idevflow"), { recursive: true, mode: 0o700 });
+  const adoption: ExistingProjectAdoption = {
+    schemaVersion: EXISTING_PROJECT_ADOPTION_SCHEMA_VERSION,
+    adoptedAt: new Date().toISOString(),
+    actor,
+    repository: { fingerprint: repository.fingerprint, head: repository.head },
+    audit: await inspectExistingProject(repository),
+  };
+  await writeFileAtomically(adoptionPath(repository.primaryRoot), `${JSON.stringify(adoption, null, 2)}\n`);
+  return adoption;
 }

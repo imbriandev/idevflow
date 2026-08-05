@@ -120,7 +120,7 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
   }
 
   const route = lifecycleRoute(runtime.lifecycle);
-  if (runtime.lifecycle === "idea" && await hasExistingAppleProject(repository.primaryRoot) && !await isExistingProjectAdopted(repository.primaryRoot)) {
+  if (runtime.lifecycle === "idea" && await hasExistingAppleProject(repository.primaryRoot) && !await isExistingProjectAdopted(repository)) {
     return {
       initialized: true,
       lifecycle: runtime.lifecycle,
