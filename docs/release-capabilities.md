@@ -5,7 +5,9 @@ This is the source of truth for iDevFlow's Apple release authority. A successful
 | Capability | iDevFlow action | Founder confirmation | What is retained | Explicitly not done |
 | --- | --- | --- | --- | --- |
 | Inspect signing | `idev_apple audit` | No; read-only | Structured signing audit | Credential access, profile mutation, archive |
-| Inspect App Store Connect | `idev_apple app_store_status` | No; read-only | Current app-record, IAP, and build-processing state | Remote mutation, tester selection, distribution |
+| Inspect App Store Connect | `idev_apple app_store_status`, `pricing_status`, or `price_points` | No; read-only | Current app-record, IAP/build state, and requested price schedule/points | Remote mutation, tester selection, distribution |
+| Set app or IAP manual price | `idev_apple set_price` | Required; exact scope, Apple price-point ID, and UTC effective dates | Structured tool result only | Availability, metadata, tester selection, distribution |
+| Remove app or IAP manual price | `idev_apple delete_price` | Required; exact scope and manual-price ID | Structured tool result only | Deleting app/IAP, availability, metadata, tester selection, distribution; fails closed unless every other manual price can be preserved in Apple's replacement schedule |
 | Provision a development device/profile | `idev_apple provision_device` | Required | Tool result only | Archive, export, upload, distribution |
 | Verify app behavior | `idev_verify` / proof tools | Per lifecycle policy | Source-bound verification receipts | Signing, upload, distribution |
 | Create release candidate | `idev_release create_candidate` | Existing lifecycle/review gates | Candidate, review and verification evidence | Promotion, signing, archive, upload |
@@ -17,7 +19,7 @@ This is the source of truth for iDevFlow's Apple release authority. A successful
 
 ## Local upload credentials
 
-Call `idev_apple setup_vault` once to install the stable `~/.config/idevflow/automic-vault/automic-app-store-connect` bridge, then approve that exact bridge with `av bless ~/.config/idevflow/automic-vault/automic-app-store-connect`. `idev_apple upload_testflight` executes only through that bridge, so project-local package paths do not affect the approval. Automic Vault injects `APP_CONNECT_KEY`, `APPSTORE_KEY_ID`, and `APPSTORE_ISSUER_ID` into that child process; it creates a temporary private-key directory for Apple tooling and removes it afterward. iDevFlow never persists those values, their paths, or their content in receipts.
+Call `idev_apple setup_vault` once to install the stable `~/.config/idevflow/automic-vault/automic-app-store-connect` bridge, then approve that exact bridge with `av bless ~/.config/idevflow/automic-vault/automic-app-store-connect`. Pricing and `idev_apple upload_testflight` execute only through that bridge, so project-local package paths do not affect the approval. Automic Vault injects `APP_CONNECT_KEY`, `APPSTORE_KEY_ID`, and `APPSTORE_ISSUER_ID` into that child process; it creates a temporary private-key directory for Apple tooling and removes it afterward. iDevFlow never persists those values, their paths, or their content in receipts.
 
 ## External validation
 

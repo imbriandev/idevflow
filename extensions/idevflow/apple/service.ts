@@ -151,7 +151,7 @@ export async function writeArchiveReceipt(root: string, candidate: { id: string;
 export interface AppStoreStatus {
   readonly bundleId: string;
   readonly appFound: boolean;
-  readonly inAppPurchases: readonly { readonly name?: string; readonly productId?: string; readonly state?: string }[];
+  readonly inAppPurchases: readonly { readonly id?: string; readonly name?: string; readonly productId?: string; readonly state?: string }[];
   readonly builds: readonly { readonly version?: string; readonly uploadedDate?: string; readonly processingState?: string; readonly expired?: boolean }[];
 }
 
@@ -202,6 +202,41 @@ export async function appStoreStatus(root: string, config: iDevFlowConfig): Prom
   const result = await command(await installedAutomicVaultBridge(), ["status", project.bundleIdentifier], root);
   try { return JSON.parse(result.stdout) as AppStoreStatus; }
   catch (error) { throw new SafetyKernelError("App Store Connect returned invalid status data", { cause: error }); }
+}
+
+export type AppStorePriceScope = "app" | "iap";
+
+export interface AppStorePricing {
+  readonly bundleId: string;
+  readonly scope: AppStorePriceScope;
+  readonly productId?: string;
+  readonly scheduleId?: string;
+  readonly baseTerritory?: string;
+  readonly manualPrices: readonly { readonly id: string; readonly pricePointId?: string; readonly startDate?: string; readonly endDate?: string }[];
+}
+
+async function pricingCommand(root: string, config: iDevFlowConfig, args: readonly string[]): Promise<unknown> {
+  const project = await discoverXcodeProject(root, config, undefined, "Release");
+  if (project.platform !== "ios" || !project.bundleIdentifier) throw new SafetyKernelError("App Store Connect pricing requires an iOS app with a bundle identifier");
+  const result = await command(await installedAutomicVaultBridge(), [...args, project.bundleIdentifier], root);
+  try { return JSON.parse(result.stdout) as unknown; }
+  catch (error) { throw new SafetyKernelError("App Store Connect returned invalid pricing data", { cause: error }); }
+}
+
+export async function appStorePricing(root: string, config: iDevFlowConfig, scope: AppStorePriceScope, productId?: string): Promise<AppStorePricing> {
+  return await pricingCommand(root, config, ["pricing_status", scope, productId ?? ""]) as AppStorePricing;
+}
+
+export async function appStorePricePoints(root: string, config: iDevFlowConfig, scope: AppStorePriceScope, territory: string, productId?: string): Promise<unknown> {
+  return await pricingCommand(root, config, ["price_points", scope, productId ?? "", territory]);
+}
+
+export async function setAppStorePrice(root: string, config: iDevFlowConfig, scope: AppStorePriceScope, pricePointId: string, startDate: string, endDate?: string, productId?: string): Promise<unknown> {
+  return await pricingCommand(root, config, ["set_price", scope, productId ?? "", pricePointId, startDate, endDate ?? ""]);
+}
+
+export async function deleteAppStorePrice(root: string, config: iDevFlowConfig, scope: AppStorePriceScope, manualPriceId: string, productId?: string): Promise<unknown> {
+  return await pricingCommand(root, config, ["delete_price", scope, productId ?? "", manualPriceId]);
 }
 
 export async function exportAndUploadTestFlight(

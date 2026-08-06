@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0-beta.14 — 2026-08-06
+## 0.3.0-beta.15 — 2026-08-06\n\n- Add founder-confirmed inspection, creation, and removal of app and IAP manual price-schedule entries through the approved App Store Connect vault bridge.\n- Require exact Apple price-point/manual-price IDs and UTC effective dates; pricing changes cannot alter availability, metadata, testers, or distribution.\n\n## 0.3.0-beta.14 — 2026-08-06
 
 - Add a founder-confirmed, transactional `idev_flow bootstrap_ios` precondition for new clean Git repositories.
 - Generate an XcodeGen SwiftUI app shell with unit tests, privacy manifest, shared scheme, iOS Simulator build, and one scaffold commit; it creates no lifecycle branch.

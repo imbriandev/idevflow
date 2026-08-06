@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { appStoreStatus, archiveAppleApp, auditAppleSigning, exportAndUploadTestFlight, installAutomicVaultBridge, provisionAppleDevice, writeArchiveReceipt } from "../apple/service.ts";
+import { appStorePricePoints, appStorePricing, appStoreStatus, archiveAppleApp, auditAppleSigning, deleteAppStorePrice, exportAndUploadTestFlight, installAutomicVaultBridge, provisionAppleDevice, setAppStorePrice, writeArchiveReceipt, type AppStorePriceScope } from "../apple/service.ts";
 import { loadConfig } from "../config/config.ts";
 import { integrationHead } from "../git/integration.ts";
 import { loadCandidate } from "../release/service.ts";
@@ -11,6 +11,17 @@ import { discoverRepository } from "../repository/discovery.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
 const execFileAsync = promisify(execFile);
+
+function priceScope(params: { priceScope?: "app" | "iap"; productId?: string }): AppStorePriceScope {
+  const scope = params.priceScope ?? "app";
+  if (scope === "iap" && !params.productId) throw new SafetyKernelError("IAP pricing requires productId");
+  return scope;
+}
+
+export function priceDate(value: string | undefined, name: string): string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value) || Number.isNaN(Date.parse(value))) throw new SafetyKernelError(`${name} must be an ISO-8601 UTC instant, for example 2026-01-15T00:00:00Z`);
+  return value;
+}
 
 async function cleanAtCommit(root: string, commit: string): Promise<boolean> {
   const [head, status] = await Promise.all([
@@ -24,18 +35,26 @@ export function registerAppleTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "idev_apple",
     label: "iDevFlow Apple Developer",
-    description: "Inspect App Store Connect status or iOS signing, provision a device, archive, configure a stable Automic Vault bridge, or upload an explicitly approved exact IPA to internal TestFlight.",
+    description: "Inspect App Store Connect, manage explicitly confirmed app or IAP price schedules, inspect iOS signing, provision a device, archive, configure a stable Automic Vault bridge, or upload an explicitly approved exact IPA to internal TestFlight.",
     promptSnippet: "Diagnose Apple signing and create explicitly approved local provisioning or archive evidence",
     promptGuidelines: [
-      "Use app_store_status for App Store Connect app, IAP, and build processing state; it is read-only.",
+      "Use app_store_status, pricing_status, or price_points to inspect App Store Connect state; they are read-only.",
+      "set_price and delete_price require a trusted project and one confirmation for the exact app/IAP, Apple price-point or manual-price ID, and effective date. They never change availability, metadata, testers, or distribution.",
       "Use audit first for TestFlight signing or provisioning failures.",
       "provision_device, archive, and upload_testflight require trusted-project interactive founder confirmation.",
       "upload_testflight reads APP_CONNECT_KEY, APPSTORE_KEY_ID, and APPSTORE_ISSUER_ID only through an approved Automic Vault wrapper; never put credentials in tool arguments, source, or chat.",
       "upload_testflight never selects testers or distributes a build.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["app_store_status", "audit", "provision_device", "archive", "setup_vault", "upload_testflight"] as const),
+      action: StringEnum(["app_store_status", "pricing_status", "price_points", "set_price", "delete_price", "audit", "provision_device", "archive", "setup_vault", "upload_testflight"] as const),
       deviceId: Type.Optional(Type.String()),
+      priceScope: Type.Optional(StringEnum(["app", "iap"] as const)),
+      productId: Type.Optional(Type.String()),
+      territory: Type.Optional(Type.String()),
+      pricePointId: Type.Optional(Type.String()),
+      manualPriceId: Type.Optional(Type.String()),
+      startDate: Type.Optional(Type.String()),
+      endDate: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _update, ctx) {
       const repository = await discoverRepository(ctx.cwd);
@@ -47,6 +66,16 @@ export function registerAppleTool(pi: ExtensionAPI): void {
           : `App Store Connect has no app record for ${status.bundleId}.`;
         return { content: [{ type: "text", text }], details: { status } };
       }
+      if (params.action === "pricing_status") {
+        const pricing = await appStorePricing(repository.primaryRoot, config, priceScope(params), params.productId);
+        return { content: [{ type: "text", text: `App Store Connect pricing: ${pricing.manualPrices.length} manual ${pricing.scope} price(s).` }], details: { pricing } };
+      }
+      if (params.action === "price_points") {
+        const territory = params.territory?.toUpperCase();
+        if (!territory || !/^[A-Z]{3}$/.test(territory)) throw new SafetyKernelError("price_points requires a three-letter App Store Connect territory code, for example USA or VNM");
+        const pricePoints = await appStorePricePoints(repository.primaryRoot, config, priceScope(params), territory, params.productId);
+        return { content: [{ type: "text", text: `App Store Connect price points loaded for ${territory}.` }], details: { pricePoints } };
+      }
       if (params.action === "audit") {
         const audit = await auditAppleSigning(repository.primaryRoot, config);
         const text = [
@@ -56,7 +85,29 @@ export function registerAppleTool(pi: ExtensionAPI): void {
         ].join("\n");
         return { content: [{ type: "text", text }], details: { audit } };
       }
-      if (!ctx.isProjectTrusted() || !ctx.hasUI) throw new SafetyKernelError("Apple setup, provisioning, archive, and upload actions require a trusted project with interactive founder confirmation");
+      if (!ctx.isProjectTrusted() || !ctx.hasUI) throw new SafetyKernelError("Apple pricing, setup, provisioning, archive, and upload actions require a trusted project with interactive founder confirmation");
+      if (params.action === "set_price") {
+        const scope = priceScope(params);
+        if (!params.pricePointId) throw new SafetyKernelError("set_price requires pricePointId from price_points");
+        const startDate = priceDate(params.startDate, "startDate");
+        const endDate = params.endDate ? priceDate(params.endDate, "endDate") : undefined;
+        if (endDate && endDate <= startDate) throw new SafetyKernelError("endDate must be after startDate");
+        const subject = scope === "app" ? "this app" : `IAP ${params.productId}`;
+        const approved = await ctx.ui.confirm("Set App Store Connect price?", `Set ${subject} to Apple price point ${params.pricePointId} from ${startDate}${endDate ? ` until ${endDate}` : " with no end date"}. This changes only its price schedule; it does not change availability, metadata, testers, or distribution.`);
+        if (!approved) return { content: [{ type: "text", text: "App Store Connect price change cancelled." }], details: { changed: false } };
+        const pricing = await setAppStorePrice(repository.primaryRoot, config, scope, params.pricePointId, startDate, endDate, params.productId);
+        return { content: [{ type: "text", text: "App Store Connect price schedule updated." }], details: { changed: true, pricing } };
+      }
+      if (params.action === "delete_price") {
+        const scope = priceScope(params);
+        if (!params.manualPriceId) throw new SafetyKernelError("delete_price requires manualPriceId from pricing_status");
+        const subject = scope === "app" ? "this app" : `IAP ${params.productId}`;
+        const approved = await ctx.ui.confirm("Remove App Store Connect manual price?", `Remove manual price ${params.manualPriceId} from ${subject}. Apple will replace the manual-price schedule while retaining its other current entries, then fall back to a remaining scheduled or automatic price. This does not delete the app/IAP or change availability, metadata, testers, or distribution.`);
+        if (!approved) return { content: [{ type: "text", text: "App Store Connect price removal cancelled." }], details: { changed: false } };
+        const pricing = await deleteAppStorePrice(repository.primaryRoot, config, scope, params.manualPriceId, params.productId);
+        return { content: [{ type: "text", text: "App Store Connect manual price removed." }], details: { changed: true, pricing } };
+      }
+
       if (params.action === "setup_vault") {
         const approved = await ctx.ui.confirm("Install stable Automic Vault bridge?", "It is installed once under your user config, independent of project/package paths. You will approve this exact bridge in Automic Vault before it can receive secrets.");
         if (!approved) return { content: [{ type: "text", text: "Automic Vault bridge setup cancelled." }], details: { configured: false } };

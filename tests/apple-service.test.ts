@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { archiveSigningEvidence, signingFindings, signingTargets, testFlightExportOptions, testFlightUploadArguments } from "../extensions/idevflow/apple/service.ts";
+import { priceDate } from "../extensions/idevflow/tools/apple-tool.ts";
 
 describe("Apple signing audit", () => {
   it("reports missing team and distribution identity without exposing credentials", () => {
@@ -27,5 +29,19 @@ describe("Apple signing audit", () => {
     const args = testFlightUploadArguments("/tmp/App.ipa");
     assert.deepEqual(args, ["upload", "/tmp/App.ipa"]);
     assert.doesNotMatch(args.join(" "), /AuthKey|KEY_ID|ISSUER_ID|BEGIN PRIVATE KEY/);
+  });
+
+  it("requires unambiguous UTC instants for remote price changes", () => {
+    assert.equal(priceDate("2026-01-15T00:00:00Z", "startDate"), "2026-01-15T00:00:00Z");
+    assert.throws(() => priceDate("2026-01-15", "startDate"), /ISO-8601 UTC/);
+  });
+
+  it("uses App Store Connect's current app and IAP price-schedule endpoints", async () => {
+    const bridge = await readFile(new URL("../extensions/idevflow/apple/automic-vault.mjs", import.meta.url), "utf8");
+    assert.match(bridge, /\/v1\/apps\/\$\{owner\.app\.id\}\/appPriceSchedule/);
+    assert.match(bridge, /\/v2\/inAppPurchases\/\$\{owner\.purchase\.id\}\/iapPriceSchedule/);
+    assert.match(bridge, /\/v1\/apps\/\$\{owner\.app\.id\}\/appPricePoints/);
+    assert.match(bridge, /\/v2\/inAppPurchases\/\$\{owner\.purchase\.id\}\/pricePoints/);
+    assert.doesNotMatch(bridge, /PriceScheduleManualPrices/);
   });
 });

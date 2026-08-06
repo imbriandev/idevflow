@@ -38,13 +38,13 @@ The seven lifecycle commands remain optional manual escape hatches:
 - `idev_context` — select bounded specialist iOS references and record required session-bound context receipts.
 - `idev_lifecycle` — integrate stages, approve frozen plans, and record source-bound reviews.
 - `idev_release` — create, approve, locally promote, and hand off exact TestFlight candidates.
-- `idev_apple` — internal Apple capability: audit/signing, App Store Connect status, founder-approved provisioning/archive/upload, and later confirmed remote reconciliation; it never selects testers or distributes.
+- `idev_apple` — internal Apple capability: audit/signing, App Store Connect status/pricing, founder-approved app/IAP manual-price changes, provisioning/archive/upload; it never selects testers or distributes.
 - `idev_preflight` / `idev_session` — authorize writer worktrees, claims, postflight, and completion.
 - `idev_exec` / `idev_verify` — run managed verification and emit fingerprinted receipts.
 - `idev_simulator` / `idev_proof` — capture simulator and XCTest-backed quality evidence.
 - `idev_doctor` — diagnose and conservatively repair local runtime state.
 
-Promotion, IPA export/upload, tester selection, and distribution remain explicit founder boundaries. App Store Connect credentials are injected only into the approved Automic Vault child process for status and upload; they never enter iDevFlow state, receipts, prompts, or source. See the [Apple release capability matrix](docs/release-capabilities.md).
+Promotion, IPA export/upload, price-schedule changes, tester selection, and distribution remain explicit founder boundaries. App Store Connect credentials are injected only into the approved Automic Vault child process for status, pricing, and upload; they never enter iDevFlow state, receipts, prompts, or source. See the [Apple release capability matrix](docs/release-capabilities.md).
 
 ## Installation
 
