@@ -10,6 +10,7 @@ import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { loadLatestPlatformMatrix } from "../verification/matrix.ts";
+import { repairExpiredSessions } from "../recovery/doctor.ts";
 import { hasExistingAppleProject, isExistingProjectAdopted, loadExistingProjectAdoption } from "../recovery/existing-project.ts";
 
 export type CoordinatorRoute =
@@ -218,6 +219,8 @@ export async function inspectCoordinator(repository: RepositoryDescriptor, piSes
 
   const config = await loadConfig(repository.primaryRoot);
   const baseline = await inspectBaseline(repository, config);
+  // ponytail: stale leases only block work; marking them stale preserves every branch and worktree.
+  await repairExpiredSessions(repository, `pi-session:${piSessionId}`);
   const registry = new SessionRegistry(repository);
   const sessions = Object.values((await registry.load()).sessions);
   const activeWriter = sessions.some((session) => session.status === "active");

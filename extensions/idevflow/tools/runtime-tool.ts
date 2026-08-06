@@ -6,7 +6,7 @@ import { applyConfigMigration, discoverConfigMigration, initializeConfig, loadCo
 import { inspectBaseline } from "../git/baseline.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
-import { CONTINUATION_DISPOSITIONS, adoptExistingProject, chooseExistingProjectContinuation, hasExistingAppleProject } from "../recovery/existing-project.ts";
+import { CONTINUATION_DISPOSITIONS, adoptExistingProject, chooseExistingProjectContinuation, hasExistingAppleProject, isExistingProjectAdopted } from "../recovery/existing-project.ts";
 
 export function registerRuntimeTool(pi: ExtensionAPI): void {
   pi.registerTool({
@@ -35,9 +35,12 @@ export function registerRuntimeTool(pi: ExtensionAPI): void {
         return { content: [{ type: "text", text: `Existing project adopted with an audit snapshot at ${adoption.repository.head ?? "uncommitted baseline"}. Define the current product before planning the next change.` }], details: { adopted: true, adoption } };
       }
       if (params.action === "choose_continuation") {
+        if (!await hasExistingAppleProject(repository.primaryRoot)) throw new Error("No existing Apple-platform project was detected for continuation");
         if (!params.disposition || !params.outcome) throw new Error("Continuation requires disposition and founder outcome");
+        const adopted = !await isExistingProjectAdopted(repository);
+        if (adopted) await adoptExistingProject(repository, `pi-session:${ctx.sessionManager.getSessionId()}`);
         const adoption = await chooseExistingProjectContinuation(repository, params.disposition, params.outcome, `pi-session:${ctx.sessionManager.getSessionId()}`);
-        return { content: [{ type: "text", text: `Founder continuation selected: ${adoption.continuation!.disposition.replaceAll("_", " ")}. Define the current product state and this outcome before planning.` }], details: { selected: true, adoption } };
+        return { content: [{ type: "text", text: `Founder continuation selected: ${adoption.continuation!.disposition.replaceAll("_", " ")}. Define the current product state and this outcome before planning.` }], details: { selected: true, adopted, adoption } };
       }
       if (params.action === "migrate") {
         if (!ctx.hasUI) throw new Error("Config migration fails closed without interactive approval");

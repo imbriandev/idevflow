@@ -40,7 +40,7 @@ This returns the lifecycle to `defined` using the existing product definition. P
 
 ## Founder mode
 
-Describe the outcome, not the workflow: “assess this app”, “build this feature”, “fix this defect”, “keep this and start over”, or “prepare a TestFlight handoff”. iDevFlow chooses the eligible session and keeps Git worktrees, claims, receipts, and recovery details behind the status card. It asks for a decision only when work is ambiguous, irreversible, or needs founder-owned Apple evidence.
+Describe the outcome, not the workflow: “assess this app”, “build this feature”, “fix this defect”, “keep this and start over”, or “prepare a TestFlight handoff”. iDevFlow chooses the eligible session and keeps Git worktrees, claims, receipts, and recovery details behind the status card. It handles bounded diagnosis, repair, verification, and valid integration itself; it asks only for scope, unresolved trade-offs, definition/plan/release approval, or founder-owned Apple evidence.
 
 The coordinator does not replace lifecycle gates or run in the background. “Prepare TestFlight handoff” means verified local preparation and a founder handoff; iDevFlow never uploads, selects testers, or distributes.
 

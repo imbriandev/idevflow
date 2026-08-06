@@ -29,11 +29,9 @@ export function registerDoctorTool(pi: ExtensionAPI): void {
       }
       if (params.action === "repair") {
         if (!ctx.isProjectTrusted()) throw new Error("Doctor repair requires a trusted project");
-        if (!ctx.hasUI) throw new Error("Doctor repair fails closed without interactive approval");
-        const approved = await ctx.ui.confirm("Repair iDevFlow registry?", "Expired sessions will be marked stale. No branch or worktree will be deleted.");
-        if (!approved) return { content: [{ type: "text", text: "Doctor repair cancelled." }], details: { repaired: [] } };
+        // ponytail: this only clears expired registry leases; it never deletes source, branches, or worktrees.
         const repaired = await repairExpiredSessions(repository, `pi-session:${ctx.sessionManager.getSessionId()}`);
-        return { content: [{ type: "text", text: `Doctor marked ${repaired.length} expired session(s) stale; all worktrees were preserved.` }], details: { repaired } };
+        return { content: [{ type: "text", text: repaired.length ? `Recovered ${repaired.length} expired work session(s); all work was preserved.` : "No expired work sessions needed recovery." }], details: { repaired } };
       }
       if (params.action === "release") {
         if (!ctx.isProjectTrusted()) throw new Error("Doctor release requires a trusted project");

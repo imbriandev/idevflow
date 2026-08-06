@@ -21,7 +21,7 @@ iDevFlow is a TypeScript Pi package for taking an indie Apple-platform app from 
 
 ## Conversational coordinator
 
-Use iDevFlow conversationally: describe the product, the next change, a defect, or a beta decision. At each interaction boundary, the coordinator reads the durable `.idevflow/` state and injects a safe next-route brief for the agent. `/idev` provides the corresponding dashboard for workflow, runtime, baseline, active writer, pipeline, and recovery status.
+Use iDevFlow conversationally: describe the product, the next change, a defect, or a beta decision. Ask “what is blocking this beta?” for one plain-language readiness check; `idev_flow` combines routine local recovery, signing, candidate, and available App Store Connect status without exposing workflow mechanics. `/idev` remains an optional dashboard for technical detail.
 
 The coordinator does not own authority: lifecycle transitions, founder approvals, worktree writes, integration, promotion, push, upload, and distribution remain kernel-gated operations. It also does not run in the background; it resumes solely from durable state on the next Pi interaction.
 
@@ -38,7 +38,7 @@ The seven lifecycle commands remain optional manual escape hatches:
 - `idev_context` — select bounded specialist iOS references and record required session-bound context receipts.
 - `idev_lifecycle` — integrate stages, approve frozen plans, and record source-bound reviews.
 - `idev_release` — create, approve, locally promote, and hand off exact TestFlight candidates.
-- `idev_apple` — audit iOS signing, provision one founder-approved device, or create a founder-approved local archive; it never uploads or distributes.
+- `idev_apple` — internal Apple capability: audit/signing, App Store Connect status, founder-approved provisioning/archive/upload, and later confirmed remote reconciliation; it never selects testers or distributes.
 - `idev_pipeline` — create, schedule, reconcile, observe, and integrate frozen multi-agent work graphs.
 - `idev_pipeline_worker` — capability-bound worker repair and source-bound submission.
 - `idev_preflight` / `idev_session` — authorize writer worktrees, claims, postflight, and completion.
@@ -46,7 +46,7 @@ The seven lifecycle commands remain optional manual escape hatches:
 - `idev_simulator` / `idev_proof` — capture simulator and XCTest-backed quality evidence.
 - `idev_doctor` — diagnose and conservatively repair local runtime state.
 
-Push, IPA export, App Store Connect upload, tester selection, and distribution remain explicit founder boundaries. `idev_apple` can diagnose signing and perform separately confirmed local provisioning/archive actions, but never receives App Store Connect credentials. See the [Apple release capability matrix](docs/release-capabilities.md).
+Promotion, IPA export/upload, tester selection, and distribution remain explicit founder boundaries. App Store Connect credentials are injected only into the approved Automic Vault child process for status and upload; they never enter iDevFlow state, receipts, prompts, or source. See the [Apple release capability matrix](docs/release-capabilities.md).
 
 ## Installation
 

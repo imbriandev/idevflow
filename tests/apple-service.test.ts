@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { archiveSigningEvidence, signingFindings, signingTargets } from "../extensions/idevflow/apple/service.ts";
+import { archiveSigningEvidence, signingFindings, signingTargets, testFlightExportOptions, testFlightUploadArguments } from "../extensions/idevflow/apple/service.ts";
 
 describe("Apple signing audit", () => {
   it("reports missing team and distribution identity without exposing credentials", () => {
@@ -20,5 +20,12 @@ describe("Apple signing audit", () => {
   it("accepts configured distribution signing", () => {
     const targets = signingTargets([{ target: "App", buildSettings: { PRODUCT_BUNDLE_IDENTIFIER: "com.example.app", DEVELOPMENT_TEAM: "TEAM123", CODE_SIGN_IDENTITY: "Apple Distribution" } }]);
     assert.equal(signingFindings(targets, ["Apple Distribution: Founder"]).length, 0);
+  });
+
+  it("exports an App Store IPA and uploads it without exposing the private key", () => {
+    assert.match(testFlightExportOptions(), /app-store-connect/);
+    const args = testFlightUploadArguments("/tmp/App.ipa");
+    assert.deepEqual(args, ["upload", "/tmp/App.ipa"]);
+    assert.doesNotMatch(args.join(" "), /AuthKey|KEY_ID|ISSUER_ID|BEGIN PRIVATE KEY/);
   });
 });

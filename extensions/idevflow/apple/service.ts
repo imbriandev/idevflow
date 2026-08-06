@@ -1,7 +1,9 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { access, chmod, copyFile, mkdir, readdir, readFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { hashPath } from "../artifacts/manifest.ts";
 import type { iDevFlowConfig } from "../config/config.ts";
@@ -58,9 +60,9 @@ export function signingFindings(targets: readonly SigningTarget[], identities: r
   return findings;
 }
 
-async function command(executable: string, args: readonly string[], cwd: string): Promise<{ stdout: string; stderr: string }> {
+async function command(executable: string, args: readonly string[], cwd: string, env?: NodeJS.ProcessEnv): Promise<{ stdout: string; stderr: string }> {
   try {
-    const result = await execFileAsync(executable, [...args], { cwd, encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
+    const result = await execFileAsync(executable, [...args], { cwd, encoding: "utf8", maxBuffer: 10 * 1024 * 1024, ...(env ? { env } : {}) });
     return { stdout: result.stdout, stderr: result.stderr };
   } catch (error) {
     const result = error as { stdout?: string; stderr?: string };
@@ -142,6 +144,86 @@ export async function writeArchiveReceipt(root: string, candidate: { id: string;
   const archive = await hashPath(archivePath);
   const receipt: ArchiveReceipt = { schemaVersion: 1, candidate: { id: candidate.id, fingerprint: candidate.fingerprint, commit: candidate.commit, target: candidate.target }, archive: { path: archivePath, ...archive }, signing, configurationFindings, verdict: signing.distributionSigned && !configurationFindings.length ? "ready_for_founder_upload_review" : "signing_attention", createdAt: new Date().toISOString(), boundary: { exported: false, uploaded: false, distributed: false } };
   const path = join(root, ".idevflow", "release", "archives", `${candidate.id}.json`);
+  await writeFileAtomically(path, `${JSON.stringify(receipt, null, 2)}\n`);
+  return { receipt, path };
+}
+
+export interface AppStoreStatus {
+  readonly bundleId: string;
+  readonly appFound: boolean;
+  readonly inAppPurchases: readonly { readonly name?: string; readonly productId?: string; readonly state?: string }[];
+  readonly builds: readonly { readonly version?: string; readonly uploadedDate?: string; readonly processingState?: string; readonly expired?: boolean }[];
+}
+
+export interface TestFlightUploadReceipt {
+  readonly schemaVersion: 1;
+  readonly candidate: { readonly id: string; readonly fingerprint: string; readonly commit: string; readonly target: string };
+  readonly ipa: { readonly path: string; readonly sha256: string; readonly bytes: number };
+  readonly uploadedAt: string;
+  readonly boundary: { readonly uploaded: true; readonly distributed: false };
+}
+
+function archiveReceiptPath(root: string, candidateId: string): string { return join(root, ".idevflow", "release", "archives", `${candidateId}.json`); }
+function uploadReceiptPath(root: string, candidateId: string): string { return join(root, ".idevflow", "release", `testflight-upload-${candidateId}.json`); }
+const VAULT_BRIDGE_FILES = ["automic-app-store-connect", "automic-vault.mjs"] as const;
+
+export async function installAutomicVaultBridge(): Promise<string> {
+  const source = dirname(fileURLToPath(import.meta.url));
+  const destination = join(homedir(), ".config", "idevflow", "automic-vault");
+  await mkdir(destination, { recursive: true, mode: 0o700 });
+  for (const name of VAULT_BRIDGE_FILES) {
+    const [from, to] = [join(source, name), join(destination, name)];
+    const expected = await readFile(from, "utf8");
+    const existing = await readFile(to, "utf8").catch(() => undefined);
+    if (existing !== undefined && existing !== expected) throw new SafetyKernelError("Installed Automic Vault bridge differs from this iDevFlow version; replace and bless it explicitly before uploading");
+    if (existing === undefined) await copyFile(from, to);
+    await chmod(to, 0o700);
+  }
+  return join(destination, "automic-app-store-connect");
+}
+
+export function testFlightExportOptions(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>destination</key><string>export</string><key>uploadSymbols</key><true/></dict></plist>\n`;
+}
+
+export function testFlightUploadArguments(ipaPath: string): string[] {
+  return ["upload", ipaPath];
+}
+
+async function installedAutomicVaultBridge(): Promise<string> {
+  const bridge = join(homedir(), ".config", "idevflow", "automic-vault", "automic-app-store-connect");
+  await access(bridge).catch(() => { throw new SafetyKernelError("App Store Connect requires idev_apple setup_vault, then av bless ~/.config/idevflow/automic-vault/automic-app-store-connect"); });
+  return bridge;
+}
+
+export async function appStoreStatus(root: string, config: iDevFlowConfig): Promise<AppStoreStatus> {
+  const project = await discoverXcodeProject(root, config, undefined, "Release");
+  if (project.platform !== "ios" || !project.bundleIdentifier) throw new SafetyKernelError("App Store Connect status requires an iOS app with a bundle identifier");
+  const result = await command(await installedAutomicVaultBridge(), ["status", project.bundleIdentifier], root);
+  try { return JSON.parse(result.stdout) as AppStoreStatus; }
+  catch (error) { throw new SafetyKernelError("App Store Connect returned invalid status data", { cause: error }); }
+}
+
+export async function exportAndUploadTestFlight(
+  root: string,
+  candidate: { readonly id: string; readonly fingerprint: string; readonly commit: string; readonly target: string },
+): Promise<{ receipt: TestFlightUploadReceipt; path: string }> {
+  const archive = JSON.parse(await readFile(archiveReceiptPath(root, candidate.id), "utf8")) as ArchiveReceipt;
+  if (archive.candidate.fingerprint !== candidate.fingerprint || archive.candidate.commit !== candidate.commit || archive.verdict !== "ready_for_founder_upload_review") throw new SafetyKernelError("Upload requires a current distribution-signed archive for the exact promoted candidate");
+  const currentArchive = await hashPath(archive.archive.path);
+  if (currentArchive.sha256 !== archive.archive.sha256) throw new SafetyKernelError("Archive changed after signing receipt");
+  const directory = join(root, ".idevflow", "release", "uploads", candidate.id);
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  const optionsPath = join(directory, "ExportOptions.plist");
+  await writeFileAtomically(optionsPath, testFlightExportOptions());
+  await command("xcodebuild", ["-exportArchive", "-archivePath", archive.archive.path, "-exportPath", directory, "-exportOptionsPlist", optionsPath], root);
+  const ipas = (await readdir(directory)).filter((name) => name.endsWith(".ipa"));
+  if (ipas.length !== 1) throw new SafetyKernelError("Archive export must produce exactly one IPA");
+  const ipaPath = join(directory, ipas[0]!);
+  await command(await installAutomicVaultBridge(), testFlightUploadArguments(ipaPath), root);
+  const ipa = await hashPath(ipaPath);
+  const receipt: TestFlightUploadReceipt = { schemaVersion: 1, candidate: { id: candidate.id, fingerprint: candidate.fingerprint, commit: candidate.commit, target: candidate.target }, ipa: { path: ipaPath, ...ipa }, uploadedAt: new Date().toISOString(), boundary: { uploaded: true, distributed: false } };
+  const path = uploadReceiptPath(root, candidate.id);
   await writeFileAtomically(path, `${JSON.stringify(receipt, null, 2)}\n`);
   return { receipt, path };
 }

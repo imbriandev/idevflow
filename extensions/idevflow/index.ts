@@ -14,6 +14,7 @@ import { registerContextTool } from "./tools/context-tool.ts";
 import { registerBlockerTool } from "./tools/blocker-tool.ts";
 import { registerAppleTool } from "./tools/apple-tool.ts";
 import { registerDoctorTool } from "./tools/doctor-tool.ts";
+import { registerFlowTool } from "./tools/flow-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
 import { registerPreflightTool } from "./tools/preflight-tool.ts";
 import { registerPipelineTool } from "./tools/pipeline-tool.ts";
@@ -43,6 +44,7 @@ export default function piIosExtension(pi: ExtensionAPI): void {
     }
   }
 
+  registerFlowTool(pi);
   registerRuntimeTool(pi);
   registerContextTool(pi);
   registerBlockerTool(pi);
@@ -106,7 +108,7 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   pi.on("before_agent_start", async (event, ctx) => {
     if (state.stage) {
       const contract = STAGE_CONTRACTS[state.stage];
-      return { message: { customType: "idev-stage-contract", content: `Active iDevFlow stage: ${state.stage}. ${contract.purpose} Forbidden actions: ${contract.forbidden.join("; ")}. For non-trivial iOS domain work, call idev_context with stage, risk, task, and surfaces; read only its selected package references. Deterministic gates remain authoritative.`, display: false } };
+      return { message: { customType: "idev-stage-contract", content: `[IDEVFLOW:${state.stage}] ${contract.purpose} Follow the stage skill; kernel tools are authoritative.`, display: false } };
     }
     try {
       const repository = await discoverRepository(ctx.cwd);

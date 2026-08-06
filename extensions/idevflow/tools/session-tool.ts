@@ -37,15 +37,11 @@ export function registerSessionTool(pi: ExtensionAPI): void {
         );
         session = params.sessionId ? candidates.find((candidate) => candidate.id === params.sessionId) : candidates.length === 1 ? candidates[0] : undefined;
         if (!session) throw new SafetyKernelError(`No unique completed session is available to ${params.action}; provide sessionId when multiple sessions are eligible`);
-        if (!ctx.isProjectTrusted() || !ctx.hasUI) throw new SafetyKernelError(`${params.action === "reopen" ? "Reopening" : "Preserving"} a completed session requires a trusted project with interactive founder confirmation`);
+        if (!ctx.isProjectTrusted()) throw new SafetyKernelError(`${params.action === "reopen" ? "Reopening" : "Preserving"} a completed session requires a trusted project`);
         if (params.action === "preserve") {
-          const confirmed = await ctx.ui.confirm("Preserve completed session?", "This parks the completed worktree without integrating it and releases its claims so new work can start. It can later be reopened for repair.");
-          if (!confirmed) return { content: [{ type: "text", text: "Completed-session preservation cancelled." }], details: { preserved: false } };
           const preserved = await registry.changeStatus(session.id, "parked", params.message?.trim() || "preserved by founder", `pi-session:${ctx.sessionManager.getSessionId()}`);
           session = preserved.sessions[session.id]!;
         } else {
-          const confirmed = await ctx.ui.confirm("Reopen completed session for repair?", "This preserves the completed commit as the new base, transfers writer ownership to this chat, and requires fresh postflight before integration.");
-          if (!confirmed) return { content: [{ type: "text", text: "Completed-session reopen cancelled." }], details: { reopened: false } };
           session = await reopenCompletedSession(repository, session, ctx.sessionManager.getSessionId(), params.message ?? "integration validation requires repair");
         }
       }

@@ -54,7 +54,7 @@ describe("conversational coordinator", () => {
     const snapshot = await inspectCoordinator(repository, "coordinator");
     assert.equal(snapshot.route, "existing_audit");
     assert.match(snapshot.reason, /read-only/);
-    assert.match(coordinatorBrief(snapshot), /idev_doctor with action=audit/);
+    assert.match(coordinatorBrief(snapshot), /Audit read-only/);
     await adoptExistingProject(repository, "test");
     assert.equal((await inspectCoordinator(repository, "coordinator")).route, "existing_continuation");
     await chooseExistingProjectContinuation(repository, "repair", "Repair the observed subscription purchase failure.", "founder");
@@ -116,7 +116,7 @@ describe("conversational coordinator", () => {
     assert.equal(snapshot.integrationReadyStage, "define");
     assert.doesNotMatch(JSON.stringify(snapshot), /private product request/);
     const brief = coordinatorBrief(snapshot);
-    assert.match(brief, /Accept it \| Repair it \| Keep it and start over/);
+    assert.match(brief, /Show the definition and ask for acceptance/);
     assert.doesNotMatch(brief, /private product request/);
   });
 
@@ -129,7 +129,7 @@ describe("conversational coordinator", () => {
   it("shows founders a decision card without internal workflow nouns", () => {
     const snapshot = { initialized: true, lifecycle: "planned", revision: 3, route: "founder_plan_approval" as const, reason: "approval required", baselineReady: true, activeWriter: false, activePipeline: false, workerRecommendation: { mode: "pipeline_unavailable" as const, reason: "approval required", eligibleSliceIds: [] } };
     const brief = coordinatorBrief(snapshot);
-    assert.match(brief, /Never advance a lifecycle gate/);
+    assert.match(brief, /Kernel tools, not prose, advance gates/);
     assert.match(formatCoordinatorDashboard(snapshot), /Approve the build plan/);
     assert.match(formatCoordinatorDashboard(snapshot), /What this means: The build plan is ready/);
     assert.match(formatCoordinatorDashboard(snapshot), /You can say:/);

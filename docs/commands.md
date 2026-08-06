@@ -13,7 +13,7 @@
 | `/idev:ship` | Create a release candidate and handoff |
 | `/idev:learn` | Record feedback and the next decision |
 
-Commands are optional entry points. Typed tools remain authoritative. For an existing Apple-platform project whose runtime is still `idea`, `/idev` assesses it read-only, then records adoption and the founder’s stated near-term outcome before definition. This is a coordinator route, not a lifecycle stage or slash command.
+Commands are optional entry points. Typed tools remain authoritative. For an existing Apple-platform project whose runtime is still `idea`, `/idev` assesses it read-only; when the founder states a near-term outcome, iDevFlow records that audit snapshot and outcome together before definition. This is a coordinator route, not a lifecycle stage or slash command.
 
 ## Runtime and recovery
 

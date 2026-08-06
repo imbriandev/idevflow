@@ -22,7 +22,7 @@ Supervised process logs are redacted before persistence. Worker capabilities and
 
 Multi-agent workers receive immutable digest-checked, credential-shaped-content-free task packets. Their capability is random, hash-only in durable state, and checked on every worker tool call. Workers run in distinct supervised Pi processes with package/project extension loading disabled and a restricted tool list. They cannot call integration, release, approval, push, upload, or distribution operations. The coordinator has a leased, journaled ownership boundary; takeover and retry are interactive and fail closed. Lost, conflicted, or exhausted worker source is retained for diagnosis rather than automatically removed.
 
-`idev_doctor report` is metadata-only: it returns aggregate state, revisions, identifiers, and recommendations, but excludes source/task text, worker packets and logs, approval tokens, receipt payloads, and credentials. Report generation is read-only; repair remains a separate interactive operation.
+`idev_doctor report` is metadata-only: it returns aggregate state, revisions, identifiers, and recommendations, but excludes source/task text, worker packets and logs, approval tokens, receipt payloads, and credentials. Expired leases are recovered automatically; this only marks registry records stale and never deletes source, branches, or worktrees.
 
 Specialist guidance is package-owned static Markdown selected by `idev_context`; no project-provided reference path is honored. Pipeline workers may read only canonical `.md` files under that package `references/` directory, using a symlink-safe containment check. This read exception never permits package source, project source outside a claimed worktree, or any write.
 

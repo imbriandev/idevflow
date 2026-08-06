@@ -5,10 +5,12 @@ import { randomUUID } from "node:crypto";
 import { createDiagnosticReport } from "../extensions/idevflow/recovery/report.ts";
 import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
 import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
+import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 import { registerPipelineTool } from "../extensions/idevflow/tools/pipeline-tool.ts";
 import { registerReleaseTool } from "../extensions/idevflow/tools/release-tool.ts";
 import { registerRuntimeTool } from "../extensions/idevflow/tools/runtime-tool.ts";
+import { registerLifecycleTool } from "../extensions/idevflow/tools/lifecycle-tool.ts";
 import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
@@ -57,10 +59,19 @@ describe("production diagnostics and interaction gates", () => {
     const runtime = registry.tools.get("idev_runtime")!;
     const context = nonInteractiveContext(fixture.root);
     await runtime.execute("id", { action: "initialize" }, undefined, undefined, context);
-    const adopted: any = await runtime.execute("id", { action: "adopt_existing" }, undefined, undefined, context);
-    assert.equal(adopted.details.adopted, true);
     const selected: any = await runtime.execute("id", { action: "choose_continuation", disposition: "repair", outcome: "Fix subscription restore." }, undefined, undefined, context);
     assert.equal(selected.details.selected, true);
+    assert.equal(selected.details.adopted, true);
+  });
+
+  it("starts a bounded repair without a second founder confirmation", async () => {
+    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
+    const registry = toolRegistry(); registerLifecycleTool(registry as any);
+    const repository = await discoverRepository(fixture.root);
+    await new RuntimeStore(repository).initialize("test");
+    const result: any = await registry.tools.get("idev_lifecycle")!.execute("id", { action: "start_test_repair", evidence: "Launch crashes after update." }, undefined, undefined, nonInteractiveContext(fixture.root));
+    assert.equal(result.details.started, true);
+    assert.equal((await new RuntimeStore(repository).status())?.lifecycle, "testing");
   });
 
   it("honors an interactive cancellation before coordinator mutation", async () => {

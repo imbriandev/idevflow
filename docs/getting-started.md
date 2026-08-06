@@ -73,13 +73,7 @@ The coordinator will recommend an **existing-project audit** first. Keep that au
 idev_doctor audit
 ```
 
-After reviewing the findings, explicitly acknowledge adoption:
-
-```text
-idev_runtime adopt_existing
-```
-
-Adoption stores only local onboarding metadata. It does not modify source, advance lifecycle state, or grant verification/release evidence. Next, define the current product and plan only the next change.
+Then state the one outcome you need, for example: “Fix subscription restore.” iDevFlow records the audit snapshot and that outcome together. It does not modify source, advance lifecycle state, or grant verification/release evidence. Next, define the current product and plan only that change.
 
 This prevents an existing codebase from receiving unearned lifecycle or release evidence.
 

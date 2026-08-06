@@ -10,8 +10,7 @@ export type StateReader = () => SessionState;
 export type StateWriter = (state: SessionState) => void;
 
 function kickoffPrompt(stage: Stage, request: string): string {
-  const contract = STAGE_CONTRACTS[stage];
-  return `[IDEVFLOW STAGE: ${stage.toUpperCase()}]\n\nRead and follow the available \`idev-${stage}\` skill before acting.\n\nFounder request:\n${request || "Inspect the trusted project and determine the narrowest responsible task for this stage."}\n\nContract:\n- Purpose: ${contract.purpose}\n- Required evidence: ${contract.requiredEvidence.join("; ")}\n- Forbidden: ${contract.forbidden.join("; ")}\n- Default next route: ${contract.defaultNext}\n\nFor non-trivial iOS product, SwiftUI, persistence, concurrency, testing, privacy, monetization, accessibility, performance, widget, App Intent, audit, or release work, call \`idev_context\` with this stage, risk, task, and relevant surfaces before loading specialist references. Read only returned references.\n\nDo not claim a deterministic gate has passed unless a iDevFlow kernel tool provides that result.`;
+  return `[IDEVFLOW:${stage}] Follow idev-${stage}.\nRequest: ${request || "Find the narrowest responsible task."}\nUse kernel evidence; do not claim a gate passed from prose.`;
 }
 
 async function dispatchPrompt(pi: ExtensionAPI, ctx: ExtensionContext, prompt: string): Promise<void> {

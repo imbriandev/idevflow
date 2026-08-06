@@ -1,0 +1,2 @@
+#!/usr/local/bin/av inject --allow-missing-keys +APP_CONNECT_KEY +APPSTORE_KEY_ID +APPSTORE_ISSUER_ID /bin/sh
+exec /usr/bin/env node "$HOME/.config/idevflow/automic-vault/automic-vault.mjs" "$@"

@@ -73,22 +73,16 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
       }
       if (!ctx.isProjectTrusted()) throw new SafetyKernelError("Lifecycle mutation is blocked in an untrusted project");
       if (params.action === "start_test_repair") {
-        if (!ctx.hasUI) throw new SafetyKernelError("Test repair start fails closed without interactive UI");
         const reason = params.evidence?.trim() ?? "";
         if (!reason) throw new SafetyKernelError("Test repair requires observed failing behavior or an external blocker");
-        const confirmed = await ctx.ui.confirm("Start bounded test repair?", `Authorize one claimed test-stage repair for: ${reason}. It preserves the current lifecycle route after verified integration and does not approve a product plan or release.`);
-        if (!confirmed) return { content: [{ type: "text", text: "Test repair cancelled." }], details: { started: false } };
         await startTestRepair(repository, ctx.sessionManager.getSessionId(), reason);
-        return { content: [{ type: "text", text: "Test repair started. Create a test-stage writer session, reproduce the blocker, repair the narrowest cause, and integrate fresh evidence." }], details: { started: true } };
+        return { content: [{ type: "text", text: "Test repair started. Reproduce, repair the narrowest cause, and integrate fresh evidence." }], details: { started: true } };
       }
       if (params.action === "start_maintenance") {
-        if (!ctx.hasUI) throw new SafetyKernelError("Maintenance start fails closed without interactive UI");
         const reason = params.evidence?.trim() ?? "";
         if (!reason) throw new SafetyKernelError("Maintenance requires evidence describing the user-visible issue or change");
-        const confirmed = await ctx.ui.confirm("Start maintenance loop?", `Return the shipped product to planning for this change: ${reason}`);
-        if (!confirmed) return { content: [{ type: "text", text: "Maintenance start cancelled." }], details: { started: false } };
         await startMaintenance(repository, ctx.sessionManager.getSessionId(), reason);
-        return { content: [{ type: "text", text: "Maintenance loop started. Plan the narrowest verified change before implementation." }], details: { started: true } };
+        return { content: [{ type: "text", text: "Maintenance started. Plan the narrowest verified change before implementation." }], details: { started: true } };
       }
       if (params.action === "approve_plan") {
         if (!ctx.hasUI) throw new SafetyKernelError("Plan approval fails closed without interactive UI");
