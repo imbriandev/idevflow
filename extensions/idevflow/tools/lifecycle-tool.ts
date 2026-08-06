@@ -2,32 +2,14 @@ import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { loadConfig } from "../config/config.ts";
-import { loadDefinedProduct, validateIdeaQuality } from "../documents/product.ts";
-import { approvePlan, integrateCurrentStage, recordReview, startMaintenance, startTestRepair } from "../lifecycle/service.ts";
+import { loadDefinedProduct } from "../documents/product.ts";
+import { approvePlan, definitionAcceptance, integrateCurrentStage, recordReview, startMaintenance, startTestRepair } from "../lifecycle/service.ts";
 import { loadWorkGraph } from "../planning/work-graph.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import type { WriterSession } from "../sessions/types.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
-
-export function definitionAcceptancePrompt(
-  critique: { readonly alternative: string; readonly adoptionRisk: string; readonly invalidatingSignal: string },
-  unresolvedCriticalAssumptionIds: readonly string[],
-): { readonly title: string; readonly message: string } {
-  return {
-    title: "Accept definition and known risks?",
-    message: [
-      `Alternative: ${critique.alternative}`,
-      `Adoption risk: ${critique.adoptionRisk}`,
-      `Invalidating signal: ${critique.invalidatingSignal}`,
-      unresolvedCriticalAssumptionIds.length
-        ? `Unresolved high-impact assumptions: ${unresolvedCriticalAssumptionIds.join(", ")}`
-        : "No unresolved high-impact assumptions.",
-      "Accept this exact definition and continue to planning?",
-    ].join("\n"),
-  };
-}
 
 export function selectIntegrationSession(sessions: readonly WriterSession[], piSessionId: string, requestedSessionId?: string): WriterSession | undefined {
   const ready = sessions.filter((session) => session.status === "ready_for_integration");
@@ -103,15 +85,11 @@ export function registerLifecycleTool(pi: ExtensionAPI): void {
       let founderAcceptedAssumptionIds: readonly string[] = [];
       let founderAcceptedCritique = false;
       if (session.stage === "define") {
-        const config = await loadConfig(repository.primaryRoot);
-        const product = await loadDefinedProduct(session.worktreePath, config.documents);
-        const quality = validateIdeaQuality(product.memory, product.slc);
-        if (product.memory.schemaVersion !== 3) throw new SafetyKernelError("Definition requires schema version 3 discovery documents");
         if (!ctx.hasUI) throw new SafetyKernelError("Definition integration fails closed without interactive founder confirmation");
-        const prompt = definitionAcceptancePrompt(product.memory.ideaValidation.skepticalCritique, quality.unresolvedCriticalAssumptionIds);
-        founderAcceptedCritique = await ctx.ui.confirm(prompt.title, prompt.message);
-        if (!founderAcceptedCritique) return { content: [{ type: "text", text: "Definition integration cancelled; founder acceptance is required." }], details: { integrated: false, unresolvedCriticalAssumptionIds: quality.unresolvedCriticalAssumptionIds } };
-        founderAcceptedAssumptionIds = quality.unresolvedCriticalAssumptionIds;
+        const acceptance = await definitionAcceptance(repository, session);
+        founderAcceptedCritique = await ctx.ui.confirm(acceptance.prompt.title, acceptance.prompt.message);
+        if (!founderAcceptedCritique) return { content: [{ type: "text", text: "Definition integration cancelled; founder acceptance is required." }], details: { integrated: false, unresolvedCriticalAssumptionIds: acceptance.unresolvedCriticalAssumptionIds } };
+        founderAcceptedAssumptionIds = acceptance.unresolvedCriticalAssumptionIds;
       }
       const receipt = await integrateCurrentStage(repository, session, params.evidence ?? "", params.sliceId, founderAcceptedAssumptionIds, founderAcceptedCritique);
       return { content: [{ type: "text", text: `Integrated ${receipt.stage} commit ${receipt.sourceCommit}; stage receipt ${receipt.id}.` }], details: { receipt } };

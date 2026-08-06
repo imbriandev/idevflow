@@ -1,6 +1,6 @@
 # iDevFlow
 
-iDevFlow is a TypeScript Pi package for taking an indie Apple-platform app from idea through authorized implementation and commit-bound verification. It supports iOS, macOS, and exact-commit universal verification matrices, with separate manual TestFlight and macOS distribution handoffs.
+iDevFlow is a TypeScript Pi package for taking an indie Apple-platform app from idea through authorized implementation, commit-bound verification, and founder-approved internal TestFlight upload. It supports iOS first, with macOS verification and distribution readiness.
 
 ## Product principles
 
@@ -39,8 +39,6 @@ The seven lifecycle commands remain optional manual escape hatches:
 - `idev_lifecycle` — integrate stages, approve frozen plans, and record source-bound reviews.
 - `idev_release` — create, approve, locally promote, and hand off exact TestFlight candidates.
 - `idev_apple` — internal Apple capability: audit/signing, App Store Connect status, founder-approved provisioning/archive/upload, and later confirmed remote reconciliation; it never selects testers or distributes.
-- `idev_pipeline` — create, schedule, reconcile, observe, and integrate frozen multi-agent work graphs.
-- `idev_pipeline_worker` — capability-bound worker repair and source-bound submission.
 - `idev_preflight` / `idev_session` — authorize writer worktrees, claims, postflight, and completion.
 - `idev_exec` / `idev_verify` — run managed verification and emit fingerprinted receipts.
 - `idev_simulator` / `idev_proof` — capture simulator and XCTest-backed quality evidence.

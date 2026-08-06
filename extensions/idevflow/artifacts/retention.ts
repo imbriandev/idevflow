@@ -1,7 +1,7 @@
 import { readdir, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 
-export async function pruneExpiredArtifactDirectories(
+export async function pruneExpiredDirectories(
   root: string,
   retentionDays: number,
   preserve: ReadonlySet<string> = new Set(),
@@ -24,3 +24,5 @@ export async function pruneExpiredArtifactDirectories(
   }
   return removed;
 }
+
+export const pruneExpiredArtifactDirectories = pruneExpiredDirectories;

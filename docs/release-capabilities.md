@@ -23,4 +23,4 @@ Call `idev_apple setup_vault` once to install the stable `~/.config/idevflow/aut
 
 Use `idev_blocker open` with `kind=apple_developer`, `external_validation`, or `release` for sandbox-device, Apple Developer, App Store Connect, or TestFlight work. These records require a founder/coordinator owner, the evidence required to close them, and a retry action. They block candidate creation only when still open at ship time.
 
-Workers never receive Apple credentials or authority to call Apple, release, blocker, approval, upload, or distribution tools.
+iDevFlow never exposes Apple credentials to prompts, receipts, or project state.

@@ -7,10 +7,8 @@ import { RISKS, STAGES, STAGE_CONTRACTS } from "../lifecycle/contracts.ts";
 import { discoverRepository } from "../repository/discovery.ts";
 import { RuntimeStore } from "../state/runtime-store.ts";
 import { writePreflight } from "../sessions/service.ts";
-import type { SessionState } from "../state/session-state.ts";
-import { assertPacketPath, readWorkerPacket } from "../workers/packets.ts";
 
-export function registerPreflightTool(pi: ExtensionAPI, readState: () => SessionState): void {
+export function registerPreflightTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "idev_preflight",
     label: "iDevFlow Preflight",
@@ -28,19 +26,6 @@ export function registerPreflightTool(pi: ExtensionAPI, readState: () => Session
       write: Type.Boolean(),
     }),
     async execute(_id, params, _signal, _update, ctx) {
-      const selectedStage = readState().stage;
-      const workerPacketPath = process.env.IDEVFLOW_WORKER_PACKET;
-      if (workerPacketPath) {
-        const discovered = await discoverRepository(ctx.cwd);
-        const packet = await readWorkerPacket(await assertPacketPath(workerPacketPath, discovered.primaryRoot), process.env.IDEVFLOW_WORKER_PACKET_DIGEST);
-        const requestedPaths = [...params.paths].sort();
-        if (params.stage !== "build" || !params.write || params.task !== packet.task || params.risk !== packet.risk || JSON.stringify(requestedPaths) !== JSON.stringify([...packet.claims].sort())) {
-          throw new Error("Worker preflight must exactly match its immutable task packet");
-        }
-      }
-      if (selectedStage && selectedStage !== params.stage) {
-        throw new Error(`Preflight stage ${params.stage} does not match active stage ${selectedStage}`);
-      }
       if (params.write && !STAGE_CONTRACTS[params.stage].writeCapable) {
         throw new Error(`Stage ${params.stage} is read-only and cannot receive write preflight`);
       }

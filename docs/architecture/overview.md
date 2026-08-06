@@ -2,7 +2,7 @@
 
 ## Mission
 
-iDevFlow turns a founder's product intent into a narrow Apple-platform product, an approved implementation graph, isolated code changes, and artifact-backed verification. It supports separate deliberate TestFlight and macOS distribution-readiness handoffs; signing, upload, notarization, and distribution remain manual boundaries.
+iDevFlow turns a founder's product intent into a narrow Apple-platform product, an approved implementation graph, isolated code changes, and artifact-backed verification. It supports founder-approved internal TestFlight upload and macOS distribution readiness; push, tester selection, distribution, and macOS notarization remain manual boundaries.
 
 It is not a prompt pack. It is a deterministic workflow kernel integrated with Pi's commands, skills, tools, events, sessions, and TUI.
 
@@ -19,14 +19,13 @@ The TypeScript extension owns:
 - Xcode and simulator resource coordination
 - verification policy, receipts, evidence, and artifacts
 - approval tokens and candidate promotion
-- worker scheduling and reconciliation
 - recovery diagnostics and cleanup
 
 These behaviors must not depend on an LLM correctly remembering prose.
 
 ### Conversational coordinator
 
-The coordinator is one founder-facing conversational layer, not a second workflow engine. At Pi interaction boundaries it projects sanitized durable runtime, baseline, writer-session, pipeline, and candidate state into a safe next-route brief. It prioritizes recovery of an owned writer or active pipeline over new work, and recommends worker delegation only for independent low/medium-risk slices of an exact approved graph.
+The coordinator is one founder-facing conversational layer, not a second workflow engine. At Pi interaction boundaries it projects sanitized durable runtime, baseline, and writer-session state into a safe next-route brief. It prioritizes recovery of an owned writer over new work.
 
 It cannot mutate lifecycle state or infer approval from prose. It creates no background daemon, retains no separate authoritative state, and does not expose task text, capabilities, credentials, or worktree paths in the founder dashboard. `/idev` renders the same safe projection; the seven stage commands remain manual escape hatches.
 
@@ -44,19 +43,6 @@ Skills provide progressively disclosed Apple-platform expertise for seven stages
 
 Skills may recommend actions but cannot mutate workflow state directly. State changes pass through typed tools. For non-trivial Apple-platform work, `idev_context` deterministically selects a bounded cold path from the package-owned specialist knowledge base; skills then read only selected references. The current reference set is iOS-focused while verification supports iOS, macOS, and universal projects. This improves domain reasoning without loading all guidance or granting authority.
 
-### Worker runtime
-
-Workers run as isolated Pi processes in extension-created Git worktrees. A worker receives:
-
-- a bounded task packet
-- a stage-specific system prompt
-- only relevant skills and references
-- a restricted tool set
-- claimed paths
-- risk and verification requirements
-
-Workers can produce source commits and receipts. They cannot integrate, approve risk, retry themselves, promote, push, upload, or distribute. Their packets are digest-checked and secret-free; their random capabilities are hash-only at rest and redacted from logs.
-
 ### Project state
 
 Durable state belongs to `.idevflow/` in the iOS app repository, independently of Pi conversation sessions. Pi custom entries mirror session-local UI state but are not the source of truth.
@@ -66,7 +52,7 @@ Durable state belongs to `.idevflow/` in the iOS app repository, independently o
 ```text
 extensions/idevflow/
   commands/       command registration and argument handling
-  coordinator/    state projection, conversational brief, delegation policy
+  coordinator/    state projection and conversational brief
   lifecycle/      contracts, transitions, risk, and policy
   state/          event journal, snapshots, locking, migrations
   git/            worktrees, claims, integration, promotion
@@ -74,9 +60,7 @@ extensions/idevflow/
   xcode/          project discovery and xcodebuild execution
   simulator/      device discovery, leases, boot, and cleanup
   verification/   profiles, fingerprints, receipts, evidence
-  pipeline/       work graph, scheduler, repair, reconciliation
   release/        verified iOS and macOS distribution handoffs
-  workers/        isolated Pi worker processes and task packets
   ui/             status, dashboard, approvals, and renderers
 skills/           progressive iOS stage guidance
 references/       cold-path specialist guidance
@@ -89,8 +73,7 @@ templates/        project memory and evidence templates
 - `registerTool` exposes typed kernel operations to agents.
 - `tool_call` enforces write and shell policy before execution.
 - `before_agent_start` refreshes owned leases and injects the current stage contract plus a sanitized coordinator route.
-- `session_start` restores the session mirror and dashboard.
-- `appendEntry` records branch-aware UI state, never authoritative project state.
+- `session_start` starts with a clean UI hint and reads durable project state.
 - `setStatus` and `setWidget` show stage and gate progress.
 - `ctx.ui.confirm` performs human approvals in interactive/RPC modes.
 - non-interactive approval-requiring operations fail closed.
@@ -99,11 +82,10 @@ templates/        project memory and evidence templates
 
 1. No source write before successful write preflight.
 2. No write outside the current worktree and claimed paths.
-3. No integration from a dirty or uncommitted worker tree.
+3. No integration from a dirty or uncommitted writer tree.
 4. No verification receipt without an exact source fingerprint.
 5. No candidate approval reusable for another commit or target.
 6. No push, upload, or distribution implied by candidate approval.
-7. No project-local worker prompt loaded before project trust.
 8. No secret included in model-visible output or persisted artifact.
 9. No crash recovery operation deletes unintegrated work.
 10. No LLM prose alone advances a lifecycle transition.
@@ -130,16 +112,8 @@ Tracked product memory and SLC documents produce the definition fingerprint. A m
 
 Completed writer commits fast-forward onto the integration branch under a lock. Define, plan, build, test, review, and post-handoff learning produce local source-bound receipts. Build integration must descend from the approved plan and map claims to exactly one approved slice. Machine-readable review verdicts apply only to the currently verified integration commit.
 
-## Multi-agent pipeline
-
-An approved graph is frozen into a durable pipeline record with a coordinator lease and integration epoch. The scheduler runs only dependency-ready, non-overlapping slices up to configured bounded concurrency. Each worker gets its own branch and worktree, repairs only through a finite deterministic budget, then submits test and review evidence bound to its finished commit.
-
-The coordinator is the sole integration authority. It cherry-picks ready commits in an isolated temporary worktree under the integration lock and uses compare-and-swap publication. Failed multi-slice batches recursively split; conflicted source is retained rather than guessed away. Once every slice integrates, a clean candidate worktree receives fresh combined verification and advances the lifecycle to `review_passed`. Any later integration-branch drift makes that pipeline candidate stale.
-
-Pipeline state is hash-chained independently of lifecycle and writer session state. Reconciliation detects lost workers, preserves their worktrees, and requires an explicit bounded retry. Dashboard and doctor diagnostics expose coordinator, worker, batch, and stale-candidate state.
-
 ## Release boundary
 
-For iOS, the default result is a verified TestFlight handoff. Candidate creation requires fresh release verification, xcresult/test evidence, source-bound visual/accessibility/performance proof, privacy readiness, monetization reconciliation when detected, exact bundle/target metadata, and known issues. Interactive ship approval produces an expiring single-use capability bound to candidate commit, fingerprint, and target; promotion fast-forwards only the local base branch.
+For iOS, the default result is a founder-approved internal TestFlight upload. Candidate creation requires fresh Release build/test evidence, privacy readiness, monetization reconciliation when detected, exact bundle/target metadata, and known issues. Screenshots plus XCTest accessibility/performance evidence are opt-in full-release gates. One interactive approval binds the exact candidate, promotion, archive, export, and upload; Pi never pushes, selects testers, or distributes.
 
 For macOS, iDevFlow emits a source-bound Mac App Store or notarized-distribution readiness handoff after the corresponding security and release gates pass. Handoff packages explicitly record that push, signing, archive/upload, notarization, and distribution did not occur; each remains a manual boundary.

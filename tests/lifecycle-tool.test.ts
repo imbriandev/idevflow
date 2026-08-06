@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { definitionAcceptancePrompt, selectIntegrationSession } from "../extensions/idevflow/tools/lifecycle-tool.ts";
+import { definitionAcceptancePrompt } from "../extensions/idevflow/lifecycle/service.ts";
+import { selectIntegrationSession } from "../extensions/idevflow/tools/lifecycle-tool.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
 
 function session(id: string, piSessionId: string, status: WriterSession["status"]): WriterSession {

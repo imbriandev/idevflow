@@ -1,15 +1,15 @@
 # iDevFlow Operations Playbook
 
-This guide explains how to operate iDevFlow from an idea through a verified TestFlight handoff. iDevFlow is in beta. Git push, App Store Connect upload, and tester distribution remain explicit founder decisions.
+This guide explains how to operate iDevFlow from an idea through a founder-approved internal TestFlight upload. iDevFlow is in beta. Git push, tester selection, and distribution remain explicit founder decisions.
 
-Use one conversational coordinator agent for everyday work. It reads durable project state, recommends the next safe route, and can supervise the existing worker pipeline only after an approved plan. The seven `/idev:*` stage commands remain optional manual escape hatches; founders do not need to memorize them.
+Use one conversational coordinator agent for everyday work. It reads durable project state and recommends the next safe route. The seven `/idev:*` stage commands remain optional manual escape hatches; founders do not need to memorize them.
 
 ## 1. Prepare a project
 
 Before starting, make sure the project has:
 
 - a clean Git repository with a valid author identity;
-- Node.js 22+, Pi 0.82.1+, and macOS/Xcode with an iOS simulator when app verification is needed;
+- Node.js 22+, Pi 0.82.1+, and macOS/Xcode with an iOS simulator when app verification is needed; new iOS shells also require XcodeGen (`brew install xcodegen`);
 - at least a minimal Xcode app project before building a new app.
 
 Start Pi in the app directory:
@@ -93,11 +93,11 @@ iDevFlow requires fresh release verification, critical ship context, privacy/rel
 
 When StoreKit or RevenueCat is present, the monetization manifest and restore/entitlement evidence must be complete.
 
-After all gates pass, iDevFlow creates a candidate. The founder approves an exact candidate using an expiring token; `promote` changes only the local base branch. `handoff` creates a package containing evidence, known issues, and the remaining external steps.
+After all gates pass, iDevFlow creates a candidate. When the founder approves the exact internal beta, `idev_flow prepare_testflight` promotes it locally, archives, exports, and uploads it through the credential-isolated bridge. It never pushes, selects testers, or distributes.
 
 Use `idev_apple audit` first when signing, profiles, device registration, App Groups, or archive configuration block a beta. It reports Xcode Release signing settings and locally installed signing identities without reading credentials. `idev_apple provision_device` can run Xcode automatic development provisioning for one specified UDID only after an interactive founder confirmation. After a promoted exact candidate, `idev_apple archive` can create a local signed archive after another confirmation.
 
-`idev_apple` never receives App Store Connect credentials and never uploads or distributes. Push, App Store Connect upload, and tester distribution remain separate explicit founder boundaries.
+`idev_apple` receives App Store Connect credentials only through the founder-approved Automic Vault bridge. After one explicit approval for an exact promoted candidate, it may archive, export, and upload an internal beta; it never selects testers or distributes. Push and tester distribution remain separate founder boundaries.
 
 ## 8. Learn — decide the next iteration from feedback
 
@@ -116,10 +116,8 @@ Ask the agent for the current status, or use these tools:
 - `idev_runtime status` — runtime and lifecycle state;
 - `idev_doctor status` — human-readable diagnostics;
 - `idev_doctor report` — metadata-only support report;
-- `idev_pipeline status` — multi-agent pipeline state;
-- `idev_pipeline reconcile` — detects and reconciles lost worker leases according to policy.
 
-Recovery never deletes unintegrated source, branches, worktrees, packets, or logs. Do not delete `.idevflow/` while work is active.
+Recovery never deletes unintegrated source, branches, or worktrees. Do not delete `.idevflow/` while work is active.
 
 ## Founder checklist
 

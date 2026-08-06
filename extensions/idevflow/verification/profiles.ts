@@ -17,18 +17,35 @@ export const PROFILE_CONTRACTS: Readonly<Record<VerificationProfile, Verificatio
   quick: { profile: "quick", xcodeActions: ["build"], swiftActions: ["build"], requiredProofs: [], reusable: true },
   slice: { profile: "slice", xcodeActions: ["build"], swiftActions: ["build", "test"], requiredProofs: [], reusable: true },
   integration: { profile: "integration", xcodeActions: ["build", "test"], swiftActions: ["build", "test"], requiredProofs: ["simulator"], reusable: true },
-  release: { profile: "release", xcodeActions: ["build", "test"], swiftActions: ["build", "test"], requiredProofs: ["simulator", "screenshot", "accessibility", "performance"], reusable: false },
+  // ponytail: internal TestFlight needs a fresh build/test; screenshots and XCTest audits opt in for external/store-quality evidence.
+  release: { profile: "release", xcodeActions: ["build", "test"], swiftActions: ["build", "test"], requiredProofs: ["simulator"], reusable: false },
 };
+
+export function requiredProofs(
+  profile: VerificationProfile,
+  requiredScreenshotVariants: readonly string[],
+  requireXCTestEvidence: boolean,
+  platform: "ios" | "macos" = "ios",
+): ProofKind[] {
+  const required = new Set(PROFILE_CONTRACTS[profile].requiredProofs);
+  if (profile === "release" && requiredScreenshotVariants.length) required.add("screenshot");
+  if (profile === "release" && requireXCTestEvidence) {
+    required.add("accessibility");
+    required.add("performance");
+  }
+  return [...required].filter((kind) => platform === "ios" || kind !== "simulator");
+}
 
 export function missingRequiredProofs(
   profile: VerificationProfile,
   proofs: readonly { readonly kind: ProofKind; readonly metadata: Readonly<Record<string, unknown>> }[],
   requiredScreenshotVariants: readonly string[],
   platform: "ios" | "macos" = "ios",
+  requireXCTestEvidence = false,
 ): ProofKind[] {
-  const required = PROFILE_CONTRACTS[profile].requiredProofs.filter((kind) => platform === "ios" || kind !== "simulator");
+  const required = requiredProofs(profile, requiredScreenshotVariants, requireXCTestEvidence, platform);
   const missing = new Set(required.filter((kind) => !proofs.some((proof) => proof.kind === kind)));
-  if (profile === "release") {
+  if (profile === "release" && requiredScreenshotVariants.length) {
     const variants = new Set(proofs.filter((proof) => proof.kind === "screenshot").map((proof) => proof.metadata.variant));
     if (requiredScreenshotVariants.some((variant) => !variants.has(variant))) missing.add("screenshot");
   }

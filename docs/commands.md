@@ -1,5 +1,9 @@
 # Commands and tools
 
+## Founder entry point
+
+Use `idev_flow` for normal operation: `status`, `bootstrap_ios`, `continue`, `approve_plan`, `start_maintenance`, `start_test_repair`, `beta_readiness`, `reconcile_iap`, and `prepare_testflight`. It owns the founder checkpoints; the typed tools below are kernel implementation details used by Pi to create and verify evidence.
+
 ## Commands
 
 | Command | Use |
@@ -13,7 +17,7 @@
 | `/idev:ship` | Create a release candidate and handoff |
 | `/idev:learn` | Record feedback and the next decision |
 
-Commands are optional entry points. Typed tools remain authoritative. For an existing Apple-platform project whose runtime is still `idea`, `/idev` assesses it read-only; when the founder states a near-term outcome, iDevFlow records that audit snapshot and outcome together before definition. This is a coordinator route, not a lifecycle stage or slash command.
+Commands are optional stage hints for Pi. Durable project state and typed kernel results remain authoritative. For an existing Apple-platform project whose runtime is still `idea`, `/idev` assesses it read-only; when the founder states a near-term outcome, iDevFlow records that audit snapshot and outcome together before definition. This is a coordinator route, not a lifecycle stage or slash command.
 
 ## Runtime and recovery
 
@@ -38,9 +42,7 @@ Commands are optional entry points. Typed tools remain authoritative. For an exi
 ## Release and coordination
 
 - `idev_release` — create, approve, promote, and hand off release candidates.
-- `idev_apple` — read signing settings, founder-confirm one development provisioning action, or create a local signed archive and receipt for an exact promoted candidate; never export, upload, or distribute.
-- `idev_pipeline` — create, schedule, reconcile, observe, and integrate an approved work graph.
-- `idev_pipeline_worker` — submit work from an authorized worker process.
+- `idev_apple` — read signing/App Store Connect status, founder-confirm provisioning, archive, or exact internal TestFlight upload; never selects testers or distributes.
 
 See [Apple release capability matrix](release-capabilities.md) for the exact founder boundary at each release operation.
 

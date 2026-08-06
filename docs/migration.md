@@ -26,7 +26,7 @@ Update project instructions and personal prompts to use `/idev:*`, `idev_*`, and
 
 ## Configuration schemas
 
-The current schema is version 7. iDevFlow migrates supported older schemas in order and writes a backup beside the configuration:
+The current schema is version 9. iDevFlow migrates supported older schemas in order and writes a backup beside the configuration:
 
 ```text
 .idevflow/config.json.v<old>.backup
@@ -40,7 +40,7 @@ A migration:
 4. validates the result;
 5. atomically replaces the configuration.
 
-If validation fails, the old configuration remains in place. Unknown future schemas are not guessed or downgraded.
+If validation fails, the old configuration remains in place. Schema-7 projects migrate to full release evidence, preserving their previous screenshot/XCTest gates; schema-8 pipeline settings are removed, leaving one durable writer session per repository. Unknown future schemas are not guessed or downgraded.
 
 ## Product namespace
 

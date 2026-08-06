@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { writeFileAtomically } from "../state/atomic-file.ts";
 import { SafetyKernelError } from "../state/errors.ts";
 
-export const CONFIG_SCHEMA_VERSION = 7 as const;
+export const CONFIG_SCHEMA_VERSION = 9 as const;
 
 export type ApplePlatform = "ios" | "macos";
 
@@ -46,19 +46,8 @@ export interface DocumentConfig {
 export interface ReleaseConfig {
   readonly approvalTtlSeconds: number;
   readonly defaultTarget: "testflight-internal" | "testflight-external";
-}
-
-export interface PipelineConfig {
-  readonly enabled: boolean;
-  readonly maxSlices: number;
-  readonly maxConcurrency: number;
-  readonly maxBatchesPerRun: number;
-  readonly maxRepairCycles: number;
-  readonly maxWorkerAttempts: number;
-  readonly workerTimeoutSeconds: number;
-  readonly workerLeaseSeconds: number;
-  readonly coordinatorLeaseSeconds: number;
-  readonly candidateWorktreeDirectory?: string;
+  /** Internal TestFlight is fast by default; full requires proof artifacts. */
+  readonly evidence: "internal" | "full";
 }
 
 export interface iDevFlowConfig {
@@ -75,7 +64,6 @@ export interface iDevFlowConfig {
   readonly quality: QualityConfig;
   readonly documents: DocumentConfig;
   readonly release: ReleaseConfig;
-  readonly pipeline: PipelineConfig;
 }
 
 export const DEFAULT_CONFIG: iDevFlowConfig = {
@@ -91,9 +79,9 @@ export const DEFAULT_CONFIG: iDevFlowConfig = {
     receiptMaxAgeHours: 24,
     artifactRetentionDays: 14,
     requireXcresult: true,
-    requiredScreenshotVariants: ["compact-light", "compact-dark", "accessibility-xxxl"],
+    requiredScreenshotVariants: [],
   },
-  quality: { requireXCTestEvidence: true, performanceBudgets: {} },
+  quality: { requireXCTestEvidence: false, performanceBudgets: {} },
   documents: {
     productMemory: "docs/idevflow/product-memory.json",
     slcSpec: "docs/idevflow/slc.json",
@@ -102,18 +90,7 @@ export const DEFAULT_CONFIG: iDevFlowConfig = {
     monetization: "docs/idevflow/monetization.json",
     releaseManifest: "docs/idevflow/release.json",
   },
-  release: { approvalTtlSeconds: 1_800, defaultTarget: "testflight-internal" },
-  pipeline: {
-    enabled: true,
-    maxSlices: 12,
-    maxConcurrency: 2,
-    maxBatchesPerRun: 4,
-    maxRepairCycles: 2,
-    maxWorkerAttempts: 2,
-    workerTimeoutSeconds: 3_600,
-    workerLeaseSeconds: 300,
-    coordinatorLeaseSeconds: 600,
-  },
+  release: { approvalTtlSeconds: 1_800, defaultTarget: "testflight-internal", evidence: "internal" },
 };
 
 export async function migrateLegacyRuntimeDirectory(primaryRoot: string): Promise<void> {
@@ -186,8 +163,8 @@ export function validateConfig(value: unknown): iDevFlowConfig {
   positiveInteger(config.verification.receiptMaxAgeHours, "verification.receiptMaxAgeHours");
   positiveInteger(config.verification.artifactRetentionDays, "verification.artifactRetentionDays");
   if (typeof config.verification.requireXcresult !== "boolean") throw new SafetyKernelError("iDevFlow config verification.requireXcresult must be boolean");
-  if (!Array.isArray(config.verification.requiredScreenshotVariants) || config.verification.requiredScreenshotVariants.length === 0 || config.verification.requiredScreenshotVariants.some((variant) => typeof variant !== "string" || !variant)) {
-    throw new SafetyKernelError("iDevFlow config verification.requiredScreenshotVariants must be a non-empty string array");
+  if (!Array.isArray(config.verification.requiredScreenshotVariants) || config.verification.requiredScreenshotVariants.some((variant) => typeof variant !== "string" || !variant)) {
+    throw new SafetyKernelError("iDevFlow config verification.requiredScreenshotVariants must be a string array");
   }
 
   if (!config.quality || typeof config.quality !== "object") throw new SafetyKernelError("iDevFlow config quality must be an object");
@@ -207,18 +184,12 @@ export function validateConfig(value: unknown): iDevFlowConfig {
   if (config.release.defaultTarget !== "testflight-internal" && config.release.defaultTarget !== "testflight-external") {
     throw new SafetyKernelError("iDevFlow config release.defaultTarget is invalid");
   }
-  if (!config.pipeline || typeof config.pipeline !== "object") throw new SafetyKernelError("iDevFlow config pipeline must be an object");
-  if (typeof config.pipeline.enabled !== "boolean") throw new SafetyKernelError("iDevFlow config pipeline.enabled must be boolean");
-  const maxSlices = positiveInteger(config.pipeline.maxSlices, "pipeline.maxSlices");
-  const maxConcurrency = positiveInteger(config.pipeline.maxConcurrency, "pipeline.maxConcurrency");
-  if (maxConcurrency > maxSlices || maxConcurrency > 8) throw new SafetyKernelError("pipeline.maxConcurrency must not exceed maxSlices or 8");
-  positiveInteger(config.pipeline.maxBatchesPerRun, "pipeline.maxBatchesPerRun");
-  positiveInteger(config.pipeline.maxRepairCycles, "pipeline.maxRepairCycles");
-  positiveInteger(config.pipeline.maxWorkerAttempts, "pipeline.maxWorkerAttempts");
-  positiveInteger(config.pipeline.workerTimeoutSeconds, "pipeline.workerTimeoutSeconds", 60);
-  positiveInteger(config.pipeline.workerLeaseSeconds, "pipeline.workerLeaseSeconds", 60);
-  positiveInteger(config.pipeline.coordinatorLeaseSeconds, "pipeline.coordinatorLeaseSeconds", 60);
-  optionalString(config.pipeline.candidateWorktreeDirectory, "pipeline.candidateWorktreeDirectory");
+  if (config.release.evidence !== "internal" && config.release.evidence !== "full") {
+    throw new SafetyKernelError("iDevFlow config release.evidence must be internal or full");
+  }
+  if (config.release.evidence === "full" && (!config.quality.requireXCTestEvidence || !config.verification.requiredScreenshotVariants.length)) {
+    throw new SafetyKernelError("Full release evidence requires XCTest quality evidence and screenshot variants");
+  }
   return config as iDevFlowConfig;
 }
 
@@ -243,7 +214,11 @@ export interface ConfigMigrationPlan {
 
 function migrateLegacy(raw: Record<string, unknown>): iDevFlowConfig {
   const legacyXcode = typeof raw.xcode === "object" && raw.xcode ? raw.xcode as Record<string, unknown> : {};
+  const legacyVerification = typeof raw.verification === "object" && raw.verification ? raw.verification as Record<string, unknown> : {};
+  const legacyQuality = typeof raw.quality === "object" && raw.quality ? raw.quality as Record<string, unknown> : {};
+  const legacyRelease = typeof raw.release === "object" && raw.release ? raw.release as Record<string, unknown> : {};
   const platform = legacyXcode.platform === "macos" ? "macos" : "ios";
+  const evidence = legacyRelease.evidence === "internal" || (legacyQuality.requireXCTestEvidence === false && Array.isArray(legacyVerification.requiredScreenshotVariants) && legacyVerification.requiredScreenshotVariants.length === 0) ? "internal" : "full";
   return validateConfig({
     schemaVersion: CONFIG_SCHEMA_VERSION,
     baseBranch: raw.baseBranch ?? DEFAULT_CONFIG.baseBranch,
@@ -254,11 +229,11 @@ function migrateLegacy(raw: Record<string, unknown>): iDevFlowConfig {
     ...(raw.worktreeDirectory ? { worktreeDirectory: raw.worktreeDirectory } : {}),
     xcode: { ...DEFAULT_CONFIG.xcode, ...legacyXcode, requiredPlatforms: legacyXcode.requiredPlatforms ?? [platform] },
     simulator: { ...DEFAULT_CONFIG.simulator, ...(typeof raw.simulator === "object" ? raw.simulator : {}) },
-    verification: { ...DEFAULT_CONFIG.verification, ...(typeof raw.verification === "object" ? raw.verification : {}) },
-    quality: { ...DEFAULT_CONFIG.quality, ...(typeof raw.quality === "object" ? raw.quality : {}) },
+    verification: { ...DEFAULT_CONFIG.verification, requiredScreenshotVariants: ["compact-light", "compact-dark", "accessibility-xxxl"], ...legacyVerification },
+    quality: { ...DEFAULT_CONFIG.quality, requireXCTestEvidence: true, ...legacyQuality },
     documents: { ...DEFAULT_CONFIG.documents, ...(typeof raw.documents === "object" ? raw.documents : {}) },
-    release: { ...DEFAULT_CONFIG.release, ...(typeof raw.release === "object" ? raw.release : {}) },
-    pipeline: { ...DEFAULT_CONFIG.pipeline, ...(typeof raw.pipeline === "object" ? raw.pipeline : {}) },
+    // Existing projects keep strict evidence unless they had explicitly disabled it.
+    release: { ...DEFAULT_CONFIG.release, ...legacyRelease, evidence },
   });
 }
 
@@ -276,7 +251,7 @@ export async function discoverConfigMigration(primaryRoot: string): Promise<Conf
     validateConfig(raw);
     return { needed: false, fromVersion: CONFIG_SCHEMA_VERSION, toVersion: CONFIG_SCHEMA_VERSION };
   }
-  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3 && raw.schemaVersion !== 4 && raw.schemaVersion !== 5 && raw.schemaVersion !== 6) {
+  if (raw.schemaVersion !== undefined && raw.schemaVersion !== 0 && raw.schemaVersion !== 1 && raw.schemaVersion !== 2 && raw.schemaVersion !== 3 && raw.schemaVersion !== 4 && raw.schemaVersion !== 5 && raw.schemaVersion !== 6 && raw.schemaVersion !== 7 && raw.schemaVersion !== 8) {
     throw new SafetyKernelError(`No migration path from config schema ${String(raw.schemaVersion)}`);
   }
   return {

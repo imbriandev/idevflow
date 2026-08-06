@@ -30,12 +30,8 @@ Release proof is fresh. Non-release receipts may be reused only while their sour
 
 ## Approvals
 
-Plan approval binds the exact plan and graph fingerprint. Ship approval is interactive, expiring, single-use, and bound to a candidate commit, fingerprint, and target. Approval never grants permission to push, upload, sign, notarize, or distribute.
-
-## Workers
-
-Optional workers run in isolated processes and worktrees with bounded task packets and claimed paths. They can submit source and evidence, but only the coordinator can integrate. Workers cannot approve, promote, push, upload, or distribute.
+Plan approval binds the exact plan and graph fingerprint. Ship approval is interactive, expiring, single-use, and bound to a candidate commit, fingerprint, and target. Approval never grants permission to push, select testers, or distribute.
 
 ## Release boundaries
 
-For iOS, iDevFlow prepares an exact TestFlight handoff. For macOS, it prepares distribution-readiness evidence. Signing, archive/export, notarization, upload, App Store Connect operations, push, and tester distribution remain explicit manual steps.
+For iOS, founder approval can authorize iDevFlow to archive, export, and upload one exact internal TestFlight build. For macOS, it prepares distribution-readiness evidence. Push, tester selection, distribution, and macOS notarization remain explicit manual steps.

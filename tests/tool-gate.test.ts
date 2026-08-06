@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { rm } from "node:fs/promises";
-import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { initializeConfig } from "../extensions/idevflow/config/config.ts";
+import type { Stage } from "../extensions/idevflow/lifecycle/contracts.ts";
 import { registerToolGate } from "../extensions/idevflow/policy/tool-gate.ts";
 import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
 import { writePreflight } from "../extensions/idevflow/sessions/service.ts";
@@ -12,21 +12,19 @@ import { createGitFixture } from "./helpers.ts";
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
-  delete process.env.IDEVFLOW_WORKER_PACKET;
-  delete process.env.IDEVFLOW_WORKER_EXTENSION;
   for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
 });
 
 type ToolCallHandler = (event: { toolName: string; input: Record<string, unknown> }, ctx: ExtensionContext) => Promise<{ block: true; reason?: string } | undefined>;
 
-function captureGate(): ToolCallHandler {
+function captureGate(stage: Stage = "build"): ToolCallHandler {
   let handler: ToolCallHandler | undefined;
   const pi = {
     on(name: string, candidate: ToolCallHandler) {
       if (name === "tool_call") handler = candidate;
     },
   } as unknown as ExtensionAPI;
-  registerToolGate(pi, () => ({ schemaVersion: 1, stage: "build" }));
+  registerToolGate(pi, () => ({ schemaVersion: 1, stage }));
   if (!handler) throw new Error("tool gate was not registered");
   return handler;
 }
@@ -67,15 +65,16 @@ describe("tool gate", () => {
     assert.equal(outside?.block, true);
   });
 
-  it("allows a worker to read only package-owned Markdown specialist references before preflight", async () => {
+  it("uses the active writer stage instead of a stale slash-command hint", async () => {
     const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
-    process.env.IDEVFLOW_WORKER_PACKET = "/packet.json";
-    process.env.IDEVFLOW_WORKER_EXTENSION = join(process.cwd(), "extensions", "idevflow", "index.ts");
-    const gate = captureGate(); const ctx = context(fixture.root);
-    const reference: Record<string, unknown> = { path: join(process.cwd(), "references", "swiftui-experience.md") };
-    assert.equal(await gate({ toolName: "read", input: reference }, ctx), undefined);
-    const nonReference = await gate({ toolName: "read", input: { path: join(process.cwd(), "extensions", "idevflow", "index.ts") } }, ctx);
-    assert.equal(nonReference?.block, true);
+    const repository = await discoverRepository(fixture.root);
+    await new RuntimeStore(repository).initialize("test");
+    await initializeConfig(repository.primaryRoot);
+    cleanups.push(async () => rm(`${fixture.root}.idev-worktrees`, { recursive: true, force: true }));
+    const session = await writePreflight(repository, { piSessionId: "pi-gate", stage: "test", task: "verify", risk: "medium", paths: ["README.md"] });
+    const input: Record<string, unknown> = { path: "README.md" };
+    assert.equal(await captureGate("plan")({ toolName: "write", input }, context(fixture.root)), undefined);
+    assert.equal(input.path, `${session.worktreePath}/README.md`);
   });
 
   it("blocks mutating shell and routes read-only shell to the writer worktree", async () => {

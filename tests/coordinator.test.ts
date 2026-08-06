@@ -5,7 +5,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { coordinatorBrief } from "../extensions/idevflow/coordinator/prompt.ts";
-import { founderStatus, inspectCoordinator, isLikelyiDevFlowIntent, recommendWorkerDelegation } from "../extensions/idevflow/coordinator/service.ts";
+import { founderStatus, inspectCoordinator, isLikelyiDevFlowIntent, stageForRoute } from "../extensions/idevflow/coordinator/service.ts";
 import { formatCoordinatorDashboard } from "../extensions/idevflow/ui/status.ts";
 import type { WorkSlice } from "../extensions/idevflow/planning/work-graph.ts";
 import { discoverRepository } from "../extensions/idevflow/repository/discovery.ts";
@@ -91,16 +91,18 @@ describe("conversational coordinator", () => {
     assert.equal((await new RuntimeStore(repository).status())?.lifecycle, "defined");
   });
 
-  it("prefers existing writer ownership and never exposes its task", async () => {
+  it("reports existing writer ownership without exposing its task or mutating an expired lease", async () => {
     const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
     const repository = await discoverRepository(fixture.root);
     const state = await new RuntimeStore(repository).initialize("test");
     const now = new Date().toISOString();
     const secret = "build token=super-secret-never-display";
-    const session: WriterSession = { id: randomUUID(), piSessionId: "other-agent", stage: "build", task: secret, risk: "medium", status: "active", branch: "idev/coordinator-test", worktreePath: fixture.root, baseCommit: repository.head!, claims: ["README.md"], createdAt: now, heartbeatAt: now, leaseExpiresAt: new Date(Date.now() + 60_000).toISOString() };
+    const session: WriterSession = { id: randomUUID(), piSessionId: "other-agent", stage: "build", task: secret, risk: "medium", status: "active", branch: "idev/coordinator-test", worktreePath: fixture.root, baseCommit: repository.head!, claims: ["README.md"], createdAt: now, heartbeatAt: now, leaseExpiresAt: new Date(Date.now() - 60_000).toISOString() };
     await new SessionRegistry(repository).start(session, "test");
     const snapshot = await inspectCoordinator(repository, "coordinator");
     assert.equal(snapshot.route, "resume_writer");
+    assert.equal(snapshot.activeWriterStage, "build");
+    assert.equal((await new SessionRegistry(repository).load()).sessions[session.id]?.status, "active");
     assert.doesNotMatch(JSON.stringify(snapshot), /super-secret-never-display/);
     assert.equal((await new RuntimeStore(repository).status())?.revision, state.revision);
   });
@@ -120,15 +122,10 @@ describe("conversational coordinator", () => {
     assert.doesNotMatch(brief, /private product request/);
   });
 
-  it("permits only independent low/medium-risk work to be pipeline eligible", () => {
-    assert.equal(recommendWorkerDelegation([slice("one", "low"), slice("two", "medium")]).mode, "pipeline_eligible");
-    assert.equal(recommendWorkerDelegation([slice("one", "low"), slice("two", "high")]).mode, "pipeline_blocked_by_risk");
-    assert.equal(recommendWorkerDelegation([slice("one", "low", ["earlier"]), slice("two", "medium")]).mode, "single_agent");
-  });
-
   it("shows founders a decision card without internal workflow nouns", () => {
-    const snapshot = { initialized: true, lifecycle: "planned", revision: 3, route: "founder_plan_approval" as const, reason: "approval required", baselineReady: true, activeWriter: false, activePipeline: false, workerRecommendation: { mode: "pipeline_unavailable" as const, reason: "approval required", eligibleSliceIds: [] } };
+    const snapshot = { initialized: true, lifecycle: "planned", revision: 3, route: "founder_plan_approval" as const, reason: "approval required", baselineReady: true, activeWriter: false };
     const brief = coordinatorBrief(snapshot);
+    assert.match(brief, /idev_flow approve_plan/);
     assert.match(brief, /Kernel tools, not prose, advance gates/);
     assert.match(formatCoordinatorDashboard(snapshot), /Approve the build plan/);
     assert.match(formatCoordinatorDashboard(snapshot), /What this means: The build plan is ready/);
@@ -136,6 +133,8 @@ describe("conversational coordinator", () => {
     assert.doesNotMatch(formatCoordinatorDashboard(snapshot), /route|receipt|worktree/i);
     assert.equal(founderStatus(snapshot).stage, "Approve the build plan");
     assert.match(founderStatus(snapshot).suggestedRequest, /plain language/);
+    assert.equal(stageForRoute("build"), "build");
+    assert.equal(stageForRoute("resume_writer"), undefined);
     assert.equal(isLikelyiDevFlowIntent("I want to build an iOS app"), true);
     assert.equal(isLikelyiDevFlowIntent("Explain this generic TypeScript function"), false);
   });

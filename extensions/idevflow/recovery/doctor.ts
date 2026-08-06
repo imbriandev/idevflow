@@ -3,7 +3,6 @@ import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { BlockerStore } from "../blockers/store.ts";
-import { PipelineStore } from "../pipeline/store.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import { SessionRegistry } from "../sessions/registry.ts";
 import type { WriterSession } from "../sessions/types.ts";
@@ -77,18 +76,18 @@ export async function diagnoseSimulatorLeases(repository: RepositoryDescriptor):
   });
 }
 
-export type DoctorLockTarget = "runtime" | "sessions" | "pipeline" | "simulators" | "integration";
+export type DoctorLockTarget = "runtime" | "sessions" | "simulators" | "integration";
 
 function lockPath(repository: RepositoryDescriptor, target: DoctorLockTarget): string {
   const root = join(repository.primaryRoot, ".idevflow", "state");
   return target === "sessions" ? join(root, "sessions", "registry.lock")
     : target === "simulators" ? join(root, "simulators", "leases.lock")
       : target === "integration" ? join(root, "locks", "integration.lock")
-        : join(root, "locks", `${target}.lock`);
+        : join(root, "locks", "runtime.lock");
 }
 
 export async function diagnoseLocks(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {
-  const diagnostics = await Promise.all((["runtime", "sessions", "pipeline", "simulators", "integration"] as const).map(async (target): Promise<SessionDiagnostic | undefined> => {
+  const diagnostics = await Promise.all((["runtime", "sessions", "simulators", "integration"] as const).map(async (target): Promise<SessionDiagnostic | undefined> => {
     const lock = await inspectFileLock(lockPath(repository, target));
     return lock ? { sessionId: `lock:${target}`, severity: "warning", message: `Lock held by pid ${lock.owner?.pid ?? "unknown"} on ${lock.owner?.hostname ?? "unknown"}`, recommendation: "If the owner is gone and normal recovery times out, use doctor release_lock with explicit confirmation" } : undefined;
   }));
@@ -107,22 +106,6 @@ export async function diagnoseBlockers(repository: RepositoryDescriptor): Promis
     message: `[${blocker.kind}] ${blocker.title}`,
     recommendation: blocker.nextAction,
   }));
-}
-
-export async function diagnosePipelines(repository: RepositoryDescriptor): Promise<SessionDiagnostic[]> {
-  const pipelines = await new PipelineStore(repository).list();
-  const now = Date.now();
-  return pipelines.flatMap((pipeline) => {
-    const running = Object.values(pipeline.slices).filter((slice) => slice.status === "working");
-    const expiredRuns = running.flatMap((slice) => slice.runs.filter((run) => run.state === "running" && Date.parse(run.leaseExpiresAt) < now));
-    const severity: SessionDiagnostic["severity"] = ["blocked", "cancelled", "stale_candidate"].includes(pipeline.status) || expiredRuns.length ? "warning" : "info";
-    return [{
-      sessionId: `pipeline:${pipeline.id}`,
-      severity,
-      message: `${pipeline.status}; ${running.length} working, ${expiredRuns.length} expired worker lease(s), ${pipeline.batches.length} integration batch record(s)`,
-      recommendation: expiredRuns.length ? "Run idev_pipeline reconcile as the current coordinator; worker source will be preserved" : pipeline.status === "stale_candidate" ? "Inspect integration drift and create or run a new pipeline deliberately" : "Use idev_pipeline status for source-bound slice and batch receipts",
-    }];
-  });
 }
 
 export async function repairExpiredSessions(repository: RepositoryDescriptor, actor: string): Promise<WriterSession[]> {

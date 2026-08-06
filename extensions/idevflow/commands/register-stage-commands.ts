@@ -1,9 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { STAGES, STAGE_CONTRACTS, type Stage } from "../lifecycle/contracts.ts";
-import {
-  persistSessionState,
-  type SessionState,
-} from "../state/session-state.ts";
+import type { SessionState } from "../state/session-state.ts";
 import { updateStatus } from "../ui/status.ts";
 
 export type StateReader = () => SessionState;
@@ -38,7 +35,6 @@ export function registerStageCommands(
           startedAt: new Date().toISOString(),
         };
         writeState(state);
-        persistSessionState(pi, state);
         updateStatus(ctx, readState());
         await dispatchPrompt(pi, ctx, kickoffPrompt(stage, state.request ?? ""));
       },

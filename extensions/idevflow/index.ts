@@ -1,15 +1,14 @@
-import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { registerStageCommands } from "./commands/register-stage-commands.ts";
 import { coordinatorBrief } from "./coordinator/prompt.ts";
-import { inspectCoordinator, isLikelyiDevFlowIntent } from "./coordinator/service.ts";
+import { inspectCoordinator, isLikelyiDevFlowIntent, stageForRoute } from "./coordinator/service.ts";
 import { registerToolGate } from "./policy/tool-gate.ts";
 import { loadConfig } from "./config/config.ts";
 import { STAGE_CONTRACTS } from "./lifecycle/contracts.ts";
 import { discoverRepository } from "./repository/discovery.ts";
 import { SessionRegistry } from "./sessions/registry.ts";
 import { heartbeatSession } from "./sessions/service.ts";
-import { emptySessionState, restoreSessionState, type SessionState } from "./state/session-state.ts";
+import { emptySessionState, type SessionState } from "./state/session-state.ts";
 import { registerContextTool } from "./tools/context-tool.ts";
 import { registerBlockerTool } from "./tools/blocker-tool.ts";
 import { registerAppleTool } from "./tools/apple-tool.ts";
@@ -17,8 +16,6 @@ import { registerDoctorTool } from "./tools/doctor-tool.ts";
 import { registerFlowTool } from "./tools/flow-tool.ts";
 import { registerExecTool } from "./tools/exec-tool.ts";
 import { registerPreflightTool } from "./tools/preflight-tool.ts";
-import { registerPipelineTool } from "./tools/pipeline-tool.ts";
-import { registerPipelineWorkerTool } from "./tools/pipeline-worker-tool.ts";
 import { registerLifecycleTool } from "./tools/lifecycle-tool.ts";
 import { registerReleaseTool } from "./tools/release-tool.ts";
 import { registerProofTool } from "./tools/proof-tool.ts";
@@ -29,7 +26,6 @@ import { registerVerificationTool } from "./tools/verification-tool.ts";
 import { registerVisualReviewTool } from "./tools/visual-review-tool.ts";
 import { formatCoordinatorDashboard, updateCoordinatorStatus, updateStatus } from "./ui/status.ts";
 import { checkForUpdate } from "./ui/update.ts";
-import { heartbeatPipelineWorker } from "./workers/service.ts";
 
 export default function piIosExtension(pi: ExtensionAPI): void {
   let state: SessionState = emptySessionState();
@@ -49,11 +45,9 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   registerContextTool(pi);
   registerBlockerTool(pi);
   registerAppleTool(pi);
-  registerPipelineTool(pi, fileURLToPath(import.meta.url));
-  registerPipelineWorkerTool(pi);
   registerLifecycleTool(pi);
   registerReleaseTool(pi);
-  registerPreflightTool(pi, () => state);
+  registerPreflightTool(pi);
   registerSessionTool(pi);
   registerExecTool(pi);
   registerSimulatorTool(pi);
@@ -79,7 +73,8 @@ export default function piIosExtension(pi: ExtensionAPI): void {
   });
 
   pi.on("session_start", async (_event, ctx) => {
-    state = restoreSessionState(ctx);
+    // Slash commands are one-chat hints; durable project state routes every new Pi session.
+    state = emptySessionState();
     updateStatus(ctx, state);
     await refreshWriterLease(ctx);
     try {
@@ -95,26 +90,20 @@ export default function piIosExtension(pi: ExtensionAPI): void {
 
   pi.on("turn_start", async (_event, ctx) => {
     await refreshWriterLease(ctx);
-    if (process.env.IDEVFLOW_WORKER_PACKET) {
-      try {
-        const repository = await discoverRepository(ctx.cwd);
-        await heartbeatPipelineWorker(repository, ctx.sessionManager.getSessionId());
-      } catch {
-        // The worker tool surfaces an authoritative capability error before submission.
-      }
-    }
   });
 
   pi.on("before_agent_start", async (event, ctx) => {
-    if (state.stage) {
-      const contract = STAGE_CONTRACTS[state.stage];
-      return { message: { customType: "idev-stage-contract", content: `[IDEVFLOW:${state.stage}] ${contract.purpose} Follow the stage skill; kernel tools are authoritative.`, display: false } };
-    }
     try {
       const repository = await discoverRepository(ctx.cwd);
       const snapshot = await inspectCoordinator(repository, ctx.sessionManager.getSessionId());
       if (!snapshot.initialized && !isLikelyiDevFlowIntent(event.prompt)) return;
       updateCoordinatorStatus(ctx, snapshot);
+      // Durable writer ownership wins. A persisted slash-command hint is valid only for its current lifecycle route.
+      const stage = snapshot.activeWriterStage ?? (state.stage === stageForRoute(snapshot.route) ? state.stage : undefined);
+      if (stage) {
+        const contract = STAGE_CONTRACTS[stage];
+        return { message: { customType: "idev-stage-contract", content: `[IDEVFLOW:${stage}] ${contract.purpose} Follow the stage skill; kernel tools are authoritative.`, display: false } };
+      }
       return { message: { customType: "idev-coordinator", content: coordinatorBrief(snapshot), display: false } };
     } catch {
       // A non-Git or unavailable project should not change ordinary Pi conversation behavior.

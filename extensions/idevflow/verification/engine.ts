@@ -6,7 +6,7 @@ import { requireContextReceipt } from "../context/receipts.ts";
 import { changedFiles } from "../git/changes.ts";
 import { hashArtifact } from "../artifacts/manifest.ts";
 import { assertArtifactContainsNoSecrets } from "../artifacts/security.ts";
-import { pruneExpiredArtifactDirectories } from "../artifacts/retention.ts";
+import { pruneExpiredArtifactDirectories, pruneExpiredDirectories } from "../artifacts/retention.ts";
 import { runSupervised, type ProcessSpec, type SupervisedProcessResult } from "../process/supervisor.ts";
 import type { RepositoryDescriptor } from "../repository/discovery.ts";
 import type { WriterSession } from "../sessions/types.ts";
@@ -18,7 +18,7 @@ import { discoverXcodeProject, systemProbe, type XcodeProjectDescriptor } from "
 import { discoverToolchain } from "../xcode/toolchain.ts";
 import { sourceFingerprint, verificationFingerprint } from "./fingerprint.ts";
 import { collectProof, simulatorProof, type ProofInput } from "./proofs.ts";
-import { PROFILE_CONTRACTS, VERIFICATION_PROFILES, assertVerificationProfileSupported, missingRequiredProofs, selectVerificationProfile, type VerificationProfile } from "./profiles.ts";
+import { PROFILE_CONTRACTS, VERIFICATION_PROFILES, assertVerificationProfileSupported, missingRequiredProofs, requiredProofs, selectVerificationProfile, type VerificationProfile } from "./profiles.ts";
 import { VerificationReceiptStore } from "./receipts.ts";
 import type { ArtifactRecord, QualityProof, VerificationReceipt } from "./types.ts";
 import { assertPassedXCTest, assertPerformanceBudget, assertQualityTestSource } from "./xctest-evidence.ts";
@@ -139,7 +139,8 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
     const providedProofs: QualityProof[] = [];
     for (const proof of input.proofs ?? []) providedProofs.push(await collectProof(proof, artifactDirectory));
     const providedKinds = new Set(providedProofs.map((proof) => proof.kind));
-    const externallyRequired = contract.requiredProofs.filter((kind) => kind !== "simulator");
+    const fullReleaseEvidence = input.config.release.evidence === "full";
+    const externallyRequired = requiredProofs(profile, fullReleaseEvidence ? input.config.verification.requiredScreenshotVariants : [], fullReleaseEvidence && input.config.quality.requireXCTestEvidence, project?.platform ?? "ios").filter((kind) => kind !== "simulator");
     const missingExternal = externallyRequired.filter((kind) => !providedKinds.has(kind));
     if (missingExternal.length) throw new SafetyKernelError(`${profile} verification requires proof inputs: ${missingExternal.join(", ")}`);
 
@@ -148,7 +149,9 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
     let testEvidenceValid = true;
     let testResultBundle: string | undefined;
     const startedAt = new Date().toISOString();
-    const resources = join(input.repository.primaryRoot, ".idevflow", "resources", input.session.id);
+    const resourcesRoot = join(input.repository.primaryRoot, ".idevflow", "resources");
+    await pruneExpiredDirectories(resourcesRoot, input.config.verification.artifactRetentionDays, new Set([input.session.id]));
+    const resources = join(resourcesRoot, input.session.id);
     const derivedData = join(resources, "DerivedData");
     const scratch = join(resources, "SwiftScratch");
     const actions = project?.kind === "swift-package" ? contract.swiftActions : contract.xcodeActions;
@@ -274,7 +277,7 @@ export async function verifySession(input: VerificationInput): Promise<Verificat
         commandsPassed: commands.length,
       }, artifactDirectory));
     }
-    const missingProofs = missingRequiredProofs(profile, proofs, input.config.verification.requiredScreenshotVariants, project?.platform ?? "ios");
+    const missingProofs = missingRequiredProofs(profile, proofs, fullReleaseEvidence ? input.config.verification.requiredScreenshotVariants : [], project?.platform ?? "ios", fullReleaseEvidence && input.config.quality.requireXCTestEvidence);
     const finalSuccess = success && missingProofs.length === 0;
     artifacts.push(...proofs.map((proof) => proof.artifact));
 

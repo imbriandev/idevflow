@@ -3,7 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyConfigMigration, DEFAULT_CONFIG, discoverConfigMigration, initializeConfig, loadConfig, validateConfig } from "../extensions/idevflow/config/config.ts";
+import { applyConfigMigration, CONFIG_SCHEMA_VERSION, DEFAULT_CONFIG, discoverConfigMigration, initializeConfig, loadConfig, validateConfig } from "../extensions/idevflow/config/config.ts";
 
 const roots: string[] = [];
 afterEach(async () => Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))));
@@ -15,6 +15,13 @@ describe("configuration", () => {
     assert.deepEqual(await loadConfig(root), DEFAULT_CONFIG);
     assert.deepEqual(await initializeConfig(root), DEFAULT_CONFIG);
     assert.deepEqual(JSON.parse(await readFile(join(root, ".idevflow", "config.json"), "utf8")), DEFAULT_CONFIG);
+  });
+
+  it("defaults to one founder run and minimal internal-beta evidence", () => {
+    assert.equal(DEFAULT_CONFIG.release.evidence, "internal");
+    assert.equal(DEFAULT_CONFIG.quality.requireXCTestEvidence, false);
+    assert.deepEqual(DEFAULT_CONFIG.verification.requiredScreenshotVariants, []);
+    assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, release: { ...DEFAULT_CONFIG.release, evidence: "full" } }), /Full release evidence/);
   });
 
   it("atomically adopts legacy runtime state and fails closed on conflicting roots", async () => {
@@ -47,7 +54,7 @@ describe("configuration", () => {
     assert.equal((await discoverConfigMigration(root)).needed, true);
     const migrated = await applyConfigMigration(root);
     assert.equal(migrated.baseBranch, "trunk");
-    assert.equal(migrated.schemaVersion, 7);
+    assert.equal(migrated.schemaVersion, CONFIG_SCHEMA_VERSION);
     assert.equal(JSON.parse(await readFile(`${path}.v0.backup`, "utf8")).schemaVersion, 0);
   });
 
@@ -65,8 +72,9 @@ describe("configuration", () => {
       verificationTimeoutSeconds: 1_800,
     }), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 7);
+    assert.equal(migrated.schemaVersion, CONFIG_SCHEMA_VERSION);
     assert.deepEqual(migrated.verification.requiredScreenshotVariants, ["compact-light", "compact-dark", "accessibility-xxxl"]);
+    assert.equal(migrated.release.evidence, "full");
   });
 
   it("migrates the milestone-4 schema with lifecycle defaults", async () => {
@@ -79,23 +87,9 @@ describe("configuration", () => {
     delete legacy.release;
     await writeFile(path, JSON.stringify(legacy), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 7);
+    assert.equal(migrated.schemaVersion, CONFIG_SCHEMA_VERSION);
     assert.equal(migrated.documents.workGraph, "docs/idevflow/work-graph.json");
     assert.equal(migrated.release.defaultTarget, "testflight-internal");
-  });
-
-  it("migrates the milestone-5 schema with pipeline defaults", async () => {
-    const root = await mkdtemp(join(tmpdir(), "idev-config-"));
-    roots.push(root);
-    const path = join(root, ".idevflow", "config.json");
-    await initializeConfig(root);
-    const legacy = { ...DEFAULT_CONFIG, schemaVersion: 3 } as Record<string, unknown>;
-    delete legacy.pipeline;
-    await writeFile(path, JSON.stringify(legacy), "utf8");
-    const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 7);
-    assert.equal(migrated.pipeline.maxConcurrency, 2);
-    assert.equal(migrated.pipeline.maxRepairCycles, 2);
   });
 
   it("migrates the specialist-knowledge schema with XCTest quality defaults", async () => {
@@ -107,7 +101,7 @@ describe("configuration", () => {
     delete legacy.quality;
     await writeFile(path, JSON.stringify(legacy), "utf8");
     const migrated = await applyConfigMigration(root);
-    assert.equal(migrated.schemaVersion, 7);
+    assert.equal(migrated.schemaVersion, CONFIG_SCHEMA_VERSION);
     assert.equal(migrated.quality.requireXCTestEvidence, true);
   });
 
@@ -118,6 +112,16 @@ describe("configuration", () => {
     await initializeConfig(root);
     await writeFile(path, JSON.stringify({ ...DEFAULT_CONFIG, schemaVersion: 5, xcode: { configuration: "Debug" } }), "utf8");
     assert.deepEqual((await applyConfigMigration(root)).xcode, { platform: "ios", requiredPlatforms: ["ios"], configuration: "Debug" });
+  });
+
+  it("removes retired pipeline settings during schema-8 migration", async () => {
+    const root = await mkdtemp(join(tmpdir(), "idev-config-"));
+    roots.push(root);
+    const path = join(root, ".idevflow", "config.json");
+    await initializeConfig(root);
+    await writeFile(path, JSON.stringify({ ...DEFAULT_CONFIG, schemaVersion: 8, pipeline: { enabled: true } }), "utf8");
+    const migrated = await applyConfigMigration(root) as unknown as Record<string, unknown>;
+    assert.equal(migrated.pipeline, undefined);
   });
 
   it("migrates schema 6 with a single required platform", async () => {

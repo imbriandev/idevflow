@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.3.0-beta.14 — 2026-08-06
+
+- Add a founder-confirmed, transactional `idev_flow bootstrap_ios` precondition for new clean Git repositories.
+- Generate an XcodeGen SwiftUI app shell with unit tests, privacy manifest, shared scheme, iOS Simulator build, and one scaffold commit; it creates no lifecycle branch.
+
+## 0.3.0-beta.13 — 2026-08-06
+
+- Let `idev_flow continue` complete the interactive definition-acceptance checkpoint.
+- Add founder-facade maintenance and bounded test-repair actions, backed by the existing lifecycle authority.
+- Remove the unused stage dashboard formatter and move definition acceptance into the lifecycle service for reuse.
+
+## 0.3.0-beta.12 — 2026-08-06
+
+- Remove the unproven multi-agent pipeline and worker runtime from the production package (983 runtime LOC plus associated tools/tests).
+- Keep one durable writer-session delivery run with safe cross-chat handoff and recovery.
+- Migrate configuration to schema 9, dropping retired schema-8 pipeline settings without deleting preserved source or runtime data.
+- Simplify coordinator, diagnostics, tool-gate, process environment, and documentation to the single-founder operating path.
+
+## 0.3.0-beta.11 — 2026-08-06
+
+- Make `idev_flow` the documented founder entry point; typed tools remain evidence-producing kernel details.
+- Keep slash-command stage hints only for the current Pi chat; durable project state routes resumed chats.
+- Stop coordinator reads from mutating expired writer leases, and skip routine pipeline scans when multi-agent operation is disabled.
+- Remove candidate and platform-matrix reads from normal coordinator routing; release operations retain their direct candidate checks.
+
+## 0.3.0-beta.10 — 2026-08-06
+
+- Default new projects to one founder-owned delivery run, with multi-agent pipeline opt-in.
+- Add founder-facade plan approval and routine completed-work continuation.
+- Default internal TestFlight to fresh Release build/test evidence; preserve full proof gates for migrated projects and opt-in full release evidence.
+- Let one founder approval promote, archive, export, and upload the exact internal TestFlight candidate; tester selection and distribution remain manual.
+- Ignore stale Pi stage hints when durable lifecycle/writer state has moved, and prune expired verification resources.
+
 ## 0.3.0-beta.9 — 2026-08-05
 
 - Allow a coordinator to integrate the one completed writer session awaiting integration even when it was created by an earlier Pi chat.

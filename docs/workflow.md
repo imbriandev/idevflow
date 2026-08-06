@@ -1,5 +1,9 @@
 # Workflow
 
+## Before idea: new iOS shell
+
+For a new app, install [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`), then use `idev_flow bootstrap_ios` in a clean Git repository. With founder confirmation, it uses XcodeGen to create a minimal SwiftUI app, unit-test target, privacy manifest, and shared scheme; it builds the shell for the iOS Simulator and commits it. This is a one-time precondition, not a lifecycle state. Existing Apple projects use the read-only adoption audit instead.
+
 ## 1. Define
 
 Run `/idev:define` and describe the product, user, problem, constraints, and smallest useful outcome. Keep the bet narrow. The stage records product memory and a Simple, Lovable, Complete definition.
@@ -42,7 +46,7 @@ This returns the lifecycle to `defined` using the existing product definition. P
 
 Describe the outcome, not the workflow: “assess this app”, “build this feature”, “fix this defect”, “keep this and start over”, or “prepare a TestFlight handoff”. iDevFlow chooses the eligible session and keeps Git worktrees, claims, receipts, and recovery details behind the status card. It handles bounded diagnosis, repair, verification, and valid integration itself; it asks only for scope, unresolved trade-offs, definition/plan/release approval, or founder-owned Apple evidence.
 
-The coordinator does not replace lifecycle gates or run in the background. “Prepare TestFlight handoff” means verified local preparation and a founder handoff; iDevFlow never uploads, selects testers, or distributes.
+The coordinator does not run in the background. After founder approval of the exact candidate, “Prepare TestFlight handoff” may promote, archive, export, and upload that internal beta to App Store Connect; it never selects testers or distributes.
 
 ## Interruption
 
@@ -53,4 +57,4 @@ idev_runtime status
 idev_doctor status
 ```
 
-Resume an owned writer or reconcile a pipeline before starting unrelated work. iDevFlow preserves abandoned source for diagnosis rather than deleting it.
+Resume or explicitly recover an owned writer before starting unrelated work. iDevFlow preserves abandoned source for diagnosis rather than deleting it.

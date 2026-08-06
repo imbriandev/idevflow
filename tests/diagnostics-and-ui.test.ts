@@ -7,7 +7,6 @@ import { discoverRepository } from "../extensions/idevflow/repository/discovery.
 import { SessionRegistry } from "../extensions/idevflow/sessions/registry.ts";
 import { RuntimeStore } from "../extensions/idevflow/state/runtime-store.ts";
 import type { WriterSession } from "../extensions/idevflow/sessions/types.ts";
-import { registerPipelineTool } from "../extensions/idevflow/tools/pipeline-tool.ts";
 import { registerReleaseTool } from "../extensions/idevflow/tools/release-tool.ts";
 import { registerRuntimeTool } from "../extensions/idevflow/tools/runtime-tool.ts";
 import { registerLifecycleTool } from "../extensions/idevflow/tools/lifecycle-tool.ts";
@@ -24,9 +23,6 @@ function toolRegistry(): { readonly tools: Map<string, RegisteredTool>; readonly
 function nonInteractiveContext(cwd: string): any {
   return { cwd, hasUI: false, isProjectTrusted: () => true, sessionManager: { getSessionId: () => "noninteractive" }, ui: { confirm: async () => { throw new Error("confirm must not be called without UI"); } } };
 }
-function rejectingInteractiveContext(cwd: string): any {
-  return { cwd, hasUI: true, isProjectTrusted: () => true, sessionManager: { getSessionId: () => "interactive" }, ui: { confirm: async () => false } };
-}
 
 describe("production diagnostics and interaction gates", () => {
   it("emits metadata-only diagnostics without exposing writer task content", async () => {
@@ -42,14 +38,11 @@ describe("production diagnostics and interaction gates", () => {
     assert.doesNotMatch(JSON.stringify(report), /super-secret-value-never-report/);
   });
 
-  it("fails approval-required release and pipeline actions closed without an interactive UI", async () => {
+  it("fails approval-required release actions closed without an interactive UI", async () => {
     const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
     const registry = toolRegistry();
-    registerPipelineTool(registry as any, "/extension.ts");
     registerReleaseTool(registry as any);
-    const context = nonInteractiveContext(fixture.root);
-    await assert.rejects(registry.tools.get("idev_pipeline")!.execute("id", { action: "approve_risk", pipelineId: "demo", sliceId: "high-risk" }, undefined, undefined, context), /fails closed without interactive UI/);
-    await assert.rejects(registry.tools.get("idev_release")!.execute("id", { action: "approve" }, undefined, undefined, context), /fails closed without interactive UI/);
+    await assert.rejects(registry.tools.get("idev_release")!.execute("id", { action: "approve" }, undefined, undefined, nonInteractiveContext(fixture.root)), /fails closed without interactive UI/);
   });
 
   it("records a founder-requested existing-project route without an extra confirmation", async () => {
@@ -74,11 +67,4 @@ describe("production diagnostics and interaction gates", () => {
     assert.equal((await new RuntimeStore(repository).status())?.lifecycle, "testing");
   });
 
-  it("honors an interactive cancellation before coordinator mutation", async () => {
-    const fixture = await createGitFixture(); cleanups.push(fixture.cleanup);
-    const registry = toolRegistry(); registerPipelineTool(registry as any, "/extension.ts");
-    const result: any = await registry.tools.get("idev_pipeline")!.execute("id", { action: "cancel", pipelineId: "does-not-need-to-exist", reason: "test cancellation" }, undefined, undefined, rejectingInteractiveContext(fixture.root));
-    assert.equal(result.details.cancelled, false);
-    assert.match(result.content[0].text, /cancelled/);
-  });
 });

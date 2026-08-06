@@ -120,9 +120,10 @@ async function createCandidateLocked(
   if (xcresults.length < 2 || !verification.artifacts.some((artifact) => artifact.kind === "summary")) {
     throw new SafetyKernelError("Candidate release evidence requires build/test xcresult bundles and a parsed test summary");
   }
-  const missingProofs = missingRequiredProofs("release", verification.proofs, config.verification.requiredScreenshotVariants);
+  const fullReleaseEvidence = config.release.evidence === "full";
+  const missingProofs = missingRequiredProofs("release", verification.proofs, fullReleaseEvidence ? config.verification.requiredScreenshotVariants : [], "ios", fullReleaseEvidence && config.quality.requireXCTestEvidence);
   if (missingProofs.length) throw new SafetyKernelError(`Candidate release evidence is missing proof: ${missingProofs.join(", ")}`);
-  if (config.quality.requireXCTestEvidence) {
+  if (fullReleaseEvidence && config.quality.requireXCTestEvidence) {
     const accessibility = verification.proofs.find((proof) => proof.kind === "accessibility");
     const performance = verification.proofs.find((proof) => proof.kind === "performance");
     if (!accessibility || !performance) throw new SafetyKernelError("Candidate release evidence requires XCTest accessibility and performance proof");

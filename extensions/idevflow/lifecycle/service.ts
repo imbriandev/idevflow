@@ -31,6 +31,30 @@ export interface PlanApproval {
   readonly approvedAt: string;
 }
 
+export function definitionAcceptancePrompt(
+  critique: { readonly alternative: string; readonly adoptionRisk: string; readonly invalidatingSignal: string },
+  unresolvedCriticalAssumptionIds: readonly string[],
+): { readonly title: string; readonly message: string } {
+  return {
+    title: "Accept definition and known risks?",
+    message: [
+      `Alternative: ${critique.alternative}`,
+      `Adoption risk: ${critique.adoptionRisk}`,
+      `Invalidating signal: ${critique.invalidatingSignal}`,
+      unresolvedCriticalAssumptionIds.length ? `Unresolved high-impact assumptions: ${unresolvedCriticalAssumptionIds.join(", ")}` : "No unresolved high-impact assumptions.",
+      "Accept this exact definition and continue to planning?",
+    ].join("\n"),
+  };
+}
+
+export async function definitionAcceptance(repository: RepositoryDescriptor, session: WriterSession): Promise<{ readonly prompt: ReturnType<typeof definitionAcceptancePrompt>; readonly unresolvedCriticalAssumptionIds: readonly string[] }> {
+  if (session.stage !== "define") throw new SafetyKernelError("Definition acceptance requires a completed definition session");
+  const product = await loadDefinedProduct(session.worktreePath, (await loadConfig(repository.primaryRoot)).documents);
+  const quality = validateIdeaQuality(product.memory, product.slc);
+  if (product.memory.schemaVersion !== 3) throw new SafetyKernelError("Definition requires schema version 3 discovery documents");
+  return { prompt: definitionAcceptancePrompt(product.memory.ideaValidation.skepticalCritique, quality.unresolvedCriticalAssumptionIds), unresolvedCriticalAssumptionIds: quality.unresolvedCriticalAssumptionIds };
+}
+
 export interface StageReceipt {
   readonly schemaVersion: 1;
   readonly id: string;
