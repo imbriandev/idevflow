@@ -205,6 +205,18 @@ export async function appStoreStatus(root: string, config: iDevFlowConfig): Prom
 }
 
 export type AppStorePriceScope = "app" | "iap";
+export type InAppPurchaseType = "CONSUMABLE" | "NON_CONSUMABLE" | "NON_RENEWING_SUBSCRIPTION";
+
+export interface CreateInAppPurchase {
+  readonly productId: string;
+  readonly referenceName: string;
+  readonly type: InAppPurchaseType;
+  readonly reviewNote?: string;
+  readonly familySharable?: boolean;
+  readonly locale?: string;
+  readonly displayName?: string;
+  readonly description?: string;
+}
 
 export interface AppStorePricing {
   readonly bundleId: string;
@@ -221,6 +233,10 @@ async function pricingCommand(root: string, config: iDevFlowConfig, args: readon
   const result = await command(await installedAutomicVaultBridge(), [...args, project.bundleIdentifier], root);
   try { return JSON.parse(result.stdout) as unknown; }
   catch (error) { throw new SafetyKernelError("App Store Connect returned invalid pricing data", { cause: error }); }
+}
+
+export async function createInAppPurchase(root: string, config: iDevFlowConfig, input: CreateInAppPurchase): Promise<unknown> {
+  return await pricingCommand(root, config, ["create_iap", JSON.stringify(input)]);
 }
 
 export async function appStorePricing(root: string, config: iDevFlowConfig, scope: AppStorePriceScope, productId?: string): Promise<AppStorePricing> {

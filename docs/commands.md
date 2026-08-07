@@ -42,7 +42,7 @@ Commands are optional stage hints for Pi. Durable project state and typed kernel
 ## Release and coordination
 
 - `idev_release` — create, approve, promote, and hand off release candidates.
-- `idev_apple` — read signing/App Store Connect status and price schedules/points; founder-confirm an exact app/IAP manual-price change or removal, provisioning, archive, or internal TestFlight upload; never selects testers or distributes.
+- `idev_apple` — read signing/App Store Connect status and price schedules/points; founder-confirm exact IAP product/localization creation or manual-price changes, provisioning, archive, or internal TestFlight upload; never selects testers or distributes.
 
 See [Apple release capability matrix](release-capabilities.md) for the exact founder boundary at each release operation.
 

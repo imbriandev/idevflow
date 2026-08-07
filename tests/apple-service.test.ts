@@ -42,6 +42,9 @@ describe("Apple signing audit", () => {
     assert.match(bridge, /\/v2\/inAppPurchases\/\$\{owner\.purchase\.id\}\/iapPriceSchedule/);
     assert.match(bridge, /\/v1\/apps\/\$\{owner\.app\.id\}\/appPricePoints/);
     assert.match(bridge, /\/v2\/inAppPurchases\/\$\{owner\.purchase\.id\}\/pricePoints/);
+    assert.match(bridge, /"\/v2\/inAppPurchases"/);
+    assert.match(bridge, /"\/v1\/inAppPurchaseVersions"/);
+    assert.match(bridge, /"\/v2\/inAppPurchaseLocalizations"/);
     assert.doesNotMatch(bridge, /PriceScheduleManualPrices/);
   });
 });

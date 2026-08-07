@@ -114,6 +114,29 @@ else if (action === "upload") {
         ]);
         console.log(JSON.stringify({ bundleId, appFound: true, inAppPurchases: (purchases.data ?? []).map((item) => ({ id: item.id, ...item.attributes })), builds: (builds.data ?? []).map((item) => item.attributes) }));
       }
+    } else if (action === "create_iap") {
+      const [rawInput, bundleId] = args;
+      let input;
+      try { input = JSON.parse(rawInput); } catch { throw new Error("Invalid IAP creation input"); }
+      if (!input || !/^[A-Za-z0-9._-]{1,255}$/.test(input.productId ?? "") || typeof input.referenceName !== "string" || !input.referenceName.trim() || !["CONSUMABLE", "NON_CONSUMABLE", "NON_RENEWING_SUBSCRIPTION"].includes(input.type)) throw new Error("Invalid IAP product ID, reference name, or type");
+      if ((input.locale || input.displayName || input.description) && (typeof input.locale !== "string" || typeof input.displayName !== "string" || !input.locale || !input.displayName)) throw new Error("IAP localization requires locale and displayName");
+      const app = await appForBundle(bundleId);
+      const existing = await request(`/v1/apps/${app.id}/inAppPurchasesV2?filter[productId]=${encodeURIComponent(input.productId)}&limit=1`);
+      if (existing.data?.length) throw new Error(`An in-app purchase already exists for ${input.productId}`);
+      const created = await request("/v2/inAppPurchases", { method: "POST", body: JSON.stringify({ data: { type: "inAppPurchases", attributes: { name: input.referenceName, productId: input.productId, inAppPurchaseType: input.type, ...(input.reviewNote ? { reviewNote: input.reviewNote } : {}), ...(typeof input.familySharable === "boolean" ? { familySharable: input.familySharable } : {}) }, relationships: { app: { data: { type: "apps", id: app.id } } } } }) });
+      if (!created.data?.id) throw new Error("App Store Connect created the IAP but returned no identifier; inspect it by product ID before retrying");
+      const result = { bundleId, product: { id: created.data.id, productId: input.productId, referenceName: input.referenceName, type: input.type } };
+      if (!input.locale) console.log(JSON.stringify({ complete: true, ...result }));
+      else {
+        try {
+          const version = await request("/v1/inAppPurchaseVersions", { method: "POST", body: JSON.stringify({ data: { type: "inAppPurchaseVersions", relationships: { inAppPurchase: { data: { type: "inAppPurchases", id: created.data.id } } } } }) });
+          const localization = await request("/v2/inAppPurchaseLocalizations", { method: "POST", body: JSON.stringify({ data: { type: "inAppPurchaseLocalizations", attributes: { locale: input.locale, name: input.displayName, ...(input.description ? { description: input.description } : {}) }, relationships: { version: { data: { type: "inAppPurchaseVersions", id: version.data.id } } } } }) });
+          console.log(JSON.stringify({ complete: true, ...result, localization: { id: localization.data?.id, locale: input.locale, displayName: input.displayName } }));
+        } catch (error) {
+          // ponytail: do not delete a newly created IAP; Apple creation is non-atomic and the founder must see the exact partial result.
+          console.log(JSON.stringify({ complete: false, ...result, localization: { created: false, error: error instanceof Error ? error.message : "Localization creation failed" } }));
+        }
+      }
     } else if (action === "pricing_status") {
       const [scope, productId, bundleId] = args;
       console.log(JSON.stringify(await pricingStatus(scope, bundleId, productId)));

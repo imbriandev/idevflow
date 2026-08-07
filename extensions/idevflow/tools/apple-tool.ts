@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { StringEnum } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { appStorePricePoints, appStorePricing, appStoreStatus, archiveAppleApp, auditAppleSigning, deleteAppStorePrice, exportAndUploadTestFlight, installAutomicVaultBridge, provisionAppleDevice, setAppStorePrice, writeArchiveReceipt, type AppStorePriceScope } from "../apple/service.ts";
+import { appStorePricePoints, appStorePricing, appStoreStatus, archiveAppleApp, auditAppleSigning, createInAppPurchase, deleteAppStorePrice, exportAndUploadTestFlight, installAutomicVaultBridge, provisionAppleDevice, setAppStorePrice, writeArchiveReceipt, type AppStorePriceScope, type CreateInAppPurchase } from "../apple/service.ts";
 import { loadConfig } from "../config/config.ts";
 import { integrationHead } from "../git/integration.ts";
 import { loadCandidate } from "../release/service.ts";
@@ -35,10 +35,11 @@ export function registerAppleTool(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "idev_apple",
     label: "iDevFlow Apple Developer",
-    description: "Inspect App Store Connect, manage explicitly confirmed app or IAP price schedules, inspect iOS signing, provision a device, archive, configure a stable Automic Vault bridge, or upload an explicitly approved exact IPA to internal TestFlight.",
+    description: "Inspect App Store Connect, create explicitly confirmed IAP products and metadata, manage app or IAP price schedules, inspect iOS signing, provision a device, archive, configure a stable Automic Vault bridge, or upload an explicitly approved exact IPA to internal TestFlight.",
     promptSnippet: "Diagnose Apple signing and create explicitly approved local provisioning or archive evidence",
     promptGuidelines: [
       "Use app_store_status, pricing_status, or price_points to inspect App Store Connect state; they are read-only.",
+      "create_iap requires a trusted project and one confirmation for the exact product, type, and optional localization; it never sets price, availability, submission, testers, or distribution.",
       "set_price and delete_price require a trusted project and one confirmation for the exact app/IAP, Apple price-point or manual-price ID, and effective date. They never change availability, metadata, testers, or distribution.",
       "Use audit first for TestFlight signing or provisioning failures.",
       "provision_device, archive, and upload_testflight require trusted-project interactive founder confirmation.",
@@ -46,7 +47,7 @@ export function registerAppleTool(pi: ExtensionAPI): void {
       "upload_testflight never selects testers or distributes a build.",
     ],
     parameters: Type.Object({
-      action: StringEnum(["app_store_status", "pricing_status", "price_points", "set_price", "delete_price", "audit", "provision_device", "archive", "setup_vault", "upload_testflight"] as const),
+      action: StringEnum(["app_store_status", "create_iap", "pricing_status", "price_points", "set_price", "delete_price", "audit", "provision_device", "archive", "setup_vault", "upload_testflight"] as const),
       deviceId: Type.Optional(Type.String()),
       priceScope: Type.Optional(StringEnum(["app", "iap"] as const)),
       productId: Type.Optional(Type.String()),
@@ -55,6 +56,13 @@ export function registerAppleTool(pi: ExtensionAPI): void {
       manualPriceId: Type.Optional(Type.String()),
       startDate: Type.Optional(Type.String()),
       endDate: Type.Optional(Type.String()),
+      iapType: Type.Optional(StringEnum(["CONSUMABLE", "NON_CONSUMABLE", "NON_RENEWING_SUBSCRIPTION"] as const)),
+      referenceName: Type.Optional(Type.String()),
+      reviewNote: Type.Optional(Type.String()),
+      familySharable: Type.Optional(Type.Boolean()),
+      locale: Type.Optional(Type.String()),
+      displayName: Type.Optional(Type.String()),
+      description: Type.Optional(Type.String()),
     }),
     async execute(_id, params, _signal, _update, ctx) {
       const repository = await discoverRepository(ctx.cwd);
@@ -86,6 +94,19 @@ export function registerAppleTool(pi: ExtensionAPI): void {
         return { content: [{ type: "text", text }], details: { audit } };
       }
       if (!ctx.isProjectTrusted() || !ctx.hasUI) throw new SafetyKernelError("Apple pricing, setup, provisioning, archive, and upload actions require a trusted project with interactive founder confirmation");
+      if (params.action === "create_iap") {
+        const productId = params.productId?.trim() ?? "";
+        const referenceName = params.referenceName?.trim() ?? "";
+        if (!/^[A-Za-z0-9._-]{1,255}$/.test(productId) || !referenceName || !params.iapType) throw new SafetyKernelError("create_iap requires productId, referenceName, and one supported iapType");
+        const hasLocalization = Boolean(params.locale || params.displayName || params.description);
+        if (hasLocalization && (!params.locale?.trim() || !params.displayName?.trim())) throw new SafetyKernelError("IAP localization requires locale and displayName");
+        const input: CreateInAppPurchase = { productId, referenceName, type: params.iapType, ...(params.reviewNote?.trim() ? { reviewNote: params.reviewNote.trim() } : {}), ...(typeof params.familySharable === "boolean" ? { familySharable: params.familySharable } : {}), ...(hasLocalization ? { locale: params.locale!.trim(), displayName: params.displayName!.trim(), ...(params.description?.trim() ? { description: params.description.trim() } : {}) } : {}) };
+        const approved = await ctx.ui.confirm("Create App Store Connect IAP?", `Create this exact IAP and optional localization:\n${JSON.stringify(input, null, 2)}\nIt will not set a price, availability, submission, testers, or distribution.`);
+        if (!approved) return { content: [{ type: "text", text: "App Store Connect IAP creation cancelled." }], details: { created: false } };
+        const result = await createInAppPurchase(repository.primaryRoot, config, input) as { complete?: boolean; product?: { productId?: string } };
+        const text = result.complete === false ? `IAP ${result.product?.productId ?? productId} was created, but its localization needs attention; no rollback was attempted.` : `IAP ${productId} was created${input.locale ? ` with ${input.locale} localization` : ""}.`;
+        return { content: [{ type: "text", text }], details: { created: true, result } };
+      }
       if (params.action === "set_price") {
         const scope = priceScope(params);
         if (!params.pricePointId) throw new SafetyKernelError("set_price requires pricePointId from price_points");

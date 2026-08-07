@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.0-beta.16 — 2026-08-06
+
+- Add founder-confirmed IAP creation with reference metadata and optional App Store localization; report localization failures as partial results without deleting the created product.
+
 ## 0.3.0-beta.15 — 2026-08-06\n\n- Add founder-confirmed inspection, creation, and removal of app and IAP manual price-schedule entries through the approved App Store Connect vault bridge.\n- Require exact Apple price-point/manual-price IDs and UTC effective dates; pricing changes cannot alter availability, metadata, testers, or distribution.\n\n## 0.3.0-beta.14 — 2026-08-06
 
 - Add a founder-confirmed, transactional `idev_flow bootstrap_ios` precondition for new clean Git repositories.
